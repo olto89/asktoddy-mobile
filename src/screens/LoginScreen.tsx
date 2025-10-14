@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
+import { useAuth } from '../contexts/AuthContext';
 import designTokens from '../styles/designTokens';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
@@ -22,11 +23,11 @@ interface Props {
 }
 
 export default function LoginScreen({ navigation }: Props) {
+  const { signIn, signUp, loading } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
 
   const handleAuth = async () => {
     if (!email || !password) {
@@ -39,14 +40,38 @@ export default function LoginScreen({ navigation }: Props) {
       return;
     }
 
-    setIsLoading(true);
-    
-    // TODO: Implement actual authentication with Supabase
-    setTimeout(() => {
-      setIsLoading(false);
-      // Navigate to main app (for now, go to Home)
-      navigation.replace('Home');
-    }, 1500);
+    if (!isLogin && password.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters long');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
+
+    try {
+      if (isLogin) {
+        const { error } = await signIn(email, password);
+        if (error) {
+          Alert.alert('Sign In Failed', error.message || 'Invalid email or password');
+          return;
+        }
+      } else {
+        const { error } = await signUp(email, password);
+        if (error) {
+          Alert.alert('Sign Up Failed', error.message || 'Failed to create account');
+          return;
+        }
+        Alert.alert('Success', 'Account created successfully! You are now signed in.');
+      }
+      
+      // Navigation will be handled by auth state change
+    } catch (error) {
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+      console.error('Auth error:', error);
+    }
   };
 
   const toggleAuthMode = () => {
@@ -119,7 +144,7 @@ export default function LoginScreen({ navigation }: Props) {
           <Button
             title={isLogin ? 'Sign In' : 'Create Account'}
             onPress={handleAuth}
-            loading={isLoading}
+            loading={loading}
             fullWidth
             style={styles.authButton}
           />
