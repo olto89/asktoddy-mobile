@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
+import { useAuth } from '../contexts/AuthContext';
 import designTokens from '../styles/designTokens';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
@@ -20,9 +21,11 @@ interface Props {
 }
 
 export default function HomeScreen({ navigation }: Props) {
-  const handleLogout = () => {
-    // TODO: Implement logout logic
-    navigation.replace('Login');
+  const { user, signOut } = useAuth();
+
+  const handleLogout = async () => {
+    await signOut();
+    // Navigation will be handled by auth state change
   };
 
   return (
