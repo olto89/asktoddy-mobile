@@ -14,6 +14,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
 import designTokens from '../styles/designTokens';
 import Button from '../components/ui/Button';
+import { AIService } from '../services/ai';
 
 type CameraScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Camera'>;
 
@@ -85,15 +86,38 @@ export default function CameraScreen({ navigation }: Props) {
       });
 
       if (photo?.uri) {
-        // Navigate to results with the captured image
-        navigation.navigate('Results', { 
-          imageUri: photo.uri,
-          analysis: { 
-            captureMethod: 'camera',
-            timestamp: new Date().toISOString(),
-            imageSize: { width: photo.width, height: photo.height }
-          }
-        });
+        // Perform AI analysis
+        console.log('🤖 Starting AI analysis...');
+        
+        try {
+          const analysis = await AIService.analyzeImageWithContext(photo.uri, {
+            projectType: 'General Construction',
+            location: 'UK',
+            // Add any other context from user preferences
+          });
+          
+          console.log('✅ Analysis complete:', analysis.projectType);
+          
+          // Navigate to results with both image and analysis
+          navigation.navigate('Results', { 
+            imageUri: photo.uri,
+            analysis: analysis
+          });
+        } catch (analysisError) {
+          console.error('Analysis failed:', analysisError);
+          
+          // Still navigate to results even if analysis fails
+          navigation.navigate('Results', { 
+            imageUri: photo.uri,
+            analysis: null
+          });
+          
+          Alert.alert(
+            'Analysis Notice',
+            'Image captured successfully, but analysis is temporarily unavailable. You can still view your photo.',
+            [{ text: 'OK' }]
+          );
+        }
       }
     } catch (error) {
       console.error('Camera error:', error);
@@ -119,14 +143,38 @@ export default function CameraScreen({ navigation }: Props) {
 
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
-        navigation.navigate('Results', { 
-          imageUri: asset.uri,
-          analysis: { 
-            captureMethod: 'library',
-            timestamp: new Date().toISOString(),
-            imageSize: { width: asset.width, height: asset.height }
-          }
-        });
+        
+        // Perform AI analysis
+        console.log('🤖 Starting AI analysis for library image...');
+        
+        try {
+          const analysis = await AIService.analyzeImageWithContext(asset.uri, {
+            projectType: 'General Construction',
+            location: 'UK',
+          });
+          
+          console.log('✅ Analysis complete:', analysis.projectType);
+          
+          // Navigate to results with both image and analysis
+          navigation.navigate('Results', { 
+            imageUri: asset.uri,
+            analysis: analysis
+          });
+        } catch (analysisError) {
+          console.error('Analysis failed:', analysisError);
+          
+          // Still navigate to results even if analysis fails
+          navigation.navigate('Results', { 
+            imageUri: asset.uri,
+            analysis: null
+          });
+          
+          Alert.alert(
+            'Analysis Notice',
+            'Image loaded successfully, but analysis is temporarily unavailable.',
+            [{ text: 'OK' }]
+          );
+        }
       }
     } catch (error) {
       console.error('Image picker error:', error);
@@ -148,7 +196,8 @@ export default function CameraScreen({ navigation }: Props) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={designTokens.colors.primary[500]} />
-        <Text style={styles.loadingText}>Processing image...</Text>
+        <Text style={styles.loadingText}>Analyzing your project...</Text>
+        <Text style={styles.loadingSubText}>This may take a few moments</Text>
       </View>
     );
   }
@@ -262,6 +311,12 @@ const styles = StyleSheet.create({
     fontSize: designTokens.typography.fontSize.base,
     color: designTokens.colors.text.inverse,
     marginTop: designTokens.spacing.lg,
+  },
+  loadingSubText: {
+    fontSize: designTokens.typography.fontSize.sm,
+    color: designTokens.colors.text.inverse,
+    marginTop: designTokens.spacing.xs,
+    opacity: 0.8,
   },
 
   // Camera overlays
