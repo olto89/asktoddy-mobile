@@ -15,19 +15,28 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.asktoddy.mobile",
+      "supportsTablet": false,
+      "bundleIdentifier": "com.asktoddy.staging",
+      "buildNumber": "1",
       "infoPlist": {
-        "NSCameraUsageDescription": "AskToddy needs camera access to analyze your construction projects and provide accurate quotes.",
-        "NSPhotoLibraryUsageDescription": "AskToddy needs photo library access to analyze your construction images and floor plans."
+        "NSCameraUsageDescription": "AskToddy needs camera access to photograph construction projects for instant quotes.",
+        "NSPhotoLibraryUsageDescription": "AskToddy needs photo library access to select construction project images.",
+        "NSLocationWhenInUseUsageDescription": "AskToddy uses your location to find local suppliers and provide accurate regional pricing.",
+        "LSApplicationQueriesSchemes": [
+          "mailto",
+          "tel"
+        ]
       }
     },
     "android": {
-      "package": "com.asktoddy.mobile",
+      "package": "com.asktoddy.staging",
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
@@ -52,7 +61,18 @@
         {
           "photosPermission": "Allow AskToddy to access your photo library to analyze construction images and floor plans."
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "AskToddy uses your location to find local suppliers and provide accurate regional pricing for construction materials and labour."
+        }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "2CA2FCBD-1FC7-4C6F-BBA2-3DF133D1AE63"
+      }
+    }
   }
 }

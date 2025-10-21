@@ -1,0 +1,63 @@
+{
+  "cli": {
+    "version": ">= 5.9.1",
+    "appVersionSource": "local"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "development"
+      },
+      "ios": {
+        "resourceClass": "m-medium"
+      }
+    },
+    "staging": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "staging"
+      },
+      "ios": {
+        "resourceClass": "m-medium",
+        "buildConfiguration": "Release"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production": {
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "production",
+        "APP_VARIANT": "production"
+      },
+      "ios": {
+        "resourceClass": "m-medium",
+        "buildConfiguration": "Release",
+        "autoIncrement": true
+      },
+      "android": {
+        "buildType": "app-bundle",
+        "autoIncrement": true
+      }
+    }
+  },
+  "submit": {
+    "staging": {
+      "ios": {
+        "appleId": "oliver@hotsoup.io",
+        "ascAppId": "6754278065"
+      }
+    },
+    "production": {
+      "ios": {
+        "appleId": "oliver@hotsoup.io",
+        "ascAppId": "6754278089"
+      },
+      "android": {
+        "track": "internal"
+      }
+    }
+  }
+}

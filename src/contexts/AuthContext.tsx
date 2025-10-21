@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
+import { Linking } from 'react-native';
 import { supabase, authHelpers } from '../services/supabase';
 
 interface AuthContextType {
@@ -8,6 +9,7 @@ interface AuthContextType {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string) => Promise<{ error: any }>;
+  signUpTest: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   isAuthenticated: boolean;
 }
@@ -57,8 +59,37 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     );
 
+    // Handle deep links for email confirmation
+    const handleDeepLink = (url: string) => {
+      console.log('Deep link received:', url);
+      if (url.includes('auth/callback')) {
+        // Extract tokens from URL and handle email confirmation
+        const urlParams = new URL(url).searchParams;
+        const access_token = urlParams.get('access_token');
+        const refresh_token = urlParams.get('refresh_token');
+        
+        if (access_token && refresh_token) {
+          console.log('Setting session from deep link tokens');
+          supabase.auth.setSession({ access_token, refresh_token });
+        }
+      }
+    };
+
+    // Listen for deep links
+    const linkingSubscription = Linking.addEventListener('url', ({ url }) => {
+      handleDeepLink(url);
+    });
+
+    // Check if app was opened with a deep link
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        handleDeepLink(url);
+      }
+    });
+
     return () => {
       subscription.unsubscribe();
+      linkingSubscription?.remove();
     };
   }, []);
 
@@ -92,7 +123,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // In production, you might want email confirmation
       if (data.user && !data.session) {
         // User created but needs email confirmation
-        return { error: { message: 'Please check your email to confirm your account' } };
+        return { 
+          error: { 
+            message: 'Account created! Please check your email to confirm your account. After clicking the link in the email, return to the app and try logging in.' 
+          } 
+        };
+      }
+
+      return { error: null };
+    } catch (error) {
+      return { error };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signUpTest = async (email: string, password: string) => {
+    try {
+      setLoading(true);
+      const { data, error } = await authHelpers.signUpTest(email, password);
+      
+      if (error) {
+        return { error };
       }
 
       return { error: null };
@@ -122,6 +174,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     loading,
     signIn,
     signUp,
+    signUpTest,
     signOut,
     isAuthenticated: !!user,
   };

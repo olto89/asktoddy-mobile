@@ -1,10 +1,10 @@
 {
-  "lastUpdated": "2025-10-15T09:34:41.429Z",
+  "lastUpdated": "2025-10-21T11:37:44.950Z",
   "project": {
     "name": "asktoddy-mobile",
     "version": "1.0.0",
     "dependencies": {
-      "expo": "~54.0.13",
+      "expo": "54.0.15",
       "react-native": "0.81.4",
       "@google/generative-ai": "^0.24.1"
     }
@@ -42,26 +42,13 @@
     "supabaseConfigured": true
   },
   "recentFiles": [
-    "src/contexts/AuthContext.tsx",
-    "src/config/index.ts",
-    "src/navigation/AuthNavigator.tsx",
-    "src/screens/CameraScreen.tsx",
-    "src/screens/SplashScreen.tsx",
-    "src/screens/ResultsScreen.tsx",
-    "src/screens/HomeScreen.tsx",
-    "src/screens/LoginScreen.tsx",
-    "src/styles/designTokens.ts",
-    "src/components/ui/Card.tsx",
-    "src/components/ui/Button.tsx",
-    "src/components/ui/Input.tsx",
-    "src/services/ai/AIMiddleware.ts",
-    "src/services/ai/providers/GeminiProvider.ts",
-    "src/services/ai/providers/MockProvider.ts",
-    "src/services/ai/AIService.ts",
-    "src/services/ai/types.ts",
-    "src/services/ai/index.ts",
-    "src/services/supabase.ts",
-    "src/services/pricing/PricingService.ts"
+    "src/screens/ChatScreen.tsx",
+    "src/hooks/index.ts",
+    "src/hooks/useLocation.ts",
+    "src/services/location/LocationService.ts",
+    "src/services/location/index.ts",
+    "src/services/ai/AIServiceEdge.ts",
+    "src/services/ai/index.ts"
   ],
   "runningProcesses": [
     {
@@ -73,8 +60,8 @@
   ],
   "git": {
     "branch": "main",
-    "lastCommit": "2a8c544 feat: implement fully functional camera component",
+    "lastCommit": "f0c3443 checkpoint: development progress - 2025-10-15 10:34",
     "hasUncommittedChanges": true,
-    "changedFiles": 13
+    "changedFiles": 46
   }
 }

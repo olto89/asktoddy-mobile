@@ -1,6 +1,11 @@
 // AI Service Exports
+// MIGRATED: Using Edge Function AI Service (ASK-35)
+// All AI processing now happens server-side in Supabase Edge Function
 
-export { AIService } from './AIService';
+export { AIService } from './AIServiceEdge';
+
+// Legacy exports (kept for backward compatibility during migration)
+export { AIService as AIServiceLocal } from './AIService';
 export { AIMiddleware } from './AIMiddleware';
 export { GeminiProvider } from './providers/GeminiProvider';
 export { MockProvider } from './providers/MockProvider';
@@ -16,5 +21,6 @@ export type {
   AIMiddlewareConfig
 } from './types';
 
-// Default export
+// Default export (now uses Edge Function)
+import { AIService } from './AIServiceEdge';
 export default AIService;

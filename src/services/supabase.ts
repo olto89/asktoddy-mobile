@@ -31,6 +31,8 @@ export const authHelpers = {
           subscription_tier: 'free',
           created_via: 'mobile_app',
         },
+        // Set redirect URL for mobile app
+        emailRedirectTo: 'asktoddy://auth/callback',
       },
     });
     return { data, error };
@@ -66,6 +68,38 @@ export const authHelpers = {
   // Reset password
   resetPassword: async (email: string) => {
     const { data, error } = await supabase.auth.resetPasswordForEmail(email);
+    return { data, error };
+  },
+
+  // Test signup without email confirmation (for development)
+  signUpTest: async (email: string, password: string) => {
+    // Try to sign up user
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          subscription_tier: 'free',
+          created_via: 'mobile_app',
+          skip_confirmation: true,
+        },
+      },
+    });
+    
+    if (error) {
+      return { data, error };
+    }
+
+    // If user was created but not confirmed, try to sign them in anyway
+    if (data.user && !data.session) {
+      console.log('User created but not confirmed, attempting direct sign in...');
+      const signInResult = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      return signInResult;
+    }
+
     return { data, error };
   },
 };
