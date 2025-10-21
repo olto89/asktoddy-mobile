@@ -15,7 +15,8 @@ import { RootStackParamList } from '../../App';
 import designTokens from '../styles/designTokens';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
-import { AIService, ProjectAnalysis } from '../services/ai';
+// AIService removed - now using Edge Functions
+import { supabase } from '../services/supabase';
 
 type ResultsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Results'>;
 type ResultsScreenRouteProp = RouteProp<RootStackParamList, 'Results'>;
@@ -27,7 +28,7 @@ interface Props {
 
 export default function ResultsScreen({ navigation, route }: Props) {
   const { imageUri } = route.params;
-  const [analysis, setAnalysis] = useState<ProjectAnalysis | null>(null);
+  const [analysis, setAnalysis] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,14 +41,22 @@ export default function ResultsScreen({ navigation, route }: Props) {
     setError(null);
 
     try {
-      console.log('🔍 Starting AI analysis...');
+      console.log('🔍 Starting Edge Function analysis...');
       
-      const result = await AIService.analyzeImageWithContext(imageUri, {
-        location: 'UK',
-        // Could add user preferences here from auth context
+      const { data, error } = await supabase.functions.invoke('analyze-construction', {
+        body: {
+          imageUri,
+          context: {
+            location: 'London',
+            projectType: 'General Construction',
+            preferredProvider: 'auto',
+          },
+        },
       });
 
-      setAnalysis(result);
+      if (error) throw error;
+
+      setAnalysis(data?.data);
       console.log('✅ Analysis completed successfully');
     } catch (err) {
       console.error('❌ Analysis failed:', err);

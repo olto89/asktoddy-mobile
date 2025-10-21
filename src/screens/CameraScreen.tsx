@@ -14,7 +14,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
 import designTokens from '../styles/designTokens';
 import Button from '../components/ui/Button';
-import { AIService } from '../services/ai';
+// AIService removed - now using Edge Functions
 
 type CameraScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Camera'>;
 
@@ -86,38 +86,12 @@ export default function CameraScreen({ navigation }: Props) {
       });
 
       if (photo?.uri) {
-        // Perform AI analysis
-        console.log('🤖 Starting AI analysis...');
-        
-        try {
-          const analysis = await AIService.analyzeImageWithContext(photo.uri, {
-            projectType: 'General Construction',
-            location: 'UK',
-            // Add any other context from user preferences
-          });
-          
-          console.log('✅ Analysis complete:', analysis.projectType);
-          
-          // Navigate to results with both image and analysis
-          navigation.navigate('Results', { 
-            imageUri: photo.uri,
-            analysis: analysis
-          });
-        } catch (analysisError) {
-          console.error('Analysis failed:', analysisError);
-          
-          // Still navigate to results even if analysis fails
-          navigation.navigate('Results', { 
-            imageUri: photo.uri,
-            analysis: null
-          });
-          
-          Alert.alert(
-            'Analysis Notice',
-            'Image captured successfully, but analysis is temporarily unavailable. You can still view your photo.',
-            [{ text: 'OK' }]
-          );
-        }
+        // Navigate to results (analysis now happens in Edge Functions via ResultsScreen)
+        console.log('📷 Image captured, navigating to results...');
+        navigation.navigate('Results', { 
+          imageUri: photo.uri,
+          analysis: null // Analysis will happen in ResultsScreen using Edge Functions
+        });
       }
     } catch (error) {
       console.error('Camera error:', error);
@@ -144,37 +118,12 @@ export default function CameraScreen({ navigation }: Props) {
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
         
-        // Perform AI analysis
-        console.log('🤖 Starting AI analysis for library image...');
-        
-        try {
-          const analysis = await AIService.analyzeImageWithContext(asset.uri, {
-            projectType: 'General Construction',
-            location: 'UK',
-          });
-          
-          console.log('✅ Analysis complete:', analysis.projectType);
-          
-          // Navigate to results with both image and analysis
-          navigation.navigate('Results', { 
-            imageUri: asset.uri,
-            analysis: analysis
-          });
-        } catch (analysisError) {
-          console.error('Analysis failed:', analysisError);
-          
-          // Still navigate to results even if analysis fails
-          navigation.navigate('Results', { 
-            imageUri: asset.uri,
-            analysis: null
-          });
-          
-          Alert.alert(
-            'Analysis Notice',
-            'Image loaded successfully, but analysis is temporarily unavailable.',
-            [{ text: 'OK' }]
-          );
-        }
+        // Navigate to results (analysis now happens in Edge Functions via ResultsScreen)
+        console.log('📁 Image selected from library, navigating to results...');
+        navigation.navigate('Results', { 
+          imageUri: asset.uri,
+          analysis: null // Analysis will happen in ResultsScreen using Edge Functions
+        });
       }
     } catch (error) {
       console.error('Image picker error:', error);

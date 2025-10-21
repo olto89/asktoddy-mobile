@@ -12,6 +12,7 @@ import LoginScreen from '../screens/LoginScreen';
 
 // App screens  
 import HomeScreen from '../screens/HomeScreen';
+import ChatScreen from '../screens/ChatScreen';
 import CameraScreen from '../screens/CameraScreen';
 import ResultsScreen from '../screens/ResultsScreen';
 
@@ -61,8 +62,13 @@ export default function AuthNavigator() {
           />
         </Stack.Group>
       ) : (
-        // App stack - user logged in
+        // App stack - user logged in - go directly to Chat with custom header
         <Stack.Group>
+          <Stack.Screen 
+            name="Chat" 
+            component={ChatScreen} 
+            options={{ headerShown: false }}
+          />
           <Stack.Screen 
             name="Home" 
             component={HomeScreen} 

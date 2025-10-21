@@ -1,5 +1,5 @@
 {
-  "lastSynced": "2025-10-15T09:01:48.345Z",
+  "lastSynced": "2025-10-21T11:37:47.005Z",
   "user": {
     "name": "Oliver Todd",
     "email": "mrolivertodd@gmail.com"
@@ -11,10 +11,96 @@
     }
   ],
   "summary": {
-    "total": 33,
-    "mobile": 26
+    "total": 43,
+    "mobile": 32
   },
   "byStatus": {
+    "Backlog": [
+      {
+        "id": "ASK-43",
+        "title": "[MOBILE-104] Add document download integration"
+      },
+      {
+        "id": "ASK-42",
+        "title": "[MOBILE-103] Integrate multi-modal input system"
+      },
+      {
+        "id": "ASK-41",
+        "title": "[MOBILE-102] Extract camera logic to reusable hooks"
+      },
+      {
+        "id": "ASK-40",
+        "title": "[MOBILE-101] Create thin client ChatScreen"
+      },
+      {
+        "id": "ASK-38",
+        "title": "[API-005] Implement document generation Edge Function"
+      },
+      {
+        "id": "ASK-35",
+        "title": "[API-002] Migrate AIMiddleware to analyze-construction Edge Function"
+      },
+      {
+        "id": "ASK-12",
+        "title": "🔌 Set up Supabase Edge Functions API ✅ COMPLETED"
+      },
+      {
+        "id": "ASK-6",
+        "title": "📦 Create monorepo structure for shared code ✅ COMPLETED"
+      },
+      {
+        "id": "ASK-5",
+        "title": "🏗️ Set up React Native project with Expo ✅ COMPLETED"
+      },
+      {
+        "id": "ASK-11",
+        "title": "📍 Port SmartLocationService to mobile (with GPS)"
+      },
+      {
+        "id": "ASK-9",
+        "title": "🛠️ Port ToolExpertiseService to mobile (offline)"
+      },
+      {
+        "id": "ASK-8",
+        "title": "🔨 Build ConstructionDataService API endpoints"
+      },
+      {
+        "id": "ASK-7",
+        "title": "🤖 Build GeminiService API endpoints"
+      },
+      {
+        "id": "ASK-22",
+        "title": "🌐 Deploy current web app to Vercel"
+      },
+      {
+        "id": "ASK-21",
+        "title": "🚀 Deploy MVP to TestFlight/Google Play Beta"
+      },
+      {
+        "id": "ASK-20",
+        "title": "✅ End-to-end testing of core flows"
+      },
+      {
+        "id": "ASK-19",
+        "title": "🔗 Connect mobile app to middleware API"
+      },
+      {
+        "id": "ASK-17",
+        "title": "💬 Implement chat interface"
+      },
+      {
+        "id": "ASK-16",
+        "title": "📊 Create analysis results screen"
+      },
+      {
+        "id": "ASK-15",
+        "title": "📸 Build camera/image picker component"
+      },
+      {
+        "id": "ASK-14",
+        "title": "🔐 Implement authentication layer"
+      }
+    ],
     "Done": [
       {
         "id": "ASK-24",
@@ -62,19 +148,39 @@
         "id": "ASK-25",
         "title": "Build MVP camera component for image capture"
       }
+    ]
+  },
+  "byPriority": {
+    "Medium": [
+      {
+        "id": "ASK-43",
+        "title": "[MOBILE-104] Add document download integration"
+      },
+      {
+        "id": "ASK-21",
+        "title": "🚀 Deploy MVP to TestFlight/Google Play Beta"
+      },
+      {
+        "id": "ASK-17",
+        "title": "💬 Implement chat interface"
+      }
     ],
-    "Backlog": [
+    "High": [
       {
-        "id": "ASK-12",
-        "title": "🔌 Set up Supabase Edge Functions API ✅ COMPLETED"
+        "id": "ASK-42",
+        "title": "[MOBILE-103] Integrate multi-modal input system"
       },
       {
-        "id": "ASK-6",
-        "title": "📦 Create monorepo structure for shared code ✅ COMPLETED"
+        "id": "ASK-41",
+        "title": "[MOBILE-102] Extract camera logic to reusable hooks"
       },
       {
-        "id": "ASK-5",
-        "title": "🏗️ Set up React Native project with Expo ✅ COMPLETED"
+        "id": "ASK-40",
+        "title": "[MOBILE-101] Create thin client ChatScreen"
+      },
+      {
+        "id": "ASK-38",
+        "title": "[API-005] Implement document generation Edge Function"
       },
       {
         "id": "ASK-11",
@@ -89,18 +195,6 @@
         "title": "🔨 Build ConstructionDataService API endpoints"
       },
       {
-        "id": "ASK-7",
-        "title": "🤖 Build GeminiService API endpoints"
-      },
-      {
-        "id": "ASK-22",
-        "title": "🌐 Deploy current web app to Vercel"
-      },
-      {
-        "id": "ASK-21",
-        "title": "🚀 Deploy MVP to TestFlight/Google Play Beta"
-      },
-      {
         "id": "ASK-20",
         "title": "✅ End-to-end testing of core flows"
       },
@@ -109,24 +203,44 @@
         "title": "🔗 Connect mobile app to middleware API"
       },
       {
-        "id": "ASK-17",
-        "title": "💬 Implement chat interface"
-      },
-      {
         "id": "ASK-16",
         "title": "📊 Create analysis results screen"
-      },
-      {
-        "id": "ASK-15",
-        "title": "📸 Build camera/image picker component"
       },
       {
         "id": "ASK-14",
         "title": "🔐 Implement authentication layer"
       }
-    ]
-  },
-  "byPriority": {
+    ],
+    "Urgent": [
+      {
+        "id": "ASK-35",
+        "title": "[API-002] Migrate AIMiddleware to analyze-construction Edge Function"
+      },
+      {
+        "id": "ASK-12",
+        "title": "🔌 Set up Supabase Edge Functions API ✅ COMPLETED"
+      },
+      {
+        "id": "ASK-6",
+        "title": "📦 Create monorepo structure for shared code ✅ COMPLETED"
+      },
+      {
+        "id": "ASK-5",
+        "title": "🏗️ Set up React Native project with Expo ✅ COMPLETED"
+      },
+      {
+        "id": "ASK-7",
+        "title": "🤖 Build GeminiService API endpoints"
+      },
+      {
+        "id": "ASK-22",
+        "title": "🌐 Deploy current web app to Vercel"
+      },
+      {
+        "id": "ASK-15",
+        "title": "📸 Build camera/image picker component"
+      }
+    ],
     "No Priority": [
       {
         "id": "ASK-24",
@@ -172,75 +286,219 @@
         "id": "ASK-23",
         "title": "Set up Expo React Native project with TypeScript"
       }
-    ],
-    "Urgent": [
-      {
-        "id": "ASK-12",
-        "title": "🔌 Set up Supabase Edge Functions API ✅ COMPLETED"
-      },
-      {
-        "id": "ASK-6",
-        "title": "📦 Create monorepo structure for shared code ✅ COMPLETED"
-      },
-      {
-        "id": "ASK-5",
-        "title": "🏗️ Set up React Native project with Expo ✅ COMPLETED"
-      },
-      {
-        "id": "ASK-7",
-        "title": "🤖 Build GeminiService API endpoints"
-      },
-      {
-        "id": "ASK-22",
-        "title": "🌐 Deploy current web app to Vercel"
-      },
-      {
-        "id": "ASK-15",
-        "title": "📸 Build camera/image picker component"
-      }
-    ],
-    "High": [
-      {
-        "id": "ASK-11",
-        "title": "📍 Port SmartLocationService to mobile (with GPS)"
-      },
-      {
-        "id": "ASK-9",
-        "title": "🛠️ Port ToolExpertiseService to mobile (offline)"
-      },
-      {
-        "id": "ASK-8",
-        "title": "🔨 Build ConstructionDataService API endpoints"
-      },
-      {
-        "id": "ASK-20",
-        "title": "✅ End-to-end testing of core flows"
-      },
-      {
-        "id": "ASK-19",
-        "title": "🔗 Connect mobile app to middleware API"
-      },
-      {
-        "id": "ASK-16",
-        "title": "📊 Create analysis results screen"
-      },
-      {
-        "id": "ASK-14",
-        "title": "🔐 Implement authentication layer"
-      }
-    ],
-    "Medium": [
-      {
-        "id": "ASK-21",
-        "title": "🚀 Deploy MVP to TestFlight/Google Play Beta"
-      },
-      {
-        "id": "ASK-17",
-        "title": "💬 Implement chat interface"
-      }
     ]
   },
   "allTickets": [
+    {
+      "id": "ASK-43",
+      "linearId": "5cb25049-4edb-4889-bfc4-6e6a8030ab31",
+      "title": "[MOBILE-104] Add document download integration",
+      "description": "**Objective:** Download PDFs generated by middleware\n\n**Description:**\nIntegrate document generation buttons that appear after analysis, calling the document generation API.\n\n**Document Types:**\n\n- [ ] **PDF Quote**: Detailed cost breakdown\n- [ ] **Project Plan**: Timeline and phases\n- [ ] **Task List**: Actionable checklist\n\n**UI Integration:**\n\n```typescript\n// Message with document buttons\n{message.showDocumentButtons && (\n  <div className=\"document-buttons\">\n    <button onClick={() => downloadDocument('quote')}>\n      📄 Download PDF Quote\n    </button>\n    <button onClick={() => downloadDocument('timeline')}>\n      📅 Download Project Plan\n    </button>\n    <button onClick={() => downloadDocument('tasklist')}>\n      ✅ Download Task List\n    </button>\n  </div>\n)}\n```\n\n**Download Flow:**\n\n```typescript\nconst downloadDocument = async (type: DocumentType) => {\n  const response = await supabase.functions.invoke('generate-document', {\n    body: { \n      type,\n      projectType: analysis.projectType,\n      analysis,\n      pricing\n    }\n  })\n  \n  // Handle PDF blob download\n  // Show success message\n  // Track download event\n}\n```\n\n**Mobile Optimization:**\n\n- [ ] Native sharing integration\n- [ ] Download progress indicators\n- [ ] Save to device storage\n- [ ] Share via email/messaging\n- [ ] Offline access to downloaded documents",
+      "status": "Backlog",
+      "stateType": "backlog",
+      "priority": 3,
+      "priorityLabel": "Medium",
+      "estimate": 2,
+      "dueDate": null,
+      "labels": [],
+      "assignee": "Unassigned",
+      "team": "Asktoddy",
+      "teamKey": "ASK",
+      "url": "https://linear.app/asktoddy/issue/ASK-43/mobile-104-add-document-download-integration",
+      "createdAt": "2025-10-15T09:52:39.696Z",
+      "updatedAt": "2025-10-15T09:52:39.696Z",
+      "parent": null,
+      "children": []
+    },
+    {
+      "id": "ASK-42",
+      "linearId": "e5f646c0-4c3f-4015-b039-322f1cb7f360",
+      "title": "[MOBILE-103] Integrate multi-modal input system",
+      "description": "**Objective:** Support text + photos + videos + PDFs in chat interface\n\n**Description:**\nBuild comprehensive input system supporting all media types like the web app.\n\n**Input Types:**\n\n- [ ] **Text**: Auto-resize textarea with placeholder\n- [ ] **Photos**: Camera capture + gallery selection\n- [ ] **Videos**: Recording + gallery selection (60 second max)\n- [ ] **PDFs**: File picker with preview\n- [ ] **Multiple files**: Up to 4 attachments per message\n\n**ChatGPT-style Integration:**\n\n```typescript\ninterface ChatInputProps {\n  onSend: (data: {\n    text?: string\n    attachments?: Attachment[]\n  }) => void\n}\n\ninterface Attachment {\n  type: 'image' | 'video' | 'pdf'\n  uri: string\n  name: string\n  size: number\n  preview?: string\n}\n```\n\n**UI Components:**\n\n- [ ] Expandable text input\n- [ ] Attachment preview grid\n- [ ] Remove attachment buttons\n- [ ] File type icons\n- [ ] Upload progress indicators\n- [ ] File size validation messages\n\n**Validation:**\n\n* Images: 10MB max, JPG/PNG/HEIC\n* Videos: 10MB max, MP4/MOV, 60s max\n* PDFs: 200MB max, architectural drawings\n* Total: 4 files maximum per message",
+      "status": "Backlog",
+      "stateType": "backlog",
+      "priority": 2,
+      "priorityLabel": "High",
+      "estimate": 3,
+      "dueDate": null,
+      "labels": [],
+      "assignee": "Unassigned",
+      "team": "Asktoddy",
+      "teamKey": "ASK",
+      "url": "https://linear.app/asktoddy/issue/ASK-42/mobile-103-integrate-multi-modal-input-system",
+      "createdAt": "2025-10-15T09:52:38.470Z",
+      "updatedAt": "2025-10-15T09:52:38.470Z",
+      "parent": null,
+      "children": []
+    },
+    {
+      "id": "ASK-41",
+      "linearId": "4505f223-68b6-4f4a-bbd9-c273d7a1dd9f",
+      "title": "[MOBILE-102] Extract camera logic to reusable hooks",
+      "description": "**Objective:** Reuse existing camera functionality in chat interface\n\n**Description:**\nExtract working camera/gallery logic from CameraScreen into reusable hooks for integration with chat input.\n\n**Hooks to Create:**\n\n```typescript\n// useCameraCapture.ts\nexport const useCameraCapture = () => {\n  const capturePhoto = async () => {\n    // Use existing camera logic\n    // Return only URI - no analysis\n  }\n  \n  return {\n    capturePhoto,\n    isLoading,\n    error,\n    hasPermission\n  }\n}\n\n// useGalleryPicker.ts  \nexport const useGalleryPicker = () => {\n  const pickImage = async () => {\n    // Use existing gallery logic\n  }\n  \n  return { pickImage, isLoading, error }\n}\n\n// useFileUpload.ts\nexport const useFileUpload = () => {\n  const uploadFile = async (files: FileList) => {\n    // Handle PDFs, videos, images\n    // File validation and compression\n  }\n  \n  return { uploadFile, isLoading, error }\n}\n```\n\n**Integration Pattern:**\n\n```typescript\n// ChatInput.tsx\nconst ChatInput = () => {\n  const { capturePhoto } = useCameraCapture()\n  const { pickImage } = useGalleryPicker()\n  \n  return (\n    <div className=\"chat-input\">\n      <input type=\"text\" />\n      <button onClick={capturePhoto}>📷</button>\n      <button onClick={pickImage}>🖼️</button>\n      <button onClick={sendMessage}>Send</button>\n    </div>\n  )\n}\n```\n\n**File Management:**\n\n- [ ] Image preview before sending\n- [ ] Multiple file selection (up to 4)\n- [ ] File type validation\n- [ ] Size limits and compression\n- [ ] Remove attached files option",
+      "status": "Backlog",
+      "stateType": "backlog",
+      "priority": 2,
+      "priorityLabel": "High",
+      "estimate": 2,
+      "dueDate": null,
+      "labels": [],
+      "assignee": "Unassigned",
+      "team": "Asktoddy",
+      "teamKey": "ASK",
+      "url": "https://linear.app/asktoddy/issue/ASK-41/mobile-102-extract-camera-logic-to-reusable-hooks",
+      "createdAt": "2025-10-15T09:52:37.158Z",
+      "updatedAt": "2025-10-15T09:52:37.158Z",
+      "parent": null,
+      "children": []
+    },
+    {
+      "id": "ASK-40",
+      "linearId": "a7f23a8f-4b98-49b1-9417-cd930ebdeed4",
+      "title": "[MOBILE-101] Create thin client ChatScreen",
+      "description": "**Objective:** Build chat-first UI that ONLY calls APIs (zero business logic)\n\n**Description:**\nReplace camera-first navigation with ChatGPT-style interface that matches the web app design, calling only APIs for all business logic.\n\n**Design Requirements:**\n\n- [ ] Match `ToddyAdviceChat.tsx` design exactly\n- [ ] AskToddy orange (#FF6B35) and navy (#2C3E50) colors\n- [ ] Message bubbles with gradients and shadows\n- [ ] Toddy avatar for assistant messages\n- [ ] User avatar for user messages\n- [ ] Professional enterprise appearance\n\n**Functionality:**\n\n- [ ] Real-time message interface\n- [ ] Conversation history persistence\n- [ ] Loading states with typing indicators\n- [ ] Error handling with retry options\n- [ ] Auto-scroll to latest message\n- [ ] Message timestamps\n- [ ] Copy message content functionality\n\n**API Integration:**\n\n```typescript\n// ONLY API calls - NO business logic\nconst handleSend = async () => {\n  const { data, error } = await supabase.functions.invoke('analyze-construction', {\n    body: { \n      message: input, \n      imageUri: attachedImage,\n      history: messages.slice(-6),\n      context: userContext\n    }\n  })\n  \n  if (data) {\n    setMessages(prev => [...prev, {\n      role: 'assistant',\n      content: data.response,\n      showDocumentButtons: data.canGenerateDocuments\n    }])\n  }\n}\n```\n\n**No Business Logic:**\n\n* ❌ No AI providers in frontend\n* ❌ No pricing calculations\n* ❌ No cost analysis\n* ❌ No document generation logic\n* ✅ Only UI state management\n* ✅ Only API calls and display",
+      "status": "Backlog",
+      "stateType": "backlog",
+      "priority": 2,
+      "priorityLabel": "High",
+      "estimate": 5,
+      "dueDate": null,
+      "labels": [],
+      "assignee": "Unassigned",
+      "team": "Asktoddy",
+      "teamKey": "ASK",
+      "url": "https://linear.app/asktoddy/issue/ASK-40/mobile-101-create-thin-client-chatscreen",
+      "createdAt": "2025-10-15T09:52:35.910Z",
+      "updatedAt": "2025-10-15T09:52:35.910Z",
+      "parent": null,
+      "children": []
+    },
+    {
+      "id": "ASK-39",
+      "linearId": "ce9ff666-4145-4a38-b309-19f7a12fbc99",
+      "title": "[API-006] Add authentication and rate limiting",
+      "description": "**Objective:** Secure APIs with authentication and usage quotas\n\n**Description:**\nImplement proper authentication, rate limiting, and usage tracking to prepare for freemium model.\n\n**Authentication:**\n\n- [ ] Supabase Auth integration with Edge Functions\n- [ ] JWT token validation\n- [ ] User session management\n- [ ] Guest user support (limited access)\n\n**Rate Limiting:**\n\n- [ ] Free tier: 10 analyses per day\n- [ ] Usage quota enforcement\n- [ ] Graceful quota exceeded handling\n- [ ] Reset timing (daily/monthly)\n\n**Database Schema:**\n\n```sql\n-- Usage tracking\nCREATE TABLE user_usage (\n  user_id UUID REFERENCES auth.users(id),\n  daily_count INT DEFAULT 0,\n  monthly_count INT DEFAULT 0,\n  plan_type TEXT DEFAULT 'free',\n  last_reset_daily TIMESTAMPTZ DEFAULT NOW(),\n  last_reset_monthly TIMESTAMPTZ DEFAULT NOW()\n);\n\n-- Analysis history  \nCREATE TABLE analyses (\n  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n  user_id UUID REFERENCES auth.users(id),\n  input_data JSONB,\n  result JSONB,\n  cost DECIMAL(10,4),\n  provider TEXT,\n  processing_time_ms INT,\n  created_at TIMESTAMPTZ DEFAULT NOW()\n);\n\n-- Pricing cache\nCREATE TABLE pricing_cache (\n  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n  region TEXT,\n  category TEXT,\n  data JSONB,\n  expires_at TIMESTAMPTZ,\n  created_at TIMESTAMPTZ DEFAULT NOW()\n);\n```\n\n**Monitoring:**\n\n* Request logging and analytics\n* Error tracking with Sentry\n* Performance metrics\n* Cost tracking per user",
+      "status": "Backlog",
+      "stateType": "backlog",
+      "priority": 2,
+      "priorityLabel": "High",
+      "estimate": 3,
+      "dueDate": null,
+      "labels": [],
+      "assignee": "Unassigned",
+      "team": "Asktoddy",
+      "teamKey": "ASK",
+      "url": "https://linear.app/asktoddy/issue/ASK-39/api-006-add-authentication-and-rate-limiting",
+      "createdAt": "2025-10-15T09:52:34.686Z",
+      "updatedAt": "2025-10-15T09:52:34.686Z",
+      "parent": null,
+      "children": []
+    },
+    {
+      "id": "ASK-38",
+      "linearId": "5f6c489a-e5be-4f9c-a5da-3da6256d2131",
+      "title": "[API-005] Implement document generation Edge Function",
+      "description": "**Objective:** Generate professional PDF quotes, project plans, and task lists\n\n**Description:**\nCreate document generation service that produces professional, branded PDF documents from analysis results.\n\n**Document Types:**\n\n#### **PDF Quote Generation**\n\n- [ ] Detailed cost breakdown with line items\n- [ ] AskToddy branding and logo\n- [ ] VAT calculations and totals\n- [ ] Terms and conditions\n- [ ] Contact information\n- [ ] Professional formatting\n\n#### **Project Plan Timeline**\n\n- [ ] Gantt-style visual timeline\n- [ ] Phase breakdown with dependencies\n- [ ] Resource allocation\n- [ ] Milestone markers\n- [ ] Critical path highlighting\n- [ ] Risk assessments\n\n#### **Task List Generation**\n\n- [ ] Categorized task breakdown\n- [ ] Dependencies and prerequisites\n- [ ] Estimated durations\n- [ ] Skills required\n- [ ] Tools and materials needed\n- [ ] Safety considerations\n\n**API Contract:**\n\n```typescript\n// POST /generate-document\ninterface DocumentRequest {\n  type: 'quote' | 'timeline' | 'tasklist'\n  projectType: string\n  analysis: ProjectAnalysis\n  pricing: PricingResponse\n  userDetails?: {\n    name: string\n    email: string\n    address: string\n  }\n}\n\n// Response: PDF blob with proper headers\nContent-Type: application/pdf\nContent-Disposition: attachment; filename=\"project-quote-20250115.pdf\"\n```\n\n**Templates:**\n\n* Professional AskToddy branding\n* Consistent typography and colors\n* Mobile-optimized layouts\n* Print-friendly formatting\n\n**Technical Stack:**\n\n* Puppeteer for PDF generation\n* HTML/CSS templates\n* Dynamic data injection\n* Asset management (logos, fonts)",
+      "status": "Backlog",
+      "stateType": "backlog",
+      "priority": 2,
+      "priorityLabel": "High",
+      "estimate": 5,
+      "dueDate": null,
+      "labels": [],
+      "assignee": "Unassigned",
+      "team": "Asktoddy",
+      "teamKey": "ASK",
+      "url": "https://linear.app/asktoddy/issue/ASK-38/api-005-implement-document-generation-edge-function",
+      "createdAt": "2025-10-15T09:52:33.386Z",
+      "updatedAt": "2025-10-15T09:52:33.386Z",
+      "parent": null,
+      "children": []
+    },
+    {
+      "id": "ASK-37",
+      "linearId": "96a4777f-6f22-43fc-8036-9a3e83945ac6",
+      "title": "[API-004] Add OpenAI provider for LLM switching",
+      "description": "**Objective:** Enable provider switching (Gemini ↔ OpenAI) for best results\n\n**Description:**\nAdd OpenAI GPT-4 Vision as an alternative AI provider to compare results and choose the best performing model for different construction scenarios.\n\n**Acceptance Criteria:**\n\n- [ ] OpenAIProvider class implementing AIProvider interface\n- [ ] GPT-4 Vision integration for image analysis\n- [ ] GPT-4 text completion for text-only queries\n- [ ] Token usage tracking and cost calculation\n- [ ] Provider selection via request parameter\n- [ ] Performance comparison logging\n- [ ] Fallback chain: Primary → Secondary → Mock\n\n**Provider Configuration:**\n\n```typescript\ninterface ProviderConfig {\n  primary: 'gemini' | 'openai'\n  fallback: ('gemini' | 'openai' | 'mock')[]\n  models: {\n    gemini: 'gemini-2.0-flash-exp' | 'gemini-pro-vision'\n    openai: 'gpt-4-vision-preview' | 'gpt-4o'\n  }\n}\n```\n\n**Cost Tracking:**\n\n```typescript\ninterface UsageMetrics {\n  provider: string\n  model: string\n  inputTokens: number\n  outputTokens: number\n  cost: number\n  responseTime: number\n  timestamp: string\n}\n```\n\n**A/B Testing Support:**\n\n* Route 50% of requests to each provider\n* Compare accuracy, speed, cost\n* Log results for analysis\n* Configurable routing rules",
+      "status": "Backlog",
+      "stateType": "backlog",
+      "priority": 2,
+      "priorityLabel": "High",
+      "estimate": 3,
+      "dueDate": null,
+      "labels": [],
+      "assignee": "Unassigned",
+      "team": "Asktoddy",
+      "teamKey": "ASK",
+      "url": "https://linear.app/asktoddy/issue/ASK-37/api-004-add-openai-provider-for-llm-switching",
+      "createdAt": "2025-10-15T09:52:32.193Z",
+      "updatedAt": "2025-10-15T09:52:32.193Z",
+      "parent": null,
+      "children": []
+    },
+    {
+      "id": "ASK-36",
+      "linearId": "2a5f82eb-744f-4fa0-af1a-90fb9b2bd34e",
+      "title": "[API-003] Build comprehensive UK pricing Edge Function",
+      "description": "**Objective:** Create complete UK construction pricing services in middleware\n\n**Description:**\nBuild comprehensive pricing intelligence covering all UK construction costs - tools, materials, aggregates, and labour - to provide accurate market-rate quotes.\n\n**Services to Implement:**\n\n#### **ToolHireService**\n\n- [ ] HSS Hire rates scraping (daily updates)\n- [ ] Speedy Hire rates (API or scraping)\n- [ ] Local hire shop integration\n- [ ] Tool category classification\n- [ ] Regional availability checking\n\n#### **MaterialsService**\n\n- [ ] Screwfix pricing integration\n- [ ] B&Q rates (scraping)\n- [ ] Travis Perkins trade prices\n- [ ] Material category mapping\n- [ ] Bulk pricing calculations\n\n#### **AggregateService**\n\n- [ ] Sand and gravel supplier rates\n- [ ] Concrete pricing by mix type\n- [ ] Delivery cost calculations\n- [ ] Regional supplier networks\n- [ ] Volume discount structures\n\n#### **LabourService**\n\n- [ ] ONS construction wage data integration\n- [ ] Regional multipliers (London +25%, etc.)\n- [ ] Trade-specific rates (carpenter, electrician, etc.)\n- [ ] Skill level variations\n- [ ] Seasonal demand adjustments\n\n**Technical Implementation:**\n\n```typescript\n// API Endpoint: POST /get-pricing\ninterface PricingRequest {\n  location: string\n  projectType: string\n  materials?: string[]\n  tools?: string[]\n  timeline?: string\n}\n\ninterface PricingResponse {\n  toolHire: ToolHireRate[]\n  materials: MaterialPrice[]\n  aggregates: AggregateRate[]\n  labour: LabourRate[]\n  contextFactors: {\n    regionMultiplier: number\n    seasonalMultiplier: number\n    demandIndex: number\n  }\n  recommendations: PricingRecommendation[]\n  lastUpdated: string\n}\n```\n\n**Data Sources:**\n\n* HSS Hire API/scraping\n* Screwfix product API\n* ONS construction statistics\n* BCIS building cost data\n* Regional supplier databases\n\n**Caching Strategy:**\n\n* Redis/Supabase cache with 4-hour TTL\n* Daily batch updates for stable pricing\n* Real-time updates for volatile items\n* Regional cache segmentation",
+      "status": "Backlog",
+      "stateType": "backlog",
+      "priority": 1,
+      "priorityLabel": "Urgent",
+      "estimate": 8,
+      "dueDate": null,
+      "labels": [],
+      "assignee": "Unassigned",
+      "team": "Asktoddy",
+      "teamKey": "ASK",
+      "url": "https://linear.app/asktoddy/issue/ASK-36/api-003-build-comprehensive-uk-pricing-edge-function",
+      "createdAt": "2025-10-15T09:52:30.991Z",
+      "updatedAt": "2025-10-15T09:52:30.991Z",
+      "parent": null,
+      "children": []
+    },
+    {
+      "id": "ASK-35",
+      "linearId": "3055f1a4-5403-4f0f-a9c2-002fddc6a664",
+      "title": "[API-002] Migrate AIMiddleware to analyze-construction Edge Function",
+      "description": "**Objective:** Move ALL AI logic from mobile app to Supabase Edge Function\n\n**Description:**\nTransfer the complete AIMiddleware system (455 lines) from mobile to server-side to eliminate technical debt and enable proper API-first architecture.\n\n**Files to Migrate:**\n\n* `src/services/ai/AIMiddleware.ts` → `supabase/functions/analyze-construction/middleware.ts`\n* `src/services/ai/providers/GeminiProvider.ts` → `supabase/functions/analyze-construction/providers/gemini.ts`\n* `src/services/ai/types.ts` → `supabase/functions/analyze-construction/types.ts`\n\n**Acceptance Criteria:**\n\n- [ ] AIMiddleware class working in Deno environment\n- [ ] Provider registration system functional\n- [ ] Gemini provider integrated with API key from environment\n- [ ] Mock provider available for development\n- [ ] Timeout handling (30 seconds)\n- [ ] Error handling and fallback logic\n- [ ] Health check endpoint: `GET /analyze-construction/health`\n- [ ] Main analysis endpoint: `POST /analyze-construction`\n\n**API Contract:**\n\n```typescript\n// Request\ninterface AnalysisRequest {\n  imageUri?: string\n  message?: string\n  context?: {\n    projectType?: string\n    location?: string\n    budgetRange?: { min: number; max: number }\n  }\n  history?: Message[]\n}\n\n// Response  \ninterface AnalysisResponse {\n  projectType: string\n  description: string\n  costBreakdown: CostBreakdown\n  timeline: Timeline\n  recommendations: string[]\n  confidence: number\n  aiProvider: string\n  processingTimeMs: number\n}\n```\n\n**Testing:**\n\n* Unit tests for middleware functions\n* Integration test with real Gemini API\n* Error handling scenarios\n* Performance benchmarks",
+      "status": "Backlog",
+      "stateType": "backlog",
+      "priority": 1,
+      "priorityLabel": "Urgent",
+      "estimate": 5,
+      "dueDate": null,
+      "labels": [],
+      "assignee": "Unassigned",
+      "team": "Asktoddy",
+      "teamKey": "ASK",
+      "url": "https://linear.app/asktoddy/issue/ASK-35/api-002-migrate-aimiddleware-to-analyze-construction-edge-function",
+      "createdAt": "2025-10-15T09:52:29.588Z",
+      "updatedAt": "2025-10-15T09:52:29.588Z",
+      "parent": null,
+      "children": []
+    },
+    {
+      "id": "ASK-34",
+      "linearId": "e88ab011-92b4-446c-a64c-837a40ff89e9",
+      "title": "[API-001] Set up Supabase Edge Functions infrastructure",
+      "description": "**Objective:** Initialize Supabase functions structure for all business logic\n\n**Description:**\nSet up the foundation for housing ALL business logic in Supabase Edge Functions to prevent frontend technical debt.\n\n**Acceptance Criteria:**\n\n- [ ] `supabase/functions/analyze-construction/` directory created\n- [ ] `supabase/functions/get-pricing/` directory created\n- [ ] `supabase/functions/generate-document/` directory created\n- [ ] TypeScript configuration for Deno environment\n- [ ] Environment variables configured (GEMINI_API_KEY, OPENAI_API_KEY)\n- [ ] Local development server running with `supabase functions serve`\n- [ ] Basic \"hello world\" endpoints responding\n\n**Technical Notes:**\n\n```bash\n# Commands to run:\nsupabase functions new analyze-construction\nsupabase functions new get-pricing\nsupabase functions new generate-document\n```\n\n**Definition of Done:**\n\n* All three Edge Functions respond to basic requests\n* TypeScript compilation working\n* Environment variables accessible\n* Local development workflow established",
+      "status": "Backlog",
+      "stateType": "backlog",
+      "priority": 1,
+      "priorityLabel": "Urgent",
+      "estimate": 2,
+      "dueDate": null,
+      "labels": [],
+      "assignee": "Unassigned",
+      "team": "Asktoddy",
+      "teamKey": "ASK",
+      "url": "https://linear.app/asktoddy/issue/ASK-34/api-001-set-up-supabase-edge-functions-infrastructure",
+      "createdAt": "2025-10-15T09:52:28.069Z",
+      "updatedAt": "2025-10-15T09:52:28.069Z",
+      "parent": null,
+      "children": []
+    },
     {
       "id": "ASK-24",
       "linearId": "c680970b-fc8c-4b23-ac96-43a91ba9f4e1",
@@ -947,6 +1205,132 @@
     }
   ],
   "mobileTickets": [
+    {
+      "id": "ASK-43",
+      "linearId": "5cb25049-4edb-4889-bfc4-6e6a8030ab31",
+      "title": "[MOBILE-104] Add document download integration",
+      "description": "**Objective:** Download PDFs generated by middleware\n\n**Description:**\nIntegrate document generation buttons that appear after analysis, calling the document generation API.\n\n**Document Types:**\n\n- [ ] **PDF Quote**: Detailed cost breakdown\n- [ ] **Project Plan**: Timeline and phases\n- [ ] **Task List**: Actionable checklist\n\n**UI Integration:**\n\n```typescript\n// Message with document buttons\n{message.showDocumentButtons && (\n  <div className=\"document-buttons\">\n    <button onClick={() => downloadDocument('quote')}>\n      📄 Download PDF Quote\n    </button>\n    <button onClick={() => downloadDocument('timeline')}>\n      📅 Download Project Plan\n    </button>\n    <button onClick={() => downloadDocument('tasklist')}>\n      ✅ Download Task List\n    </button>\n  </div>\n)}\n```\n\n**Download Flow:**\n\n```typescript\nconst downloadDocument = async (type: DocumentType) => {\n  const response = await supabase.functions.invoke('generate-document', {\n    body: { \n      type,\n      projectType: analysis.projectType,\n      analysis,\n      pricing\n    }\n  })\n  \n  // Handle PDF blob download\n  // Show success message\n  // Track download event\n}\n```\n\n**Mobile Optimization:**\n\n- [ ] Native sharing integration\n- [ ] Download progress indicators\n- [ ] Save to device storage\n- [ ] Share via email/messaging\n- [ ] Offline access to downloaded documents",
+      "status": "Backlog",
+      "stateType": "backlog",
+      "priority": 3,
+      "priorityLabel": "Medium",
+      "estimate": 2,
+      "dueDate": null,
+      "labels": [],
+      "assignee": "Unassigned",
+      "team": "Asktoddy",
+      "teamKey": "ASK",
+      "url": "https://linear.app/asktoddy/issue/ASK-43/mobile-104-add-document-download-integration",
+      "createdAt": "2025-10-15T09:52:39.696Z",
+      "updatedAt": "2025-10-15T09:52:39.696Z",
+      "parent": null,
+      "children": []
+    },
+    {
+      "id": "ASK-42",
+      "linearId": "e5f646c0-4c3f-4015-b039-322f1cb7f360",
+      "title": "[MOBILE-103] Integrate multi-modal input system",
+      "description": "**Objective:** Support text + photos + videos + PDFs in chat interface\n\n**Description:**\nBuild comprehensive input system supporting all media types like the web app.\n\n**Input Types:**\n\n- [ ] **Text**: Auto-resize textarea with placeholder\n- [ ] **Photos**: Camera capture + gallery selection\n- [ ] **Videos**: Recording + gallery selection (60 second max)\n- [ ] **PDFs**: File picker with preview\n- [ ] **Multiple files**: Up to 4 attachments per message\n\n**ChatGPT-style Integration:**\n\n```typescript\ninterface ChatInputProps {\n  onSend: (data: {\n    text?: string\n    attachments?: Attachment[]\n  }) => void\n}\n\ninterface Attachment {\n  type: 'image' | 'video' | 'pdf'\n  uri: string\n  name: string\n  size: number\n  preview?: string\n}\n```\n\n**UI Components:**\n\n- [ ] Expandable text input\n- [ ] Attachment preview grid\n- [ ] Remove attachment buttons\n- [ ] File type icons\n- [ ] Upload progress indicators\n- [ ] File size validation messages\n\n**Validation:**\n\n* Images: 10MB max, JPG/PNG/HEIC\n* Videos: 10MB max, MP4/MOV, 60s max\n* PDFs: 200MB max, architectural drawings\n* Total: 4 files maximum per message",
+      "status": "Backlog",
+      "stateType": "backlog",
+      "priority": 2,
+      "priorityLabel": "High",
+      "estimate": 3,
+      "dueDate": null,
+      "labels": [],
+      "assignee": "Unassigned",
+      "team": "Asktoddy",
+      "teamKey": "ASK",
+      "url": "https://linear.app/asktoddy/issue/ASK-42/mobile-103-integrate-multi-modal-input-system",
+      "createdAt": "2025-10-15T09:52:38.470Z",
+      "updatedAt": "2025-10-15T09:52:38.470Z",
+      "parent": null,
+      "children": []
+    },
+    {
+      "id": "ASK-41",
+      "linearId": "4505f223-68b6-4f4a-bbd9-c273d7a1dd9f",
+      "title": "[MOBILE-102] Extract camera logic to reusable hooks",
+      "description": "**Objective:** Reuse existing camera functionality in chat interface\n\n**Description:**\nExtract working camera/gallery logic from CameraScreen into reusable hooks for integration with chat input.\n\n**Hooks to Create:**\n\n```typescript\n// useCameraCapture.ts\nexport const useCameraCapture = () => {\n  const capturePhoto = async () => {\n    // Use existing camera logic\n    // Return only URI - no analysis\n  }\n  \n  return {\n    capturePhoto,\n    isLoading,\n    error,\n    hasPermission\n  }\n}\n\n// useGalleryPicker.ts  \nexport const useGalleryPicker = () => {\n  const pickImage = async () => {\n    // Use existing gallery logic\n  }\n  \n  return { pickImage, isLoading, error }\n}\n\n// useFileUpload.ts\nexport const useFileUpload = () => {\n  const uploadFile = async (files: FileList) => {\n    // Handle PDFs, videos, images\n    // File validation and compression\n  }\n  \n  return { uploadFile, isLoading, error }\n}\n```\n\n**Integration Pattern:**\n\n```typescript\n// ChatInput.tsx\nconst ChatInput = () => {\n  const { capturePhoto } = useCameraCapture()\n  const { pickImage } = useGalleryPicker()\n  \n  return (\n    <div className=\"chat-input\">\n      <input type=\"text\" />\n      <button onClick={capturePhoto}>📷</button>\n      <button onClick={pickImage}>🖼️</button>\n      <button onClick={sendMessage}>Send</button>\n    </div>\n  )\n}\n```\n\n**File Management:**\n\n- [ ] Image preview before sending\n- [ ] Multiple file selection (up to 4)\n- [ ] File type validation\n- [ ] Size limits and compression\n- [ ] Remove attached files option",
+      "status": "Backlog",
+      "stateType": "backlog",
+      "priority": 2,
+      "priorityLabel": "High",
+      "estimate": 2,
+      "dueDate": null,
+      "labels": [],
+      "assignee": "Unassigned",
+      "team": "Asktoddy",
+      "teamKey": "ASK",
+      "url": "https://linear.app/asktoddy/issue/ASK-41/mobile-102-extract-camera-logic-to-reusable-hooks",
+      "createdAt": "2025-10-15T09:52:37.158Z",
+      "updatedAt": "2025-10-15T09:52:37.158Z",
+      "parent": null,
+      "children": []
+    },
+    {
+      "id": "ASK-40",
+      "linearId": "a7f23a8f-4b98-49b1-9417-cd930ebdeed4",
+      "title": "[MOBILE-101] Create thin client ChatScreen",
+      "description": "**Objective:** Build chat-first UI that ONLY calls APIs (zero business logic)\n\n**Description:**\nReplace camera-first navigation with ChatGPT-style interface that matches the web app design, calling only APIs for all business logic.\n\n**Design Requirements:**\n\n- [ ] Match `ToddyAdviceChat.tsx` design exactly\n- [ ] AskToddy orange (#FF6B35) and navy (#2C3E50) colors\n- [ ] Message bubbles with gradients and shadows\n- [ ] Toddy avatar for assistant messages\n- [ ] User avatar for user messages\n- [ ] Professional enterprise appearance\n\n**Functionality:**\n\n- [ ] Real-time message interface\n- [ ] Conversation history persistence\n- [ ] Loading states with typing indicators\n- [ ] Error handling with retry options\n- [ ] Auto-scroll to latest message\n- [ ] Message timestamps\n- [ ] Copy message content functionality\n\n**API Integration:**\n\n```typescript\n// ONLY API calls - NO business logic\nconst handleSend = async () => {\n  const { data, error } = await supabase.functions.invoke('analyze-construction', {\n    body: { \n      message: input, \n      imageUri: attachedImage,\n      history: messages.slice(-6),\n      context: userContext\n    }\n  })\n  \n  if (data) {\n    setMessages(prev => [...prev, {\n      role: 'assistant',\n      content: data.response,\n      showDocumentButtons: data.canGenerateDocuments\n    }])\n  }\n}\n```\n\n**No Business Logic:**\n\n* ❌ No AI providers in frontend\n* ❌ No pricing calculations\n* ❌ No cost analysis\n* ❌ No document generation logic\n* ✅ Only UI state management\n* ✅ Only API calls and display",
+      "status": "Backlog",
+      "stateType": "backlog",
+      "priority": 2,
+      "priorityLabel": "High",
+      "estimate": 5,
+      "dueDate": null,
+      "labels": [],
+      "assignee": "Unassigned",
+      "team": "Asktoddy",
+      "teamKey": "ASK",
+      "url": "https://linear.app/asktoddy/issue/ASK-40/mobile-101-create-thin-client-chatscreen",
+      "createdAt": "2025-10-15T09:52:35.910Z",
+      "updatedAt": "2025-10-15T09:52:35.910Z",
+      "parent": null,
+      "children": []
+    },
+    {
+      "id": "ASK-38",
+      "linearId": "5f6c489a-e5be-4f9c-a5da-3da6256d2131",
+      "title": "[API-005] Implement document generation Edge Function",
+      "description": "**Objective:** Generate professional PDF quotes, project plans, and task lists\n\n**Description:**\nCreate document generation service that produces professional, branded PDF documents from analysis results.\n\n**Document Types:**\n\n#### **PDF Quote Generation**\n\n- [ ] Detailed cost breakdown with line items\n- [ ] AskToddy branding and logo\n- [ ] VAT calculations and totals\n- [ ] Terms and conditions\n- [ ] Contact information\n- [ ] Professional formatting\n\n#### **Project Plan Timeline**\n\n- [ ] Gantt-style visual timeline\n- [ ] Phase breakdown with dependencies\n- [ ] Resource allocation\n- [ ] Milestone markers\n- [ ] Critical path highlighting\n- [ ] Risk assessments\n\n#### **Task List Generation**\n\n- [ ] Categorized task breakdown\n- [ ] Dependencies and prerequisites\n- [ ] Estimated durations\n- [ ] Skills required\n- [ ] Tools and materials needed\n- [ ] Safety considerations\n\n**API Contract:**\n\n```typescript\n// POST /generate-document\ninterface DocumentRequest {\n  type: 'quote' | 'timeline' | 'tasklist'\n  projectType: string\n  analysis: ProjectAnalysis\n  pricing: PricingResponse\n  userDetails?: {\n    name: string\n    email: string\n    address: string\n  }\n}\n\n// Response: PDF blob with proper headers\nContent-Type: application/pdf\nContent-Disposition: attachment; filename=\"project-quote-20250115.pdf\"\n```\n\n**Templates:**\n\n* Professional AskToddy branding\n* Consistent typography and colors\n* Mobile-optimized layouts\n* Print-friendly formatting\n\n**Technical Stack:**\n\n* Puppeteer for PDF generation\n* HTML/CSS templates\n* Dynamic data injection\n* Asset management (logos, fonts)",
+      "status": "Backlog",
+      "stateType": "backlog",
+      "priority": 2,
+      "priorityLabel": "High",
+      "estimate": 5,
+      "dueDate": null,
+      "labels": [],
+      "assignee": "Unassigned",
+      "team": "Asktoddy",
+      "teamKey": "ASK",
+      "url": "https://linear.app/asktoddy/issue/ASK-38/api-005-implement-document-generation-edge-function",
+      "createdAt": "2025-10-15T09:52:33.386Z",
+      "updatedAt": "2025-10-15T09:52:33.386Z",
+      "parent": null,
+      "children": []
+    },
+    {
+      "id": "ASK-35",
+      "linearId": "3055f1a4-5403-4f0f-a9c2-002fddc6a664",
+      "title": "[API-002] Migrate AIMiddleware to analyze-construction Edge Function",
+      "description": "**Objective:** Move ALL AI logic from mobile app to Supabase Edge Function\n\n**Description:**\nTransfer the complete AIMiddleware system (455 lines) from mobile to server-side to eliminate technical debt and enable proper API-first architecture.\n\n**Files to Migrate:**\n\n* `src/services/ai/AIMiddleware.ts` → `supabase/functions/analyze-construction/middleware.ts`\n* `src/services/ai/providers/GeminiProvider.ts` → `supabase/functions/analyze-construction/providers/gemini.ts`\n* `src/services/ai/types.ts` → `supabase/functions/analyze-construction/types.ts`\n\n**Acceptance Criteria:**\n\n- [ ] AIMiddleware class working in Deno environment\n- [ ] Provider registration system functional\n- [ ] Gemini provider integrated with API key from environment\n- [ ] Mock provider available for development\n- [ ] Timeout handling (30 seconds)\n- [ ] Error handling and fallback logic\n- [ ] Health check endpoint: `GET /analyze-construction/health`\n- [ ] Main analysis endpoint: `POST /analyze-construction`\n\n**API Contract:**\n\n```typescript\n// Request\ninterface AnalysisRequest {\n  imageUri?: string\n  message?: string\n  context?: {\n    projectType?: string\n    location?: string\n    budgetRange?: { min: number; max: number }\n  }\n  history?: Message[]\n}\n\n// Response  \ninterface AnalysisResponse {\n  projectType: string\n  description: string\n  costBreakdown: CostBreakdown\n  timeline: Timeline\n  recommendations: string[]\n  confidence: number\n  aiProvider: string\n  processingTimeMs: number\n}\n```\n\n**Testing:**\n\n* Unit tests for middleware functions\n* Integration test with real Gemini API\n* Error handling scenarios\n* Performance benchmarks",
+      "status": "Backlog",
+      "stateType": "backlog",
+      "priority": 1,
+      "priorityLabel": "Urgent",
+      "estimate": 5,
+      "dueDate": null,
+      "labels": [],
+      "assignee": "Unassigned",
+      "team": "Asktoddy",
+      "teamKey": "ASK",
+      "url": "https://linear.app/asktoddy/issue/ASK-35/api-002-migrate-aimiddleware-to-analyze-construction-edge-function",
+      "createdAt": "2025-10-15T09:52:29.588Z",
+      "updatedAt": "2025-10-15T09:52:29.588Z",
+      "parent": null,
+      "children": []
+    },
     {
       "id": "ASK-24",
       "linearId": "c680970b-fc8c-4b23-ac96-43a91ba9f4e1",

@@ -40,9 +40,9 @@ export default function HomeScreen({ navigation }: Props) {
 
         <View style={styles.features}>
           <Card variant="elevated" style={styles.featureCard}>
-            <Text style={styles.featureTitle}>📷 Snap & Quote</Text>
+            <Text style={styles.featureTitle}>💬 Chat & Quote</Text>
             <Text style={styles.featureText}>
-              Take photos of your project and get instant cost estimates with AI-powered analysis
+              Chat with Toddy, share photos, and get instant cost estimates with AI-powered analysis
             </Text>
           </Card>
 
@@ -69,15 +69,15 @@ export default function HomeScreen({ navigation }: Props) {
         </View>
 
         <Button
-          title="Start Project Analysis"
-          onPress={() => navigation.navigate('Camera')}
+          title="Start Chat with Toddy"
+          onPress={() => navigation.navigate('Chat')}
           size="lg"
           fullWidth
           style={styles.cameraButton}
         />
 
         <Text style={styles.bottomText}>
-          Simply take photos of your construction project and get professional quotes instantly
+          Chat with Toddy about your construction project and get professional advice instantly
         </Text>
 
         {/* Temporary logout for testing */}
