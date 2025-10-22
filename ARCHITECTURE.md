@@ -8,7 +8,14 @@
 - Mobile app is a lightweight client
 - Clear separation of concerns
 
-### 2. **Domain-Driven Structure**
+### 2. **Environment Isolation**
+
+- **Staging Environment**: `asktoddy-staging` (iezmuqawughmwsxlqrim.supabase.co)
+- **Production Environment**: `asktoddy-production` (tggvoqhewfmczyjoxrqu.supabase.co)
+- Complete data isolation between environments
+- Parallel TestFlight distribution
+
+### 3. **Domain-Driven Structure**
 
 ```
 src/
@@ -22,7 +29,7 @@ src/
 └── config/         # App configuration
 ```
 
-### 3. **Service Layer Pattern**
+### 4. **Service Layer Pattern**
 
 ```
 services/
@@ -241,22 +248,43 @@ describe('useCamera', () => {
 
 ## 🚀 Deployment Standards
 
-### 1. **Environment Management**
+### 1. **Environment Strategy**
+
+#### **Staging Environment**
+- **Purpose**: Safe testing of new features
+- **Supabase**: `asktoddy-staging` (iezmuqawughmwsxlqrim.supabase.co)
+- **Bundle ID**: `com.asktoddy.staging`
+- **TestFlight**: Separate staging app for internal testing
+
+#### **Production Environment**
+- **Purpose**: Live user-facing application
+- **Supabase**: `asktoddy-production` (tggvoqhewfmczyjoxrqu.supabase.co)
+- **Bundle ID**: `com.asktoddy.prod`
+- **TestFlight**: Production app for end users
+
+### 2. **Deployment Commands**
 
 ```bash
-npm run env:use staging     # Switch environments
-npm run deploy:staging      # Deploy Edge Functions
-npm run build:staging       # Build mobile app
+# Staging Deployment
+eas build --platform ios --profile staging
+eas submit --platform ios --profile staging
+
+# Production Deployment
+eas build --platform ios --profile production
+eas submit --platform ios --profile production
+
+# Smart Deployment (detects branch)
+npm run deploy:testflight
 ```
 
-### 2. **Quality Gates**
+### 3. **Quality Gates**
 
 - All TypeScript errors resolved
 - All ESLint rules passing
 - All tests passing
 - Bundle size within limits
 
-### 3. **Documentation**
+### 4. **Documentation**
 
 - Architecture decisions recorded
 - API changes documented

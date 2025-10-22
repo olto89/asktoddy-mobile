@@ -6,7 +6,7 @@
  */
 
 const API_URL = 'https://api.linear.app/graphql';
-const API_KEY = process.env.LINEAR_API_KEY || 'lin_api_ArBBR9NahN2lhArFLCRsnM6Fo722k6AsHOx35ue3';
+const API_KEY = process.env.LINEAR_API_KEY || 'your_linear_api_key_here';
 
 if (!API_KEY) {
   console.error('❌ LINEAR_API_KEY environment variable not set');
