@@ -21,11 +21,11 @@ function getCurrentContext() {
     const sessionFile = path.join(CONTEXT_DIR, 'current-session.json');
     const workLogFile = path.join(CONTEXT_DIR, 'work-log.md');
     const ticketsFile = path.join(CONTEXT_DIR, 'linear-tickets.json');
-    
+
     const session = JSON.parse(fs.readFileSync(sessionFile, 'utf-8'));
     const workLog = fs.readFileSync(workLogFile, 'utf-8');
     const tickets = JSON.parse(fs.readFileSync(ticketsFile, 'utf-8'));
-    
+
     return { session, workLog, tickets };
   } catch (error) {
     console.error('Error reading context:', error);
@@ -38,35 +38,35 @@ function getCurrentContext() {
  */
 function getGitStatus() {
   try {
-    const branch = execSync('git rev-parse --abbrev-ref HEAD', { 
-      encoding: 'utf-8', 
-      cwd: PROJECT_ROOT 
+    const branch = execSync('git rev-parse --abbrev-ref HEAD', {
+      encoding: 'utf-8',
+      cwd: PROJECT_ROOT,
     }).trim();
-    
-    const lastCommit = execSync('git log -1 --oneline', { 
-      encoding: 'utf-8', 
-      cwd: PROJECT_ROOT 
+
+    const lastCommit = execSync('git log -1 --oneline', {
+      encoding: 'utf-8',
+      cwd: PROJECT_ROOT,
     }).trim();
-    
-    const status = execSync('git status --porcelain', { 
-      encoding: 'utf-8', 
-      cwd: PROJECT_ROOT 
+
+    const status = execSync('git status --porcelain', {
+      encoding: 'utf-8',
+      cwd: PROJECT_ROOT,
     }).trim();
-    
+
     const changedFiles = status.split('\n').filter(Boolean).length;
-    
+
     return {
       branch,
       lastCommit,
       hasChanges: status.length > 0,
-      changedFiles
+      changedFiles,
     };
   } catch (error) {
     return {
       branch: 'unknown',
       lastCommit: 'No commits',
       hasChanges: false,
-      changedFiles: 0
+      changedFiles: 0,
     };
   }
 }
@@ -76,30 +76,29 @@ function getGitStatus() {
  */
 function getProjectStats() {
   try {
-    const packageJson = JSON.parse(fs.readFileSync(
-      path.join(PROJECT_ROOT, 'package.json'), 
-      'utf-8'
-    ));
-    
+    const packageJson = JSON.parse(
+      fs.readFileSync(path.join(PROJECT_ROOT, 'package.json'), 'utf-8')
+    );
+
     // Count TypeScript files
-    const tsFiles = execSync(
-      'find src -name "*.ts" -o -name "*.tsx" | wc -l', 
-      { encoding: 'utf-8', cwd: PROJECT_ROOT }
-    ).trim();
-    
+    const tsFiles = execSync('find src -name "*.ts" -o -name "*.tsx" | wc -l', {
+      encoding: 'utf-8',
+      cwd: PROJECT_ROOT,
+    }).trim();
+
     // Count lines of code
     const loc = execSync(
       'find src -name "*.ts" -o -name "*.tsx" | xargs wc -l | tail -1 | awk \'{print $1}\'',
       { encoding: 'utf-8', cwd: PROJECT_ROOT }
     ).trim();
-    
+
     return {
       name: packageJson.name,
       version: packageJson.version,
       dependencies: Object.keys(packageJson.dependencies || {}).length,
       devDependencies: Object.keys(packageJson.devDependencies || {}).length,
       tsFiles: parseInt(tsFiles) || 0,
-      linesOfCode: parseInt(loc) || 0
+      linesOfCode: parseInt(loc) || 0,
     };
   } catch (error) {
     return {
@@ -108,7 +107,7 @@ function getProjectStats() {
       dependencies: 0,
       devDependencies: 0,
       tsFiles: 0,
-      linesOfCode: 0
+      linesOfCode: 0,
     };
   }
 }
@@ -121,9 +120,9 @@ function generateProgressSummary(workLog) {
   const completed = [];
   const inProgress = [];
   const decisions = [];
-  
+
   let currentSection = '';
-  
+
   lines.forEach(line => {
     if (line.includes('✅') || line.includes('COMPLETED')) {
       completed.push(line.replace(/^[#\s-]*/, ''));
@@ -135,11 +134,11 @@ function generateProgressSummary(workLog) {
       decisions.push(line.replace(/^\d+\.\s*/, ''));
     }
   });
-  
+
   return {
     completed: completed.slice(0, 5), // Last 5 completed items
     inProgress: inProgress.slice(0, 3), // Current work
-    decisions: decisions.slice(0, 5) // Key decisions
+    decisions: decisions.slice(0, 5), // Key decisions
   };
 }
 
@@ -152,31 +151,31 @@ function generateTicketsSummary(tickets) {
       total: 0,
       byStatus: {},
       urgent: [],
-      high: []
+      high: [],
     };
   }
-  
+
   const byStatus = {};
   const urgent = [];
   const high = [];
-  
+
   tickets.mobileTickets.forEach(ticket => {
     const status = ticket.status || 'Unknown';
     if (!byStatus[status]) byStatus[status] = 0;
     byStatus[status]++;
-    
+
     if (ticket.priorityLabel === 'Urgent') {
       urgent.push(ticket);
     } else if (ticket.priorityLabel === 'High') {
       high.push(ticket);
     }
   });
-  
+
   return {
     total: tickets.mobileTickets.length,
     byStatus,
     urgent: urgent.slice(0, 3),
-    high: high.slice(0, 3)
+    high: high.slice(0, 3),
   };
 }
 
@@ -185,7 +184,7 @@ function generateTicketsSummary(tickets) {
  */
 function generateReadmeContent(context, git, stats, progress, ticketsSummary) {
   const timestamp = new Date().toISOString();
-  
+
   return `# AskToddy Mobile
 
 > **Last Updated:** ${timestamp}  
@@ -220,9 +219,10 @@ ${progress.completed.map(item => `- ✅ ${item}`).join('\n')}
 
 ## 🚧 **Currently Working On**
 
-${progress.inProgress.length > 0 
-  ? progress.inProgress.map(item => `- 🔄 ${item}`).join('\n')
-  : '- 📋 Ready for next sprint'
+${
+  progress.inProgress.length > 0
+    ? progress.inProgress.map(item => `- 🔄 ${item}`).join('\n')
+    : '- 📋 Ready for next sprint'
 }
 
 ## 📋 **Linear Tickets Summary**
@@ -235,15 +235,17 @@ ${Object.entries(ticketsSummary.byStatus)
   .join('\n')}
 
 ### **🚨 Urgent Priorities:**
-${ticketsSummary.urgent.length > 0
-  ? ticketsSummary.urgent.map(t => `- [${t.id}] ${t.title}`).join('\n')
-  : '- No urgent tickets'
+${
+  ticketsSummary.urgent.length > 0
+    ? ticketsSummary.urgent.map(t => `- [${t.id}] ${t.title}`).join('\n')
+    : '- No urgent tickets'
 }
 
 ### **⚡ High Priority:**
-${ticketsSummary.high.length > 0
-  ? ticketsSummary.high.map(t => `- [${t.id}] ${t.title}`).join('\n')
-  : '- No high priority tickets'
+${
+  ticketsSummary.high.length > 0
+    ? ticketsSummary.high.map(t => `- [${t.id}] ${t.title}`).join('\n')
+    : '- No high priority tickets'
 }
 
 ## 🏗️ **Architecture Decisions**
@@ -371,30 +373,24 @@ If starting a new Claude session:
  */
 function updateReadme() {
   console.log('📚 Updating README.md with current project state...');
-  
+
   const context = getCurrentContext();
   if (!context) {
     console.error('❌ Failed to read context files');
     return false;
   }
-  
+
   const git = getGitStatus();
   const stats = getProjectStats();
   const progress = generateProgressSummary(context.workLog);
   const ticketsSummary = generateTicketsSummary(context.tickets);
-  
-  const readmeContent = generateReadmeContent(
-    context, 
-    git, 
-    stats, 
-    progress, 
-    ticketsSummary
-  );
-  
+
+  const readmeContent = generateReadmeContent(context, git, stats, progress, ticketsSummary);
+
   try {
     fs.writeFileSync(README_PATH, readmeContent);
     console.log('✅ README.md updated successfully');
-    
+
     // Update last documentation update time
     const metadataFile = path.join(CONTEXT_DIR, 'documentation-metadata.json');
     const metadata = {
@@ -402,23 +398,23 @@ function updateReadme() {
       readmeLength: readmeContent.length,
       sectionsGenerated: [
         'Project Progress',
-        'Technical Stack', 
+        'Technical Stack',
         'Recent Achievements',
         'Linear Tickets',
         'Architecture Decisions',
-        'Quick Start Guide'
+        'Quick Start Guide',
       ],
       stats: {
         totalTickets: ticketsSummary.total,
         completedTasks: progress.completed.length,
         inProgressTasks: progress.inProgress.length,
-        gitChanges: git.changedFiles
-      }
+        gitChanges: git.changedFiles,
+      },
     };
-    
+
     fs.writeFileSync(metadataFile, JSON.stringify(metadata, null, 2));
     console.log('📊 Documentation metadata updated');
-    
+
     return true;
   } catch (error) {
     console.error('❌ Failed to write README.md:', error);
@@ -431,9 +427,9 @@ function updateReadme() {
  */
 function main() {
   console.log('📚 Starting documentation update...\n');
-  
+
   const success = updateReadme();
-  
+
   if (success) {
     console.log('\n✅ Documentation update completed successfully!');
     console.log('\n📋 Summary:');
@@ -441,7 +437,9 @@ function main() {
     console.log('   - Linear tickets summary included');
     console.log('   - Progress tracking updated');
     console.log('   - Recovery instructions updated');
-    console.log('\n💡 Run "git add README.md && git commit -m \'docs: update README with current progress\'" to commit changes');
+    console.log(
+      '\n💡 Run "git add README.md && git commit -m \'docs: update README with current progress\'" to commit changes'
+    );
   } else {
     console.log('\n❌ Documentation update failed');
     process.exit(1);

@@ -22,7 +22,7 @@ class AIServiceClass {
       fallbackProviders: config.ai.fallbackProviders,
       timeoutMs: config.ai.timeoutMs,
       retryAttempts: 2,
-      enableFallback: config.ai.enableFallback
+      enableFallback: config.ai.enableFallback,
     };
 
     // Create middleware
@@ -75,9 +75,11 @@ class AIServiceClass {
 
     try {
       const result = await this.middleware.analyzeImageWithValidation(request);
-      
-      console.log(`✅ Analysis completed: ${result.projectType} (confidence: ${result.confidence}%)`);
-      
+
+      console.log(
+        `✅ Analysis completed: ${result.projectType} (confidence: ${result.confidence}%)`
+      );
+
       return result;
     } catch (error) {
       console.error('❌ AI Service analysis failed:', error);
@@ -117,8 +119,8 @@ class AIServiceClass {
       additionalContext: {
         projectType: 'Kitchen Renovation',
         budgetRange: { min: 5000, max: 15000 },
-        location: 'London, UK'
-      }
+        location: 'London, UK',
+      },
     };
 
     return this.analyzeImage(testRequest);
@@ -128,7 +130,7 @@ class AIServiceClass {
    * Enhanced analysis with user context
    */
   async analyzeImageWithContext(
-    imageUri: string, 
+    imageUri: string,
     options: {
       projectType?: string;
       budgetMin?: number;
@@ -142,14 +144,17 @@ class AIServiceClass {
       imageUri,
       additionalContext: {
         projectType: options.projectType,
-        budgetRange: options.budgetMin && options.budgetMax ? {
-          min: options.budgetMin,
-          max: options.budgetMax
-        } : undefined,
+        budgetRange:
+          options.budgetMin && options.budgetMax
+            ? {
+                min: options.budgetMin,
+                max: options.budgetMax,
+              }
+            : undefined,
         location: options.location,
-        userPreferences: options.userPreferences
+        userPreferences: options.userPreferences,
       },
-      userId: options.userId
+      userId: options.userId,
     };
 
     return this.analyzeImage(request);
@@ -160,9 +165,9 @@ class AIServiceClass {
    */
   async analyzeBatch(requests: AnalysisRequest[]): Promise<ProjectAnalysis[]> {
     console.log(`🔍 Starting batch analysis for ${requests.length} images`);
-    
+
     const results: ProjectAnalysis[] = [];
-    
+
     for (const request of requests) {
       try {
         const result = await this.analyzeImage(request);

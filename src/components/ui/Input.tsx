@@ -1,12 +1,5 @@
 import React, { useState } from 'react';
-import {
-  View,
-  TextInput,
-  Text,
-  StyleSheet,
-  ViewStyle,
-  TextInputProps,
-} from 'react-native';
+import { View, TextInput, Text, StyleSheet, ViewStyle, TextInputProps } from 'react-native';
 import designTokens from '../../styles/designTokens';
 
 export interface InputProps extends TextInputProps {
@@ -53,10 +46,10 @@ export default function Input({
   return (
     <View style={[styles.container, containerStyle]}>
       {label && <Text style={styles.label}>{label}</Text>}
-      
+
       <View style={inputContainerStyles}>
         {leftIcon && <View style={styles.leftIcon}>{leftIcon}</View>}
-        
+
         <TextInput
           style={inputStyles}
           onFocus={() => setIsFocused(true)}
@@ -64,10 +57,10 @@ export default function Input({
           placeholderTextColor={designTokens.colors.neutral[400]}
           {...props}
         />
-        
+
         {rightIcon && <View style={styles.rightIcon}>{rightIcon}</View>}
       </View>
-      
+
       {error && <Text style={styles.errorText}>{error}</Text>}
       {helper && !error && <Text style={styles.helperText}>{helper}</Text>}
     </View>
@@ -78,14 +71,14 @@ const styles = StyleSheet.create({
   container: {
     marginBottom: designTokens.spacing.md,
   },
-  
+
   label: {
     fontSize: designTokens.typography.fontSize.sm,
     fontWeight: designTokens.typography.fontWeight.medium,
     color: designTokens.colors.text.primary,
     marginBottom: designTokens.spacing.xs,
   },
-  
+
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -93,7 +86,7 @@ const styles = StyleSheet.create({
     borderRadius: designTokens.borderRadius.lg,
     backgroundColor: designTokens.colors.background,
   },
-  
+
   // Variants
   default: {
     borderColor: designTokens.colors.border,
@@ -102,7 +95,7 @@ const styles = StyleSheet.create({
     backgroundColor: designTokens.colors.neutral[50],
     borderColor: designTokens.colors.neutral[200],
   },
-  
+
   // Sizes
   sm: {
     minHeight: 36,
@@ -116,7 +109,7 @@ const styles = StyleSheet.create({
     minHeight: 52,
     paddingHorizontal: designTokens.spacing.lg,
   },
-  
+
   // States
   focused: {
     borderColor: designTokens.colors.primary[500],
@@ -126,14 +119,14 @@ const styles = StyleSheet.create({
     borderColor: designTokens.colors.error,
     borderWidth: 1,
   },
-  
+
   input: {
     flex: 1,
     fontSize: designTokens.typography.fontSize.base,
     color: designTokens.colors.text.primary,
     fontWeight: designTokens.typography.fontWeight.normal,
   },
-  
+
   // Input sizes
   smInput: {
     fontSize: designTokens.typography.fontSize.sm,
@@ -144,21 +137,21 @@ const styles = StyleSheet.create({
   lgInput: {
     fontSize: designTokens.typography.fontSize.lg,
   },
-  
+
   inputWithLeftIcon: {
     paddingLeft: designTokens.spacing.sm,
   },
   inputWithRightIcon: {
     paddingRight: designTokens.spacing.sm,
   },
-  
+
   leftIcon: {
     marginRight: designTokens.spacing.sm,
   },
   rightIcon: {
     marginLeft: designTokens.spacing.sm,
   },
-  
+
   errorText: {
     fontSize: designTokens.typography.fontSize.xs,
     color: designTokens.colors.error,

@@ -4,8 +4,4 @@
 
 export { LocationService, UK_REGIONS } from './LocationService';
 
-export type {
-  Coordinates,
-  LocationData,
-  UKRegion,
-} from './LocationService';
+export type { Coordinates, LocationData, UKRegion } from './LocationService';

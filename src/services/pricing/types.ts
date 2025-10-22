@@ -60,7 +60,15 @@ export interface ToolHirePricing {
 }
 
 export interface LaborPricing {
-  tradeType: 'general' | 'plumber' | 'electrician' | 'carpenter' | 'painter' | 'tiler' | 'plasterer' | 'roofer';
+  tradeType:
+    | 'general'
+    | 'plumber'
+    | 'electrician'
+    | 'carpenter'
+    | 'painter'
+    | 'tiler'
+    | 'plasterer'
+    | 'roofer';
   skillLevel: 'apprentice' | 'skilled' | 'specialist' | 'master';
   region: string;
   hourlyRate: {

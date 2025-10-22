@@ -40,14 +40,11 @@ export default function CameraScreenExample({ navigation }: Props) {
     requestPermission,
   } = useCamera({
     onImageCaptured: handleImageCaptured,
-    onError: (error) => console.error('Camera error:', error),
+    onError: error => console.error('Camera error:', error),
   });
 
-  const {
-    isAnalyzing,
-    analyzeImage,
-  } = useImageAnalysis({
-    onAnalysisComplete: (result) => {
+  const { isAnalyzing, analyzeImage } = useImageAnalysis({
+    onAnalysisComplete: result => {
       if (result.success && result.data) {
         // Navigate to results with analysis
         navigation.navigate('Results', {
@@ -69,7 +66,7 @@ export default function CameraScreenExample({ navigation }: Props) {
   function handleImageCaptured(uri: string) {
     console.log('📷 Image captured:', uri);
     setLastCapturedImage(uri);
-    
+
     // Auto-analyze the captured image
     analyzeImage(uri, {
       location: 'UK',
@@ -97,7 +94,8 @@ export default function CameraScreenExample({ navigation }: Props) {
         <View style={styles.permissionContent}>
           <Text style={styles.permissionTitle}>📷 Camera Access Required</Text>
           <Text style={styles.permissionText}>
-            AskToddy needs camera access to analyze your construction projects and provide accurate quotes.
+            AskToddy needs camera access to analyze your construction projects and provide accurate
+            quotes.
           </Text>
           <Button
             title="Enable Camera Access"
@@ -150,25 +148,15 @@ export default function CameraScreenExample({ navigation }: Props) {
 
         {/* Bottom controls */}
         <View style={styles.controlsContainer}>
-          <TouchableOpacity 
-            style={styles.galleryButton} 
-            onPress={pickImageFromLibrary}
-          >
+          <TouchableOpacity style={styles.galleryButton} onPress={pickImageFromLibrary}>
             <Text style={styles.controlButtonText}>📁</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.captureButton} 
-            onPress={takePicture}
-            disabled={isLoading}
-          >
+
+          <TouchableOpacity style={styles.captureButton} onPress={takePicture} disabled={isLoading}>
             <View style={styles.captureButtonInner} />
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.flipButton} 
-            onPress={toggleCameraFacing}
-          >
+
+          <TouchableOpacity style={styles.flipButton} onPress={toggleCameraFacing}>
             <Text style={styles.controlButtonText}>🔄</Text>
           </TouchableOpacity>
         </View>
@@ -192,7 +180,7 @@ const styles = StyleSheet.create({
   camera: {
     flex: 1,
   },
-  
+
   // Permission screens
   permissionContainer: {
     flex: 1,

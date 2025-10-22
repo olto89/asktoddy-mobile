@@ -11,8 +11,11 @@ export class OpenAIProvider implements AIProvider {
   private apiKey: string;
   private model: string;
   private endpoint = 'https://api.openai.com/v1/chat/completions';
-  
-  constructor(apiKey: string, model: 'gpt-4-vision-preview' | 'gpt-4o' | 'gpt-4o-mini' = 'gpt-4o-mini') {
+
+  constructor(
+    apiKey: string,
+    model: 'gpt-4-vision-preview' | 'gpt-4o' | 'gpt-4o-mini' = 'gpt-4o-mini'
+  ) {
     this.apiKey = apiKey;
     this.model = model;
   }
@@ -22,12 +25,10 @@ export class OpenAIProvider implements AIProvider {
       console.log('⚠️ OpenAI provider not configured - API key missing or invalid');
       return false;
     }
-    
+
     try {
       // Quick health check with minimal tokens
-      const response = await this.callOpenAI([
-        { role: 'user', content: 'Hi' }
-      ], { max_tokens: 5 });
+      const response = await this.callOpenAI([{ role: 'user', content: 'Hi' }], { max_tokens: 5 });
       return response !== null;
     } catch (error) {
       console.error('OpenAI availability check failed:', error);
@@ -42,15 +43,13 @@ export class OpenAIProvider implements AIProvider {
 
     const startTime = Date.now();
     try {
-      await this.callOpenAI([
-        { role: 'user', content: 'Health check' }
-      ], { max_tokens: 5 });
-      
+      await this.callOpenAI([{ role: 'user', content: 'Health check' }], { max_tokens: 5 });
+
       const latency = Date.now() - startTime;
-      
-      return { 
-        status: latency < 3000 ? 'healthy' : 'degraded', 
-        latency 
+
+      return {
+        status: latency < 3000 ? 'healthy' : 'degraded',
+        latency,
       };
     } catch (error) {
       console.error('OpenAI health check failed:', error);
@@ -61,46 +60,47 @@ export class OpenAIProvider implements AIProvider {
   async analyzeImage(request: AnalysisRequest): Promise<ProjectAnalysis> {
     try {
       const messages = this.buildMessages(request);
-      
+
       // Call OpenAI with structured output
       const response = await this.callOpenAI(messages, {
         max_tokens: 2000,
         temperature: 0.7,
-        response_format: { type: "json_object" } // Ensure JSON response
+        response_format: { type: 'json_object' }, // Ensure JSON response
       });
-      
+
       if (!response) {
         throw new Error('No response from OpenAI');
       }
-      
+
       // Parse and validate the response
       return this.parseOpenAIResponse(response);
-      
     } catch (error) {
       console.error('OpenAI analysis failed:', error);
-      throw new Error(`OpenAI analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `OpenAI analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
   private buildMessages(request: AnalysisRequest): any[] {
     const messages: any[] = [];
-    
+
     // System prompt for construction expertise
     messages.push({
       role: 'system',
       content: `You are a highly experienced UK construction contractor and estimator with 20+ years in the industry. 
       Analyze construction projects and provide comprehensive, accurate quotes using current 2024 UK market rates.
-      Always return responses in valid JSON format.`
+      Always return responses in valid JSON format.`,
     });
-    
+
     // Build user message with context
     const userContent: any[] = [
       {
         type: 'text',
-        text: this.createAnalysisPrompt(request)
-      }
+        text: this.createAnalysisPrompt(request),
+      },
     ];
-    
+
     // Add image if provided
     if (request.imageUri) {
       if (request.imageUri.startsWith('data:')) {
@@ -110,8 +110,8 @@ export class OpenAIProvider implements AIProvider {
           type: 'image_url',
           image_url: {
             url: request.imageUri,
-            detail: 'high' // High detail for construction analysis
-          }
+            detail: 'high', // High detail for construction analysis
+          },
         });
       } else if (request.imageUri.startsWith('http')) {
         // URL - pass directly
@@ -119,17 +119,17 @@ export class OpenAIProvider implements AIProvider {
           type: 'image_url',
           image_url: {
             url: request.imageUri,
-            detail: 'high'
-          }
+            detail: 'high',
+          },
         });
       }
     }
-    
+
     messages.push({
       role: 'user',
-      content: userContent
+      content: userContent,
     });
-    
+
     // Add conversation history if available
     if (request.history && request.history.length > 0) {
       // Add last 4 messages for context (2 rounds of conversation)
@@ -137,17 +137,17 @@ export class OpenAIProvider implements AIProvider {
       relevantHistory.forEach(msg => {
         messages.push({
           role: msg.role === 'user' ? 'user' : 'assistant',
-          content: msg.content
+          content: msg.content,
         });
       });
     }
-    
+
     return messages;
   }
 
   private createAnalysisPrompt(request: AnalysisRequest): string {
     const { context } = request;
-    
+
     return `Analyze this construction project and provide a detailed quote and analysis.
 
 CONTEXT:
@@ -233,13 +233,13 @@ IMPORTANT: Return ONLY a valid JSON object with this structure:
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`
+          Authorization: `Bearer ${this.apiKey}`,
         },
         body: JSON.stringify({
           model: this.model,
           messages,
-          ...options
-        })
+          ...options,
+        }),
       });
 
       if (!response.ok) {
@@ -248,14 +248,16 @@ IMPORTANT: Return ONLY a valid JSON object with this structure:
       }
 
       const data = await response.json();
-      
+
       if (!data.choices || !data.choices[0] || !data.choices[0].message) {
         throw new Error('Invalid response from OpenAI');
       }
 
       // Log token usage for cost tracking
       if (data.usage) {
-        console.log(`📊 OpenAI token usage - Input: ${data.usage.prompt_tokens}, Output: ${data.usage.completion_tokens}, Cost: $${this.estimateCost(data.usage)}`);
+        console.log(
+          `📊 OpenAI token usage - Input: ${data.usage.prompt_tokens}, Output: ${data.usage.completion_tokens}, Cost: $${this.estimateCost(data.usage)}`
+        );
       }
 
       return data.choices[0].message.content;
@@ -270,13 +272,13 @@ IMPORTANT: Return ONLY a valid JSON object with this structure:
     const costs: Record<string, { input: number; output: number }> = {
       'gpt-4-vision-preview': { input: 0.01, output: 0.03 },
       'gpt-4o': { input: 0.005, output: 0.015 },
-      'gpt-4o-mini': { input: 0.00015, output: 0.0006 }
+      'gpt-4o-mini': { input: 0.00015, output: 0.0006 },
     };
-    
+
     const modelCosts = costs[this.model] || costs['gpt-4o-mini'];
     const inputCost = (usage.prompt_tokens / 1000) * modelCosts.input;
     const outputCost = (usage.completion_tokens / 1000) * modelCosts.output;
-    
+
     return (inputCost + outputCost).toFixed(4);
   }
 
@@ -284,7 +286,7 @@ IMPORTANT: Return ONLY a valid JSON object with this structure:
     try {
       // Parse JSON response
       const parsed = JSON.parse(text);
-      
+
       // Validate and ensure all required fields
       return {
         projectType: parsed.projectType || 'Construction Project',
@@ -294,7 +296,7 @@ IMPORTANT: Return ONLY a valid JSON object with this structure:
         timeline: parsed.timeline || {
           diy: '1-2 weeks',
           professional: '3-5 days',
-          phases: []
+          phases: [],
         },
         toolsRequired: parsed.toolsRequired || [],
         safetyConsiderations: parsed.safetyConsiderations || [],
@@ -304,12 +306,12 @@ IMPORTANT: Return ONLY a valid JSON object with this structure:
         confidence: Math.min(100, Math.max(0, parsed.confidence || 80)),
         recommendations: parsed.recommendations || [],
         warnings: parsed.warnings || [],
-        
+
         // Metadata (set by middleware)
         analysisId: '',
         timestamp: '',
         aiProvider: this.name,
-        processingTimeMs: 0
+        processingTimeMs: 0,
       };
     } catch (error) {
       console.error('Failed to parse OpenAI response:', error);
@@ -322,48 +324,48 @@ IMPORTANT: Return ONLY a valid JSON object with this structure:
       return {
         materials: { min: 100, max: 500, items: [] },
         labor: { min: 200, max: 800, hourlyRate: 35, estimatedHours: 8 },
-        total: { min: 300, max: 1300 }
+        total: { min: 300, max: 1300 },
       };
     }
 
     const materials = breakdown.materials || { min: 100, max: 500, items: [] };
     const labor = breakdown.labor || { min: 200, max: 800, hourlyRate: 35, estimatedHours: 8 };
-    
+
     return {
       materials: {
         min: Math.max(0, materials.min || 0),
         max: Math.max(materials.min || 0, materials.max || 0),
-        items: Array.isArray(materials.items) ? materials.items : []
+        items: Array.isArray(materials.items) ? materials.items : [],
       },
       labor: {
         min: Math.max(0, labor.min || 0),
         max: Math.max(labor.min || 0, labor.max || 0),
         hourlyRate: Math.max(20, labor.hourlyRate || 35),
-        estimatedHours: Math.max(1, labor.estimatedHours || 8)
+        estimatedHours: Math.max(1, labor.estimatedHours || 8),
       },
       total: {
         min: (materials.min || 0) + (labor.min || 0),
-        max: (materials.max || 0) + (labor.max || 0)
-      }
+        max: (materials.max || 0) + (labor.max || 0),
+      },
     };
   }
 }
 
 /**
  * Model Comparison Guide:
- * 
+ *
  * gpt-4-vision-preview:
  * - Best for: Complex image analysis, detailed material identification
  * - Cost: Highest (~$10 per 1M input tokens)
  * - Speed: Slowest (3-5 seconds)
  * - When to use: Premium users, complex multi-trade projects
- * 
+ *
  * gpt-4o:
  * - Best for: Balanced performance and cost
  * - Cost: Medium (~$5 per 1M input tokens)
  * - Speed: Fast (1-2 seconds)
  * - When to use: Standard analysis with good accuracy
- * 
+ *
  * gpt-4o-mini:
  * - Best for: Quick, cost-effective analysis
  * - Cost: Lowest (~$0.15 per 1M input tokens)

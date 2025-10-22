@@ -25,12 +25,12 @@ function getGitStatus() {
     const branch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf-8' }).trim();
     const lastCommit = execSync('git log -1 --oneline', { encoding: 'utf-8' }).trim();
     const status = execSync('git status --short', { encoding: 'utf-8' }).trim();
-    
+
     return {
       branch,
       lastCommit,
       hasUncommittedChanges: status.length > 0,
-      changedFiles: status.split('\n').filter(Boolean).length
+      changedFiles: status.split('\n').filter(Boolean).length,
     };
   } catch (error) {
     return null;
@@ -42,7 +42,7 @@ function getGitStatus() {
  */
 function getRunningProcesses() {
   const processes = [];
-  
+
   // Check if Expo is running
   try {
     execSync('lsof -i :8081', { stdio: 'ignore' });
@@ -50,12 +50,12 @@ function getRunningProcesses() {
       command: 'npm start',
       port: 8081,
       status: 'running',
-      service: 'Expo Dev Server'
+      service: 'Expo Dev Server',
     });
   } catch (e) {
     // Port 8081 not in use
   }
-  
+
   // Check if Metro is running
   try {
     execSync('lsof -i :19001', { stdio: 'ignore' });
@@ -63,12 +63,12 @@ function getRunningProcesses() {
       command: 'metro',
       port: 19001,
       status: 'running',
-      service: 'Metro Bundler'
+      service: 'Metro Bundler',
     });
   } catch (e) {
     // Port 19001 not in use
   }
-  
+
   return processes;
 }
 
@@ -81,8 +81,11 @@ function getRecentFiles() {
     const files = execSync(
       'find src -type f \\( -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" \\) -mtime -1 | head -20',
       { encoding: 'utf-8', cwd: path.join(__dirname, '..') }
-    ).trim().split('\n').filter(Boolean);
-    
+    )
+      .trim()
+      .split('\n')
+      .filter(Boolean);
+
     return files;
   } catch (error) {
     return [];
@@ -96,15 +99,15 @@ function getProjectInfo() {
   const packageJson = JSON.parse(
     fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf-8')
   );
-  
+
   return {
     name: packageJson.name,
     version: packageJson.version,
     dependencies: {
       expo: packageJson.dependencies?.expo,
       'react-native': packageJson.dependencies?.['react-native'],
-      '@google/generative-ai': packageJson.dependencies?.['@google/generative-ai']
-    }
+      '@google/generative-ai': packageJson.dependencies?.['@google/generative-ai'],
+    },
   };
 }
 
@@ -112,10 +115,10 @@ function getProjectInfo() {
  * Update session file
  */
 function updateSession(customData = {}) {
-  const existingSession = fs.existsSync(SESSION_FILE) 
+  const existingSession = fs.existsSync(SESSION_FILE)
     ? JSON.parse(fs.readFileSync(SESSION_FILE, 'utf-8'))
     : {};
-  
+
   const session = {
     ...existingSession,
     lastUpdated: new Date().toISOString(),
@@ -124,16 +127,16 @@ function updateSession(customData = {}) {
     environment: {
       nodeVersion: process.version,
       platform: process.platform,
-      ...existingSession.environment
+      ...existingSession.environment,
     },
     runningProcesses: getRunningProcesses(),
     recentFiles: getRecentFiles(),
-    ...customData
+    ...customData,
   };
-  
+
   fs.writeFileSync(SESSION_FILE, JSON.stringify(session, null, 2));
   console.log(`✅ Session context saved to ${SESSION_FILE}`);
-  
+
   return session;
 }
 
@@ -142,9 +145,9 @@ function updateSession(customData = {}) {
  */
 function main() {
   console.log('💾 Saving session context...\n');
-  
+
   const session = updateSession();
-  
+
   console.log('📊 Session Summary:');
   console.log(`   Project: ${session.project.name} v${session.project.version}`);
   if (session.git) {
@@ -153,7 +156,7 @@ function main() {
   }
   console.log(`   Running Processes: ${session.runningProcesses.length}`);
   console.log(`   Recent Files: ${session.recentFiles.length}`);
-  
+
   console.log('\n✅ Context saved successfully!');
   console.log('💡 Run "npm run context:sync" to sync with Linear');
 }

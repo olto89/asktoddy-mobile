@@ -14,6 +14,7 @@
 Until the API key is configured, you can:
 
 ### View Tickets
+
 1. Visit https://linear.app
 2. Filter by:
    - Assigned to me
@@ -41,16 +42,19 @@ Manually update `.claude-context/linear-tickets.json`:
 ## Common Linear Workflows
 
 ### Starting Work on a Ticket
+
 1. Move ticket to "In Progress" in Linear
 2. Add to `.claude-context/work-log.md`
 3. Create a git branch: `git checkout -b TODD-XXX-feature-name`
 
 ### Completing a Ticket
+
 1. Commit changes with ticket ID: `git commit -m "TODD-XXX: Description"`
 2. Update ticket status to "In Review"
 3. Update context: `npm run context:save`
 
 ### Creating a New Ticket
+
 ```bash
 # Via Linear web UI
 # Or use this template in work-log.md:

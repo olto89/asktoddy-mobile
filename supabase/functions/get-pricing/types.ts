@@ -45,7 +45,14 @@ export interface ToolHireRate {
 export interface MaterialPrice {
   id: string;
   name: string;
-  category: 'structural' | 'finishing' | 'electrical' | 'plumbing' | 'insulation' | 'roofing' | 'flooring';
+  category:
+    | 'structural'
+    | 'finishing'
+    | 'electrical'
+    | 'plumbing'
+    | 'insulation'
+    | 'roofing'
+    | 'flooring';
   priceRange: {
     min: number;
     max: number;
@@ -107,8 +114,8 @@ export interface RegionData {
 }
 
 export interface SeasonalFactors {
-  spring: number;  // March-May
-  summer: number;  // June-August  
-  autumn: number;  // September-November
-  winter: number;  // December-February
+  spring: number; // March-May
+  summer: number; // June-August
+  autumn: number; // September-November
+  winter: number; // December-February
 }

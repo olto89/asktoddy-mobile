@@ -13,7 +13,7 @@ const environment = process.argv[2] || 'local';
 const envFiles = {
   local: '.env.local',
   staging: '.env.staging',
-  production: '.env.production'
+  production: '.env.production',
 };
 
 const envFile = envFiles[environment];
@@ -52,17 +52,19 @@ try {
 
   console.log(`✅ Switched to ${environment} environment`);
   console.log(`📁 Using: ${envFile}`);
-  
+
   // Show current configuration
   const envContent = fs.readFileSync(targetPath, 'utf8');
   const appEnv = envContent.match(/EXPO_PUBLIC_APP_ENV=(\w+)/)?.[1];
   const supabaseUrl = envContent.match(/EXPO_PUBLIC_SUPABASE_URL=([^\s]+)/)?.[1];
-  
+
   console.log(`\n📊 Current Configuration:`);
   console.log(`   Environment: ${appEnv}`);
-  console.log(`   Supabase: ${supabaseUrl?.includes('localhost') ? 'Local' : supabaseUrl?.split('.')[0]}`);
+  console.log(
+    `   Supabase: ${supabaseUrl?.includes('localhost') ? 'Local' : supabaseUrl?.split('.')[0]}`
+  );
   console.log(`   Mock Data: ${environment === 'local' ? 'Enabled' : 'Disabled'}`);
-  
+
   // Show next steps
   console.log('\n📝 Next steps:');
   if (environment === 'local') {
@@ -75,7 +77,6 @@ try {
     console.log('   - Deploy functions: npm run deploy:production');
     console.log('   - Build for App Store: npm run build:production');
   }
-
 } catch (error) {
   console.error('❌ Failed to switch environment:', error.message);
   process.exit(1);

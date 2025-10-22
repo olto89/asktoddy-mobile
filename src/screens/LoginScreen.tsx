@@ -66,7 +66,7 @@ export default function LoginScreen({ navigation }: Props) {
         }
         Alert.alert('Success', 'Account created successfully! You are now signed in.');
       }
-      
+
       // Navigation will be handled by auth state change
     } catch (error) {
       Alert.alert('Error', 'Something went wrong. Please try again.');
@@ -81,10 +81,7 @@ export default function LoginScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.logoContainer}>
@@ -93,24 +90,19 @@ export default function LoginScreen({ navigation }: Props) {
             </View>
             <Text style={styles.brandName}>AskToddy</Text>
           </View>
-          
-          <Text style={styles.welcomeTitle}>
-            {isLogin ? 'Welcome back!' : 'Join AskToddy'}
-          </Text>
+
+          <Text style={styles.welcomeTitle}>{isLogin ? 'Welcome back!' : 'Join AskToddy'}</Text>
           <Text style={styles.welcomeSubtitle}>
-            {isLogin 
-              ? 'Sign in to get instant construction quotes' 
-              : 'Create your free account to get started'
-            }
+            {isLogin
+              ? 'Sign in to get instant construction quotes'
+              : 'Create your free account to get started'}
           </Text>
         </View>
 
         {/* Auth Form */}
         <Card variant="elevated" style={styles.authCard}>
-          <Text style={styles.formTitle}>
-            {isLogin ? 'Sign In' : 'Create Account'}
-          </Text>
-          
+          <Text style={styles.formTitle}>{isLogin ? 'Sign In' : 'Create Account'}</Text>
+
           <Input
             label="Email"
             placeholder="Enter your email"
@@ -120,7 +112,7 @@ export default function LoginScreen({ navigation }: Props) {
             autoCapitalize="none"
             autoComplete="email"
           />
-          
+
           <Input
             label="Password"
             placeholder="Enter your password"
@@ -129,7 +121,7 @@ export default function LoginScreen({ navigation }: Props) {
             secureTextEntry
             autoComplete={isLogin ? 'current-password' : 'new-password'}
           />
-          
+
           {!isLogin && (
             <Input
               label="Confirm Password"
@@ -140,7 +132,7 @@ export default function LoginScreen({ navigation }: Props) {
               autoComplete="new-password"
             />
           )}
-          
+
           <Button
             title={isLogin ? 'Sign In' : 'Create Account'}
             onPress={handleAuth}
@@ -148,7 +140,7 @@ export default function LoginScreen({ navigation }: Props) {
             fullWidth
             style={styles.authButton}
           />
-          
+
           {isLogin && (
             <TouchableOpacity style={styles.forgotPassword}>
               <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
@@ -159,12 +151,10 @@ export default function LoginScreen({ navigation }: Props) {
         {/* Switch Auth Mode */}
         <View style={styles.switchAuthContainer}>
           <Text style={styles.switchAuthText}>
-            {isLogin ? "Don't have an account? " : "Already have an account? "}
+            {isLogin ? "Don't have an account? " : 'Already have an account? '}
           </Text>
           <TouchableOpacity onPress={toggleAuthMode}>
-            <Text style={styles.switchAuthLink}>
-              {isLogin ? 'Sign Up' : 'Sign In'}
-            </Text>
+            <Text style={styles.switchAuthLink}>{isLogin ? 'Sign Up' : 'Sign In'}</Text>
           </TouchableOpacity>
         </View>
 
@@ -172,10 +162,8 @@ export default function LoginScreen({ navigation }: Props) {
         <Card variant="outlined" style={styles.freeNotice}>
           <Text style={styles.freeNoticeTitle}>🎉 Free Tier Includes:</Text>
           <Text style={styles.freeNoticeText}>
-            • Unlimited photo analysis{'\n'}
-            • Instant cost estimates{'\n'}
-            • Basic material recommendations{'\n'}
-            • Community support
+            • Unlimited photo analysis{'\n'}• Instant cost estimates{'\n'}• Basic material
+            recommendations{'\n'}• Community support
           </Text>
         </Card>
       </ScrollView>

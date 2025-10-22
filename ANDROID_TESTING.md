@@ -3,9 +3,10 @@
 ## 🤖 Android Testing Options (Best to Worst)
 
 ### 1. **Google Play Internal Testing** (Recommended)
+
 **Cost**: FREE  
 **Setup Time**: 15 minutes  
-**Testers**: Up to 100 people  
+**Testers**: Up to 100 people
 
 ```bash
 # Build for Android
@@ -16,6 +17,7 @@ eas submit --platform android --profile staging
 ```
 
 **Advantages:**
+
 - ✅ Completely free (no Google Play Developer fee needed for internal testing)
 - ✅ Real device testing on any Android phone
 - ✅ Automatic updates
@@ -23,6 +25,7 @@ eas submit --platform android --profile staging
 - ✅ Works exactly like production app
 
 **Setup Process:**
+
 1. Create Google Play Developer account ($25 one-time fee)
 2. Create app in Google Play Console
 3. Upload APK to Internal Testing track
@@ -31,9 +34,10 @@ eas submit --platform android --profile staging
 ---
 
 ### 2. **Direct APK Distribution**
+
 **Cost**: FREE  
 **Setup Time**: 5 minutes  
-**Testers**: Unlimited  
+**Testers**: Unlimited
 
 ```bash
 # Build APK file
@@ -43,11 +47,13 @@ eas build --platform android --profile staging
 ```
 
 **Advantages:**
+
 - ✅ No Google account needed
 - ✅ Instant distribution
 - ✅ Works on any Android device
 
 **Disadvantages:**
+
 - ❌ Users must enable "Install Unknown Apps"
 - ❌ No automatic updates
 - ❌ Security warnings during install
@@ -56,9 +62,10 @@ eas build --platform android --profile staging
 ---
 
 ### 3. **Expo Development Build**
+
 **Cost**: FREE  
 **Setup Time**: 10 minutes  
-**Testers**: Developers only  
+**Testers**: Developers only
 
 ```bash
 # Build development client
@@ -75,6 +82,7 @@ npm start --dev-client
 ## 🎯 Recommended Android Strategy
 
 ### **Phase 1: Internal Testing (Free)**
+
 ```bash
 # 1. Build Android APK
 eas build --platform android --profile staging
@@ -87,6 +95,7 @@ eas build --platform android --profile staging
 ```
 
 ### **Phase 2: Google Play Internal Testing ($25)**
+
 When ready for wider testing:
 
 1. **Create Google Play Developer Account**
@@ -95,10 +104,11 @@ When ready for wider testing:
    - Much cheaper than Apple's $99/year
 
 2. **Set up Internal Testing**
+
    ```bash
    # Build for Google Play
    eas build --platform android --profile staging
-   
+
    # Submit to Google Play Console
    eas submit --platform android --profile staging
    ```
@@ -119,12 +129,12 @@ Your `eas.json` is already configured for Android:
   "build": {
     "staging": {
       "android": {
-        "buildType": "apk"  // For testing
+        "buildType": "apk" // For testing
       }
     },
     "production": {
       "android": {
-        "buildType": "app-bundle",  // For Play Store
+        "buildType": "app-bundle", // For Play Store
         "autoIncrement": true
       }
     }
@@ -138,7 +148,7 @@ Your `eas.json` is already configured for Android:
 # Development build (for team testing)
 eas build --platform android --profile development
 
-# Staging APK (for external testing)  
+# Staging APK (for external testing)
 eas build --platform android --profile staging
 
 # Production AAB (for Play Store)
@@ -150,16 +160,17 @@ eas build --platform all --profile staging
 
 ## 📊 Testing Comparison
 
-| Method | Cost | Setup Time | Ease of Use | Tester Limit |
-|--------|------|------------|-------------|--------------|
-| **APK Direct** | FREE | 5 min | Medium | Unlimited |
-| **Google Play Internal** | $25 | 15 min | Easy | 100 |
-| **Google Play Beta** | $25 | 30 min | Easy | Unlimited |
-| **Development Build** | FREE | 10 min | Hard | Team only |
+| Method                   | Cost | Setup Time | Ease of Use | Tester Limit |
+| ------------------------ | ---- | ---------- | ----------- | ------------ |
+| **APK Direct**           | FREE | 5 min      | Medium      | Unlimited    |
+| **Google Play Internal** | $25  | 15 min     | Easy        | 100          |
+| **Google Play Beta**     | $25  | 30 min     | Easy        | Unlimited    |
+| **Development Build**    | FREE | 10 min     | Hard        | Team only    |
 
 ## 🚀 Quick Start (When Ready)
 
 **For immediate testing:**
+
 ```bash
 # 1. Build APK
 eas build --platform android --profile staging
@@ -170,6 +181,7 @@ eas build --platform android --profile staging
 ```
 
 **For professional testing:**
+
 ```bash
 # 1. Set up Google Play Developer account ($25)
 # 2. Create app in Google Play Console
@@ -183,16 +195,19 @@ eas submit --platform android --profile staging
 ## 💡 Pro Tips
 
 ### **For Friends & Family Testing**
+
 - Use direct APK distribution (free)
 - Create simple install instructions
 - Use staging environment
 
 ### **For Beta Testing**
+
 - Use Google Play Internal Testing
 - Much easier user experience
 - Automatic updates
 
 ### **Cost Optimization**
+
 - Start with free APK distribution
 - Upgrade to Google Play when scaling
 - Google Play much cheaper than Apple ($25 vs $99/year)
@@ -204,11 +219,7 @@ Your app.json already includes required Android permissions:
 ```json
 {
   "android": {
-    "permissions": [
-      "CAMERA",
-      "READ_EXTERNAL_STORAGE",
-      "WRITE_EXTERNAL_STORAGE"
-    ]
+    "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE"]
   }
 }
 ```

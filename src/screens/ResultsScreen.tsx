@@ -42,7 +42,7 @@ export default function ResultsScreen({ navigation, route }: Props) {
 
     try {
       console.log('🔍 Starting Edge Function analysis...');
-      
+
       const { data, error } = await supabase.functions.invoke('analyze-construction', {
         body: {
           imageUri,
@@ -61,13 +61,13 @@ export default function ResultsScreen({ navigation, route }: Props) {
     } catch (err) {
       console.error('❌ Analysis failed:', err);
       setError(err instanceof Error ? err.message : 'Analysis failed');
-      
+
       Alert.alert(
         'Analysis Error',
         'Failed to analyze your image. Please try again or contact support.',
         [
           { text: 'Try Again', onPress: analyzeImage },
-          { text: 'Go Back', onPress: () => navigation.goBack() }
+          { text: 'Go Back', onPress: () => navigation.goBack() },
         ]
       );
     } finally {
@@ -140,20 +140,23 @@ export default function ResultsScreen({ navigation, route }: Props) {
               <View style={styles.costRow}>
                 <Text style={styles.costLabel}>Total Project Cost:</Text>
                 <Text style={styles.costValue}>
-                  {formatCurrency(analysis.costBreakdown.total.min)} - {formatCurrency(analysis.costBreakdown.total.max)}
+                  {formatCurrency(analysis.costBreakdown.total.min)} -{' '}
+                  {formatCurrency(analysis.costBreakdown.total.max)}
                 </Text>
               </View>
               <View style={styles.costBreakdown}>
                 <View style={styles.costRow}>
                   <Text style={styles.costSubLabel}>Materials:</Text>
                   <Text style={styles.costSubValue}>
-                    {formatCurrency(analysis.costBreakdown.materials.min)} - {formatCurrency(analysis.costBreakdown.materials.max)}
+                    {formatCurrency(analysis.costBreakdown.materials.min)} -{' '}
+                    {formatCurrency(analysis.costBreakdown.materials.max)}
                   </Text>
                 </View>
                 <View style={styles.costRow}>
                   <Text style={styles.costSubLabel}>Labor:</Text>
                   <Text style={styles.costSubValue}>
-                    {formatCurrency(analysis.costBreakdown.labor.min)} - {formatCurrency(analysis.costBreakdown.labor.max)}
+                    {formatCurrency(analysis.costBreakdown.labor.min)} -{' '}
+                    {formatCurrency(analysis.costBreakdown.labor.max)}
                   </Text>
                 </View>
               </View>
@@ -170,9 +173,7 @@ export default function ResultsScreen({ navigation, route }: Props) {
                 <Text style={styles.timelineLabel}>Professional:</Text>
                 <Text style={styles.timelineValue}>{analysis.timeline.professional}</Text>
               </View>
-              <Text style={styles.difficultyBadge}>
-                Difficulty: {analysis.difficultyLevel}
-              </Text>
+              <Text style={styles.difficultyBadge}>Difficulty: {analysis.difficultyLevel}</Text>
             </Card>
 
             {/* Tools Required */}
@@ -212,7 +213,9 @@ export default function ResultsScreen({ navigation, route }: Props) {
               <Card variant="outlined" style={styles.warningCard}>
                 <Text style={styles.warningTitle}>⚠️ Professional Required</Text>
                 {analysis.professionalReasons?.map((reason, index) => (
-                  <Text key={index} style={styles.warningText}>• {reason}</Text>
+                  <Text key={index} style={styles.warningText}>
+                    • {reason}
+                  </Text>
                 ))}
               </Card>
             )}
@@ -221,9 +224,8 @@ export default function ResultsScreen({ navigation, route }: Props) {
             <Card variant="outlined" style={styles.metaCard}>
               <Text style={styles.metaTitle}>Analysis Details</Text>
               <Text style={styles.metaText}>
-                Provider: {analysis.aiProvider} • 
-                Time: {analysis.processingTimeMs}ms • 
-                Confidence: {analysis.confidence}%
+                Provider: {analysis.aiProvider} • Time: {analysis.processingTimeMs}ms • Confidence:{' '}
+                {analysis.confidence}%
               </Text>
             </Card>
           </>
@@ -236,12 +238,8 @@ export default function ResultsScreen({ navigation, route }: Props) {
             onPress={handleNewAnalysis}
             style={styles.button}
           />
-          
-          <Button
-            title="Back to Home"
-            onPress={handleBackToHome}
-            variant="outline"
-          />
+
+          <Button title="Back to Home" onPress={handleBackToHome} variant="outline" />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -257,7 +255,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: designTokens.spacing.xl,
   },
-  
+
   // Header
   header: {
     alignItems: 'center',

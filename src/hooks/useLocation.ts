@@ -24,7 +24,7 @@ export interface UseLocationState {
       longitude: number;
     };
   } | null;
-  
+
   // Actions
   getCurrentLocation: () => Promise<void>;
   refreshLocation: () => Promise<void>;
@@ -37,7 +37,7 @@ export const useLocation = (autoFetch: boolean = true): UseLocationState => {
   const [location, setLocation] = useState<LocationData | null>(null);
   const [region, setRegion] = useState<UKRegion | null>(null);
   const [pricingContext, setPricingContext] = useState<any>(null);
-  
+
   const locationService = LocationService.getInstance();
 
   /**
@@ -46,40 +46,40 @@ export const useLocation = (autoFetch: boolean = true): UseLocationState => {
   const getCurrentLocation = useCallback(async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       // Request permissions if needed
       const hasPermission = await locationService.requestPermissions();
-      
+
       if (!hasPermission) {
         console.log('📍 Location permission denied, using default location');
       }
-      
+
       // Get location (will use default if no permission)
       const locationData = await locationService.getCurrentLocation();
-      
+
       if (locationData) {
         setLocation(locationData);
-        
+
         // Get UK region
         const ukRegion = locationService.getUKRegion(locationData);
         setRegion(ukRegion);
-        
+
         // Get pricing context
         const context = await locationService.getPricingContext();
         setPricingContext(context);
-        
+
         console.log('📍 Location updated:', {
           city: locationData.city,
           region: ukRegion.name,
-          multiplier: ukRegion.pricingMultiplier
+          multiplier: ukRegion.pricingMultiplier,
         });
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to get location';
       setError(errorMessage);
       console.error('Location error:', errorMessage);
-      
+
       // Use default location on error
       const defaultLocation = await locationService.getCurrentLocation();
       if (defaultLocation) {
@@ -138,7 +138,7 @@ export const useLocation = (autoFetch: boolean = true): UseLocationState => {
     };
 
     const subscription = AppState.addEventListener('change', handleAppStateChange);
-    
+
     return () => {
       subscription.remove();
     };
@@ -169,12 +169,12 @@ export const usePricingMultiplier = (): number => {
  */
 export const useFormattedLocation = (): string => {
   const { location, region } = useLocation(true);
-  
+
   if (!location) return 'Location not available';
-  
+
   if (location.city && region) {
     return `${location.city}, ${region.name}`;
   }
-  
+
   return location.formatted || 'Unknown location';
 };

@@ -43,7 +43,7 @@ echo "✅ Pre-commit documentation update completed"
 `;
 
   const hookPath = path.join(GIT_HOOKS_DIR, 'pre-commit');
-  
+
   try {
     fs.writeFileSync(hookPath, hookContent);
     execSync(`chmod +x "${hookPath}"`);
@@ -78,7 +78,7 @@ echo "✅ Post-commit context update completed"
 `;
 
   const hookPath = path.join(GIT_HOOKS_DIR, 'post-commit');
-  
+
   try {
     fs.writeFileSync(hookPath, hookContent);
     execSync(`chmod +x "${hookPath}"`);
@@ -121,7 +121,7 @@ echo "✅ Commit message enhanced with context"
 `;
 
   const hookPath = path.join(GIT_HOOKS_DIR, 'commit-msg');
-  
+
   try {
     fs.writeFileSync(hookPath, hookContent);
     execSync(`chmod +x "${hookPath}"`);
@@ -138,38 +138,38 @@ echo "✅ Commit message enhanced with context"
  */
 function setupWorkflow() {
   console.log('🔧 Setting up automated documentation workflow...\n');
-  
+
   // Check if .git directory exists
   if (!fs.existsSync(GIT_HOOKS_DIR)) {
     console.error('❌ .git/hooks directory not found. Initialize git repository first.');
     return false;
   }
-  
+
   let success = true;
-  
+
   // Install hooks
   success &= createPreCommitHook();
   success &= createPostCommitHook();
   success &= createCommitMsgHook();
-  
+
   if (success) {
     console.log('\n🎉 Git hooks installed successfully!');
     console.log('\n📋 What was set up:');
     console.log('   - Pre-commit: Updates README.md and context before commits');
     console.log('   - Post-commit: Updates session context after commits');
     console.log('   - Commit-msg: Enhances commit messages with context');
-    
+
     console.log('\n🔄 Automatic workflow:');
     console.log('   1. Before commit: Documentation updated');
     console.log('   2. During commit: Message enhanced with context');
     console.log('   3. After commit: Session state updated');
-    
+
     console.log('\n💡 Manual commands available:');
     console.log('   - npm run docs:update         # Update README manually');
     console.log('   - npm run git:checkpoint      # Create checkpoint commit');
     console.log('   - npm run session:end         # End session with full backup');
     console.log('   - npm run session:milestone   # Create milestone + push');
-    
+
     return true;
   } else {
     console.log('\n❌ Some hooks failed to install');
@@ -182,24 +182,24 @@ function setupWorkflow() {
  */
 function testWorkflow() {
   console.log('\n🧪 Testing documentation workflow...');
-  
+
   try {
     // Test documentation update
     console.log('📚 Testing documentation update...');
-    execSync('npm run docs:update', { 
+    execSync('npm run docs:update', {
       cwd: PROJECT_ROOT,
-      stdio: 'pipe'
+      stdio: 'pipe',
     });
     console.log('✅ Documentation update working');
-    
+
     // Test context save
     console.log('💾 Testing context save...');
-    execSync('npm run context:save', { 
+    execSync('npm run context:save', {
       cwd: PROJECT_ROOT,
-      stdio: 'pipe'
+      stdio: 'pipe',
     });
     console.log('✅ Context save working');
-    
+
     console.log('✅ All workflow components working correctly');
     return true;
   } catch (error) {
@@ -213,12 +213,12 @@ function testWorkflow() {
  */
 function main() {
   console.log('🔧 Git Hooks & Documentation Automation Setup\n');
-  
+
   const workflowSuccess = setupWorkflow();
-  
+
   if (workflowSuccess) {
     const testSuccess = testWorkflow();
-    
+
     if (testSuccess) {
       console.log('\n🎉 Setup completed successfully!');
       console.log('\n🚀 Ready for automated documentation and context management');

@@ -23,25 +23,25 @@ if (!fs.existsSync(CONTEXT_DIR)) {
 function fetchLinearTickets() {
   try {
     console.log('📋 Fetching Linear tickets...');
-    
+
     // Get current user's assigned issues
-    const myIssues = execSync('linear issue list --mine --json', { 
+    const myIssues = execSync('linear issue list --mine --json', {
       encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'ignore'] // Ignore stderr to suppress warnings
+      stdio: ['pipe', 'pipe', 'ignore'], // Ignore stderr to suppress warnings
     });
-    
+
     const issues = JSON.parse(myIssues || '[]');
-    
+
     // Filter for AskToddy Mobile related tickets
-    const mobileTickets = issues.filter(issue => 
-      issue.title.toLowerCase().includes('mobile') ||
-      issue.title.toLowerCase().includes('react native') ||
-      issue.labels?.some(label => 
-        label.toLowerCase().includes('mobile') || 
-        label.toLowerCase().includes('app')
-      )
+    const mobileTickets = issues.filter(
+      issue =>
+        issue.title.toLowerCase().includes('mobile') ||
+        issue.title.toLowerCase().includes('react native') ||
+        issue.labels?.some(
+          label => label.toLowerCase().includes('mobile') || label.toLowerCase().includes('app')
+        )
     );
-    
+
     return mobileTickets.map(ticket => ({
       id: ticket.identifier,
       title: ticket.title,
@@ -52,9 +52,8 @@ function fetchLinearTickets() {
       assignee: ticket.assignee?.name || 'Unassigned',
       url: ticket.url,
       createdAt: ticket.createdAt,
-      updatedAt: ticket.updatedAt
+      updatedAt: ticket.updatedAt,
     }));
-    
   } catch (error) {
     console.error('❌ Failed to fetch Linear tickets:', error.message);
     console.log('💡 Make sure you are logged in: linear login');
@@ -70,7 +69,7 @@ function updateTicketsFile(tickets) {
     console.log('⚠️  No tickets to update');
     return;
   }
-  
+
   const ticketsData = {
     lastSynced: new Date().toISOString(),
     totalCount: tickets.length,
@@ -80,12 +79,12 @@ function updateTicketsFile(tickets) {
       if (!acc[status]) acc[status] = [];
       acc[status].push(ticket.id);
       return acc;
-    }, {})
+    }, {}),
   };
-  
+
   fs.writeFileSync(TICKETS_FILE, JSON.stringify(ticketsData, null, 2));
   console.log(`✅ Updated ${tickets.length} tickets in ${TICKETS_FILE}`);
-  
+
   // Print summary
   console.log('\n📊 Ticket Summary:');
   Object.entries(ticketsData.byStatus).forEach(([status, ids]) => {
@@ -98,12 +97,12 @@ function updateTicketsFile(tickets) {
  */
 function createTicketSummary(tickets) {
   if (!tickets || tickets.length === 0) return;
-  
+
   const summaryFile = path.join(CONTEXT_DIR, 'active-tickets.md');
-  
+
   let content = `# Active Linear Tickets\n\n`;
   content += `Last Updated: ${new Date().toISOString()}\n\n`;
-  
+
   // Group by status
   const byStatus = {};
   tickets.forEach(ticket => {
@@ -111,7 +110,7 @@ function createTicketSummary(tickets) {
     if (!byStatus[status]) byStatus[status] = [];
     byStatus[status].push(ticket);
   });
-  
+
   // Write tickets by status
   ['In Progress', 'Todo', 'Backlog', 'Done'].forEach(status => {
     if (byStatus[status] && byStatus[status].length > 0) {
@@ -127,7 +126,7 @@ function createTicketSummary(tickets) {
       });
     }
   });
-  
+
   fs.writeFileSync(summaryFile, content);
   console.log(`📝 Created ticket summary in ${summaryFile}`);
 }
@@ -137,7 +136,7 @@ function createTicketSummary(tickets) {
  */
 function main() {
   console.log('🔄 Starting Linear sync...\n');
-  
+
   // Check if Linear CLI is installed
   try {
     execSync('linear --version', { stdio: 'ignore' });
@@ -145,7 +144,7 @@ function main() {
     console.error('❌ Linear CLI not found. Install with: npm install -g @linear/cli');
     process.exit(1);
   }
-  
+
   // Fetch and update tickets
   const tickets = fetchLinearTickets();
   if (tickets) {

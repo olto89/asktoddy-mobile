@@ -4,11 +4,11 @@
 
 We use three environments with Supabase's free tier (2 projects):
 
-| Environment | Purpose | Supabase Project | Build Profile |
-|------------|---------|------------------|---------------|
-| **Local** | Development | Local Docker | `development` |
-| **Staging** | TestFlight | `tggvoqhewfmczyjoxrqu` | `staging` |
-| **Production** | App Store | *To be created* | `production` |
+| Environment    | Purpose     | Supabase Project       | Build Profile |
+| -------------- | ----------- | ---------------------- | ------------- |
+| **Local**      | Development | Local Docker           | `development` |
+| **Staging**    | TestFlight  | `tggvoqhewfmczyjoxrqu` | `staging`     |
+| **Production** | App Store   | _To be created_        | `production`  |
 
 ## 🚀 Quick Deploy to TestFlight
 
@@ -53,6 +53,7 @@ npm run submit:testflight
 ## 🔄 Deployment Workflow
 
 ### 1. Local Development
+
 ```bash
 # Use local environment
 npm run env:use local
@@ -65,6 +66,7 @@ npm start
 ```
 
 ### 2. Staging (TestFlight)
+
 ```bash
 # Switch to staging
 npm run env:use staging
@@ -80,6 +82,7 @@ npm run submit:testflight
 ```
 
 ### 3. Production (App Store)
+
 ```bash
 # Create production Supabase project first!
 # Then update .env.production
@@ -125,6 +128,7 @@ OPENAI_API_KEY=sk-... (if using OpenAI)
    - SKU: `asktoddy-mobile-001`
 
 2. **Configure EAS**
+
    ```bash
    eas build:configure
    # Select iOS
@@ -177,6 +181,7 @@ When ready for App Store release:
 ## 🐛 Troubleshooting
 
 ### Edge Functions Not Working
+
 ```bash
 # Check deployment status
 supabase functions list --project-ref tggvoqhewfmczyjoxrqu
@@ -186,6 +191,7 @@ supabase functions logs analyze-construction --project-ref tggvoqhewfmczyjoxrqu
 ```
 
 ### Build Failing
+
 ```bash
 # Clear cache
 expo prebuild --clear
@@ -197,6 +203,7 @@ npm run build:staging
 ```
 
 ### TestFlight Issues
+
 - Ensure Apple Developer account is active
 - Check provisioning profiles in Apple Developer Portal
 - Verify bundle identifier matches App Store Connect

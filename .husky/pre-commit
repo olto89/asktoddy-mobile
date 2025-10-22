@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run lint-staged for automatic formatting and linting
+npx lint-staged
+
+# Run TypeScript check
+npm run type-check
+
+# Save context before commit
+npm run context:save

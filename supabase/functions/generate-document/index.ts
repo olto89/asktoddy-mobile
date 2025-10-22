@@ -3,21 +3,21 @@
  * Creates PDF quotes, project plans, and task lists
  */
 
-import "jsr:@supabase/functions-js/edge-runtime.d.ts"
-import { createResponse, createErrorResponse, getEnvironment, debugLog } from "../_shared/env.ts"
+import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
+import { createResponse, createErrorResponse, getEnvironment, debugLog } from '../_shared/env.ts';
 
-console.log("📄 Generate Document Edge Function initialized")
+console.log('📄 Generate Document Edge Function initialized');
 
-Deno.serve(async (req) => {
+Deno.serve(async req => {
   try {
-    const env = getEnvironment()
-    debugLog("Document request received", { method: req.method, url: req.url })
-    
+    const env = getEnvironment();
+    debugLog('Document request received', { method: req.method, url: req.url });
+
     // Handle CORS preflight
     if (req.method === 'OPTIONS') {
-      return createResponse({ message: 'CORS preflight handled' }, 200)
+      return createResponse({ message: 'CORS preflight handled' }, 200);
     }
-    
+
     // Health check endpoint
     if (req.method === 'GET') {
       return createResponse({
@@ -27,25 +27,28 @@ Deno.serve(async (req) => {
         timestamp: new Date().toISOString(),
         environment: env.APP_ENV,
         supportedFormats: ['pdf'],
-        documentTypes: ['quote', 'timeline', 'tasklist']
-      })
+        documentTypes: ['quote', 'timeline', 'tasklist'],
+      });
     }
-    
+
     // Main document generation endpoint
     if (req.method === 'POST') {
-      const requestData = await req.json()
-      debugLog("Document generation request", requestData)
-      
+      const requestData = await req.json();
+      debugLog('Document generation request', requestData);
+
       // Basic validation
       if (!requestData.type || !requestData.projectType) {
-        return createErrorResponse('Type and projectType are required', 400)
+        return createErrorResponse('Type and projectType are required', 400);
       }
-      
-      const validTypes = ['quote', 'timeline', 'tasklist']
+
+      const validTypes = ['quote', 'timeline', 'tasklist'];
       if (!validTypes.includes(requestData.type)) {
-        return createErrorResponse(`Invalid document type. Must be one of: ${validTypes.join(', ')}`, 400)
+        return createErrorResponse(
+          `Invalid document type. Must be one of: ${validTypes.join(', ')}`,
+          400
+        );
       }
-      
+
       // Mock document generation for now (will be replaced with real PDF logic)
       const documentData = {
         documentId: `${requestData.type}-${Date.now()}`,
@@ -56,28 +59,27 @@ Deno.serve(async (req) => {
         size: '2.4 MB',
         pages: requestData.type === 'quote' ? 3 : requestData.type === 'timeline' ? 2 : 1,
         downloadUrl: `https://api.asktoddy.com/documents/${requestData.type}-${Date.now()}.pdf`,
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
-      }
-      
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
+      };
+
       // Mock different response formats based on document type
       const response = {
         success: true,
         document: documentData,
         message: `${requestData.type.charAt(0).toUpperCase() + requestData.type.slice(1)} document generated successfully`,
-        processingTimeMs: 1200
-      }
-      
-      debugLog("Document generation response", response)
-      return createResponse(response)
+        processingTimeMs: 1200,
+      };
+
+      debugLog('Document generation response', response);
+      return createResponse(response);
     }
-    
-    return createErrorResponse('Method not allowed', 405)
-    
+
+    return createErrorResponse('Method not allowed', 405);
   } catch (error) {
-    console.error('Generate Document Error:', error)
-    return createErrorResponse('Internal server error', 500, { error: error.message })
+    console.error('Generate Document Error:', error);
+    return createErrorResponse('Internal server error', 500, { error: error.message });
   }
-})
+});
 
 /* To invoke locally:
 

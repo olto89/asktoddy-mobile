@@ -11,7 +11,7 @@ export type {
   AggregatePricing,
   PricingConfig,
   EnhancedMaterialItem,
-  EnhancedToolRequirement
+  EnhancedToolRequirement,
 } from './types';
 
 // Default export
