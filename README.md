@@ -1,22 +1,24 @@
 # AskToddy Mobile
 
-> **Last Updated:** 2025-10-21T11:39:12.111Z  
-> **Branch:** main | **Status:** 🔄 In Development
+> **Last Updated:** 2025-10-22T10:00:00.000Z  
+> **Branch:** main | **Status:** 🎉 Ready for TestFlight
 
 ## 🚀 **Current Status**
 
 ### **Project Progress**
 
 - **Architecture:** API-First with Supabase Edge Functions
+- **Infrastructure:** Staging/Production Environment Separation
 - **UI Approach:** Chat-First (ChatGPT-style) with camera integration
-- **Current Phase:** Planning Complete
+- **Current Phase:** TestFlight Deployment Ready
 
 ### **Technical Stack**
 
 - **Platform:** React Native + Expo 54.0.15
 - **AI Integration:** Google Gemini + OpenAI (switchable providers)
-- **Backend:** Supabase Edge Functions
+- **Backend:** Supabase Edge Functions (Staging + Production)
 - **Design System:** AskToddy brand colors (Orange #FF6B35, Navy #2C3E50)
+- **Deployment:** EAS Build + TestFlight Automation
 
 ## 📊 **Project Statistics**
 
@@ -104,6 +106,44 @@ npm run context:sync
 npm run claude:resume
 ```
 
+## 🏗️ **Environment Architecture**
+
+### **Supabase Projects**
+
+| Environment | Project Name | Project ID | URL |
+|-------------|--------------|------------|-----|
+| **Staging** | `asktoddy-staging` | `iezmuqawughmwsxlqrim` | `https://iezmuqawughmwsxlqrim.supabase.co` |
+| **Production** | `asktoddy-production` | `tggvoqhewfmczyjoxrqu` | `https://tggvoqhewfmczyjoxrqu.supabase.co` |
+
+### **App Bundle IDs**
+
+| Environment | Bundle ID | App Store Connect ID | TestFlight |
+|-------------|-----------|---------------------|-------------|
+| **Staging** | `com.asktoddy.staging` | `6754278065` | ✅ Enabled |
+| **Production** | `com.asktoddy.prod` | `6754278089` | ✅ Enabled |
+
+### **Deployment Commands**
+
+```bash
+# Staging Environment
+eas build --platform ios --profile staging
+eas submit --platform ios --profile staging
+
+# Production Environment  
+eas build --platform ios --profile production
+eas submit --platform ios --profile production
+
+# Manual deployment script
+npm run deploy:testflight  # Smart script (detects branch)
+```
+
+### **Environment Benefits**
+
+- 🔒 **Data Isolation**: Staging tests don't affect production data
+- 🚀 **Deployment Confidence**: Test thoroughly before production release
+- 🔄 **Parallel Development**: Multiple features can be tested simultaneously
+- 📱 **TestFlight Separation**: Clear staging vs production app distribution
+
 ## 📁 **Project Structure**
 
 ```
@@ -130,17 +170,35 @@ asktoddy-mobile/
 
 ## 🔧 **Available Scripts**
 
+### **Development**
 | Command                  | Description                   |
 | ------------------------ | ----------------------------- |
 | `npm start`              | Start Expo development server |
 | `npm run ios`            | Run on iOS simulator          |
 | `npm run android`        | Run on Android emulator       |
+
+### **Deployment & TestFlight**
+| Command                     | Description                        |
+| --------------------------- | ---------------------------------- |
+| `npm run deploy:testflight` | Smart deployment (detects branch) |
+| `npm run deploy:staging`    | Deploy to staging TestFlight      |
+| `npm run deploy:production` | Deploy to production TestFlight   |
+
+### **Context Management**
+| Command                  | Description                   |
+| ------------------------ | ----------------------------- |
 | `npm run context:save`   | Save current session state    |
 | `npm run context:linear` | Sync Linear tickets           |
 | `npm run context:sync`   | Save context + sync tickets   |
 | `npm run claude:resume`  | Quick context check           |
+
+### **Utilities**
+| Command                  | Description                   |
+| ------------------------ | ----------------------------- |
 | `npm run docs:update`    | Update this README            |
 | `npm run git:checkpoint` | Create checkpoint commit      |
+| `npm run lint`           | Run ESLint                    |
+| `npm run format`         | Format code with Prettier     |
 
 ## 🔄 **Context Recovery**
 
@@ -164,7 +222,7 @@ If starting a new Claude session:
 
 ## 📞 **Key Information**
 
-- **Linear API:** Configured with `lin_api_ArBBR9NahN2lhArFLCRsnM6Fo722k6AsHOx35ue3`
+- **Linear API:** Configured with `your_linear_api_key_here`
 - **Supabase:** Ready for Edge Functions deployment
 - **AI Providers:** Gemini (primary) + OpenAI (secondary) + Mock (fallback)
 - **Git Branch:** main

@@ -347,7 +347,7 @@ If starting a new Claude session:
 
 ## 📞 **Key Information**
 
-- **Linear API:** Configured with \`lin_api_ArBBR9NahN2lhArFLCRsnM6Fo722k6AsHOx35ue3\`
+- **Linear API:** Configured with \`your_linear_api_key_here\`
 - **Supabase:** Ready for Edge Functions deployment
 - **AI Providers:** Gemini (primary) + OpenAI (secondary) + Mock (fallback)
 - **Git Branch:** ${git.branch}
