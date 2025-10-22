@@ -21,22 +21,22 @@ async function queryLinear(query, variables = {}) {
     const response = await fetch(API_URL, {
       method: 'POST',
       headers: {
-        'Authorization': API_KEY,
+        Authorization: API_KEY,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         query,
-        variables
-      })
+        variables,
+      }),
     });
 
     const data = await response.json();
-    
+
     if (data.errors) {
       console.error('GraphQL Errors:', data.errors);
       throw new Error(data.errors[0].message);
     }
-    
+
     return data.data;
   } catch (error) {
     console.error('Linear API Error:', error);
@@ -59,15 +59,15 @@ async function getTeamId() {
       }
     }
   `;
-  
+
   const response = await queryLinear(query);
   const teams = response.teams.nodes;
-  
+
   console.log('Available teams:');
   teams.forEach(team => {
     console.log(`  - ${team.name} (${team.key}): ${team.id}`);
   });
-  
+
   // Return the first team or look for specific team
   return teams[0]?.id;
 }
@@ -91,7 +91,7 @@ async function createIssue(issueData) {
   `;
 
   const response = await queryLinear(mutation, { input: issueData });
-  
+
   if (response.issueCreate.success) {
     const issue = response.issueCreate.issue;
     console.log(`✅ Created: ${issue.identifier} - ${issue.title}`);
@@ -137,7 +137,7 @@ supabase functions new generate-document
 - Local development workflow established`,
     priority: 1, // Urgent
     estimate: 2,
-    labels: ['backend', 'infrastructure']
+    labels: ['backend', 'infrastructure'],
   },
   {
     title: '[API-002] Migrate AIMiddleware to analyze-construction Edge Function',
@@ -195,7 +195,7 @@ interface AnalysisResponse {
 - Performance benchmarks`,
     priority: 1, // Urgent
     estimate: 5,
-    labels: ['backend', 'ai', 'migration']
+    labels: ['backend', 'ai', 'migration'],
   },
   {
     title: '[API-003] Build comprehensive UK pricing Edge Function',
@@ -274,7 +274,7 @@ interface PricingResponse {
 - Regional cache segmentation`,
     priority: 1, // Urgent
     estimate: 8,
-    labels: ['backend', 'pricing', 'data']
+    labels: ['backend', 'pricing', 'data'],
   },
   {
     title: '[API-004] Add OpenAI provider for LLM switching',
@@ -324,7 +324,7 @@ interface UsageMetrics {
 - Configurable routing rules`,
     priority: 2, // High
     estimate: 3,
-    labels: ['backend', 'ai', 'openai']
+    labels: ['backend', 'ai', 'openai'],
   },
   {
     title: '[API-005] Implement document generation Edge Function',
@@ -392,7 +392,7 @@ Content-Disposition: attachment; filename="project-quote-20250115.pdf"
 - Asset management (logos, fonts)`,
     priority: 2, // High
     estimate: 5,
-    labels: ['backend', 'documents', 'pdf']
+    labels: ['backend', 'documents', 'pdf'],
   },
   {
     title: '[API-006] Add authentication and rate limiting',
@@ -455,7 +455,7 @@ CREATE TABLE pricing_cache (
 - Cost tracking per user`,
     priority: 2, // High
     estimate: 3,
-    labels: ['backend', 'auth', 'security']
+    labels: ['backend', 'auth', 'security'],
   },
   {
     title: '[MOBILE-101] Create thin client ChatScreen',
@@ -513,7 +513,7 @@ const handleSend = async () => {
 - ✅ Only API calls and display`,
     priority: 2, // High
     estimate: 5,
-    labels: ['frontend', 'chat', 'ui']
+    labels: ['frontend', 'chat', 'ui'],
   },
   {
     title: '[MOBILE-102] Extract camera logic to reusable hooks',
@@ -585,7 +585,7 @@ const ChatInput = () => {
 - [ ] Remove attached files option`,
     priority: 2, // High
     estimate: 2,
-    labels: ['frontend', 'camera', 'hooks']
+    labels: ['frontend', 'camera', 'hooks'],
   },
   {
     title: '[MOBILE-103] Integrate multi-modal input system',
@@ -634,7 +634,7 @@ interface Attachment {
 - Total: 4 files maximum per message`,
     priority: 2, // High
     estimate: 3,
-    labels: ['frontend', 'input', 'multimodal']
+    labels: ['frontend', 'input', 'multimodal'],
   },
   {
     title: '[MOBILE-104] Add document download integration',
@@ -692,8 +692,8 @@ const downloadDocument = async (type: DocumentType) => {
 - [ ] Offline access to downloaded documents`,
     priority: 3, // Medium
     estimate: 2,
-    labels: ['frontend', 'documents', 'download']
-  }
+    labels: ['frontend', 'documents', 'download'],
+  },
 ];
 
 /**
@@ -701,39 +701,39 @@ const downloadDocument = async (type: DocumentType) => {
  */
 async function createAllTickets() {
   console.log('🎫 Creating Linear tickets from API-first roadmap...\n');
-  
+
   try {
     // Get team ID first
     console.log('🔍 Finding team...');
     const teamId = await getTeamId();
-    
+
     if (!teamId) {
       throw new Error('No team found. Please ensure you have access to at least one team.');
     }
-    
+
     console.log(`✅ Using team ID: ${teamId}\n`);
-    
+
     const createdTickets = [];
-    
+
     // Create each ticket
     for (let i = 0; i < TICKETS.length; i++) {
       const ticket = TICKETS[i];
-      
+
       console.log(`📝 Creating ticket ${i + 1}/${TICKETS.length}: ${ticket.title}`);
-      
+
       const issueData = {
         teamId: teamId,
         title: ticket.title,
         description: ticket.description,
         priority: ticket.priority,
         estimate: ticket.estimate,
-        labelIds: [] // We'll add labels separately if needed
+        labelIds: [], // We'll add labels separately if needed
       };
-      
+
       try {
         const createdIssue = await createIssue(issueData);
         createdTickets.push(createdIssue);
-        
+
         // Add small delay to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 1000));
       } catch (error) {
@@ -741,21 +741,20 @@ async function createAllTickets() {
         console.error(`   Error: ${error.message}`);
       }
     }
-    
+
     console.log('\n🎉 Ticket creation completed!');
     console.log(`✅ Successfully created ${createdTickets.length}/${TICKETS.length} tickets\n`);
-    
+
     // Summary
     console.log('📋 Created tickets summary:');
     createdTickets.forEach(ticket => {
       console.log(`   ${ticket.identifier}: ${ticket.title}`);
     });
-    
+
     console.log('\n🔗 Linear workspace: https://linear.app/');
     console.log('💡 Next: Start with API-001 - Supabase Edge Functions infrastructure');
-    
+
     return createdTickets;
-    
   } catch (error) {
     console.error('❌ Failed to create tickets:', error.message);
     console.error('\n💡 Troubleshooting:');
@@ -772,7 +771,7 @@ async function createAllTickets() {
 async function main() {
   console.log('🎫 Linear Ticket Creation System\n');
   console.log('📋 About to create 12 tickets for API-first architecture:\n');
-  
+
   console.log('🏗️  API Tickets (Backend):');
   console.log('   - API-001: Supabase Edge Functions setup');
   console.log('   - API-002: AIMiddleware migration (455 lines)');
@@ -780,16 +779,16 @@ async function main() {
   console.log('   - API-004: OpenAI provider integration');
   console.log('   - API-005: Document generation');
   console.log('   - API-006: Authentication & rate limiting');
-  
+
   console.log('\n📱 Mobile Tickets (Frontend):');
   console.log('   - MOBILE-101: Chat-first UI (thin client)');
   console.log('   - MOBILE-102: Camera hooks extraction');
   console.log('   - MOBILE-103: Multi-modal input system');
   console.log('   - MOBILE-104: Document download integration');
-  
+
   console.log('\n📊 Total: 29 story points over 3 weeks');
   console.log('🎯 Result: Zero technical debt, API-first architecture\n');
-  
+
   await createAllTickets();
 }
 

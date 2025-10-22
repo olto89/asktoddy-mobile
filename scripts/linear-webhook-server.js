@@ -3,7 +3,7 @@
 /**
  * Linear Webhook Server
  * Receives webhook events from Linear and updates local context
- * 
+ *
  * To use:
  * 1. Run this server: node scripts/linear-webhook-server.js
  * 2. Use ngrok to expose it: ngrok http 3333
@@ -28,10 +28,7 @@ const { fetchLinearTickets } = require('./sync-linear-api');
  * Verify webhook signature
  */
 function verifyWebhookSignature(payload, signature) {
-  const hash = crypto
-    .createHmac('sha256', LINEAR_WEBHOOK_SECRET)
-    .update(payload)
-    .digest('hex');
+  const hash = crypto.createHmac('sha256', LINEAR_WEBHOOK_SECRET).update(payload).digest('hex');
   return `sha256=${hash}` === signature;
 }
 
@@ -40,10 +37,10 @@ function verifyWebhookSignature(payload, signature) {
  */
 async function processWebhookEvent(event) {
   console.log(`📨 Processing ${event.type} event for ${event.data?.identifier || 'unknown'}`);
-  
+
   // Log event
   logEvent(event);
-  
+
   // Handle different event types
   switch (event.type) {
     case 'Issue':
@@ -58,7 +55,7 @@ async function processWebhookEvent(event) {
     default:
       console.log(`   Unhandled event type: ${event.type}`);
   }
-  
+
   // Update work log with important events
   if (shouldUpdateWorkLog(event)) {
     updateWorkLog(event);
@@ -71,19 +68,19 @@ async function processWebhookEvent(event) {
 async function handleIssueEvent(event) {
   const issue = event.data;
   const action = event.action;
-  
+
   console.log(`   Issue ${action}: [${issue.identifier}] ${issue.title}`);
-  
+
   // Check if it's mobile related
   if (isMobileRelated(issue)) {
     console.log('   📱 Mobile ticket detected - updating context');
-    
+
     // Trigger full sync
     const data = await fetchLinearTickets();
     if (data) {
       updateLocalContext(data);
     }
-    
+
     // Send notification to terminal
     console.log('\n🔔 NOTIFICATION: Mobile ticket updated!');
     console.log(`   [${issue.identifier}] ${issue.title}`);
@@ -115,13 +112,15 @@ function isMobileRelated(issue) {
   const title = (issue.title || '').toLowerCase();
   const description = (issue.description || '').toLowerCase();
   const labels = (issue.labels?.nodes || []).map(l => l.name.toLowerCase());
-  
-  return title.includes('mobile') ||
-         title.includes('react native') ||
-         title.includes('app') ||
-         description.includes('mobile') ||
-         description.includes('react native') ||
-         labels.some(l => l.includes('mobile') || l.includes('app'));
+
+  return (
+    title.includes('mobile') ||
+    title.includes('react native') ||
+    title.includes('app') ||
+    description.includes('mobile') ||
+    description.includes('react native') ||
+    labels.some(l => l.includes('mobile') || l.includes('app'))
+  );
 }
 
 /**
@@ -133,7 +132,7 @@ function getPriorityLabel(priority) {
     1: 'Urgent',
     2: 'High',
     3: 'Medium',
-    4: 'Low'
+    4: 'Low',
   };
   return labels[priority] || 'Unknown';
 }
@@ -143,12 +142,12 @@ function getPriorityLabel(priority) {
  */
 function logEvent(event) {
   const eventsFile = path.join(CONTEXT_DIR, 'linear-events.json');
-  
+
   let events = [];
   if (fs.existsSync(eventsFile)) {
     events = JSON.parse(fs.readFileSync(eventsFile, 'utf-8'));
   }
-  
+
   // Add new event
   events.unshift({
     timestamp: new Date().toISOString(),
@@ -156,12 +155,12 @@ function logEvent(event) {
     action: event.action,
     identifier: event.data?.identifier,
     title: event.data?.title,
-    url: event.url
+    url: event.url,
   });
-  
+
   // Keep only last 50 events
   events = events.slice(0, 50);
-  
+
   fs.writeFileSync(eventsFile, JSON.stringify(events, null, 2));
 }
 
@@ -173,13 +172,15 @@ function shouldUpdateWorkLog(event) {
   if (event.type === 'Issue') {
     const importantActions = ['create', 'update', 'remove'];
     const importantStates = ['started', 'completed', 'canceled'];
-    
-    return importantActions.includes(event.action) ||
-           (event.action === 'update' && 
-            event.updatedFrom?.state?.type !== event.data?.state?.type &&
-            importantStates.includes(event.data?.state?.type));
+
+    return (
+      importantActions.includes(event.action) ||
+      (event.action === 'update' &&
+        event.updatedFrom?.state?.type !== event.data?.state?.type &&
+        importantStates.includes(event.data?.state?.type))
+    );
   }
-  
+
   return false;
 }
 
@@ -189,21 +190,21 @@ function shouldUpdateWorkLog(event) {
 function updateWorkLog(event) {
   const workLogFile = path.join(CONTEXT_DIR, 'work-log.md');
   let content = fs.readFileSync(workLogFile, 'utf-8');
-  
+
   const timestamp = new Date().toISOString();
   const entry = `\n### Linear Update - ${timestamp}\n`;
   const issue = event.data;
-  
+
   let update = entry;
   update += `- **Ticket:** [${issue.identifier}] ${issue.title}\n`;
   update += `- **Action:** ${event.action}\n`;
   update += `- **Status:** ${issue.state?.name || 'Unknown'}\n`;
   update += `- **URL:** ${issue.url}\n\n`;
-  
+
   // Append to work log
   content += update;
   fs.writeFileSync(workLogFile, content);
-  
+
   console.log('   📝 Updated work log');
 }
 
@@ -212,7 +213,7 @@ function updateWorkLog(event) {
  */
 function updateLocalContext(data) {
   const ticketsFile = path.join(CONTEXT_DIR, 'linear-tickets.json');
-  
+
   const ticketsData = {
     lastSynced: new Date().toISOString(),
     lastWebhookUpdate: new Date().toISOString(),
@@ -220,11 +221,11 @@ function updateLocalContext(data) {
     teams: data.teams,
     summary: {
       total: data.allTickets.length,
-      mobile: data.mobileTickets.length
+      mobile: data.mobileTickets.length,
     },
-    mobileTickets: data.mobileTickets
+    mobileTickets: data.mobileTickets,
   };
-  
+
   fs.writeFileSync(ticketsFile, JSON.stringify(ticketsData, null, 2));
   console.log('   ✅ Updated local tickets file');
 }
@@ -235,11 +236,11 @@ function updateLocalContext(data) {
 const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && req.url === '/webhook') {
     let body = '';
-    
+
     req.on('data', chunk => {
       body += chunk.toString();
     });
-    
+
     req.on('end', async () => {
       try {
         // Verify signature (if configured)
@@ -252,11 +253,11 @@ const server = http.createServer(async (req, res) => {
             return;
           }
         }
-        
+
         // Parse and process event
         const event = JSON.parse(body);
         await processWebhookEvent(event);
-        
+
         res.writeHead(200);
         res.end('OK');
       } catch (error) {
@@ -267,10 +268,12 @@ const server = http.createServer(async (req, res) => {
     });
   } else if (req.method === 'GET' && req.url === '/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ 
-      status: 'healthy',
-      timestamp: new Date().toISOString()
-    }));
+    res.end(
+      JSON.stringify({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+      })
+    );
   } else {
     res.writeHead(404);
     res.end('Not Found');

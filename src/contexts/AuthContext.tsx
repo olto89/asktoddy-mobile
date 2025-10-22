@@ -50,14 +50,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     getInitialSession();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-      }
-    );
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.email);
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
 
     // Handle deep links for email confirmation
     const handleDeepLink = (url: string) => {
@@ -67,7 +67,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const urlParams = new URL(url).searchParams;
         const access_token = urlParams.get('access_token');
         const refresh_token = urlParams.get('refresh_token');
-        
+
         if (access_token && refresh_token) {
           console.log('Setting session from deep link tokens');
           supabase.auth.setSession({ access_token, refresh_token });
@@ -81,7 +81,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     });
 
     // Check if app was opened with a deep link
-    Linking.getInitialURL().then((url) => {
+    Linking.getInitialURL().then(url => {
       if (url) {
         handleDeepLink(url);
       }
@@ -97,7 +97,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setLoading(true);
       const { data, error } = await authHelpers.signIn(email, password);
-      
+
       if (error) {
         return { error };
       }
@@ -114,7 +114,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setLoading(true);
       const { data, error } = await authHelpers.signUp(email, password);
-      
+
       if (error) {
         return { error };
       }
@@ -123,10 +123,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // In production, you might want email confirmation
       if (data.user && !data.session) {
         // User created but needs email confirmation
-        return { 
-          error: { 
-            message: 'Account created! Please check your email to confirm your account. After clicking the link in the email, return to the app and try logging in.' 
-          } 
+        return {
+          error: {
+            message:
+              'Account created! Please check your email to confirm your account. After clicking the link in the email, return to the app and try logging in.',
+          },
         };
       }
 
@@ -142,7 +143,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setLoading(true);
       const { data, error } = await authHelpers.signUpTest(email, password);
-      
+
       if (error) {
         return { error };
       }
@@ -179,9 +180,5 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isAuthenticated: !!user,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

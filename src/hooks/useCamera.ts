@@ -21,10 +21,10 @@ export interface CameraState {
   facing: CameraType;
   isLoading: boolean;
   permission: any; // Camera permission object
-  
+
   // Refs
   cameraRef: React.RefObject<CameraView>;
-  
+
   // Actions
   takePicture: () => Promise<string | null>;
   pickImageFromLibrary: () => Promise<string | null>;
@@ -56,7 +56,7 @@ export const useCamera = (options: UseCameraOptions = {}): CameraState => {
   const [facing, setFacing] = useState<CameraType>('back');
   const [permission, requestPermission] = useCameraPermissions();
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // Refs
   const cameraRef = useRef<CameraView>(null);
 
@@ -101,18 +101,14 @@ export const useCamera = (options: UseCameraOptions = {}): CameraState => {
         onImageCaptured?.(photo.uri);
         return photo.uri;
       }
-      
+
       return null;
     } catch (error) {
       const errorMessage = error instanceof Error ? error : new Error('Failed to take picture');
       console.error('Camera error:', errorMessage);
       onError?.(errorMessage);
-      
-      Alert.alert(
-        'Camera Error',
-        'Failed to take picture. Please try again.',
-        [{ text: 'OK' }]
-      );
+
+      Alert.alert('Camera Error', 'Failed to take picture. Please try again.', [{ text: 'OK' }]);
       return null;
     } finally {
       setIsLoading(false);
@@ -134,7 +130,7 @@ export const useCamera = (options: UseCameraOptions = {}): CameraState => {
 
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
-        
+
         // Optionally analyze image with Edge Function
         if (analyzeImage) {
           try {
@@ -149,18 +145,14 @@ export const useCamera = (options: UseCameraOptions = {}): CameraState => {
         onImageCaptured?.(asset.uri);
         return asset.uri;
       }
-      
+
       return null;
     } catch (error) {
       const errorMessage = error instanceof Error ? error : new Error('Failed to pick image');
       console.error('Image picker error:', errorMessage);
       onError?.(errorMessage);
-      
-      Alert.alert(
-        'Gallery Error',
-        'Failed to pick image. Please try again.',
-        [{ text: 'OK' }]
-      );
+
+      Alert.alert('Gallery Error', 'Failed to pick image. Please try again.', [{ text: 'OK' }]);
       return null;
     } finally {
       setIsLoading(false);
@@ -202,10 +194,10 @@ export const useCamera = (options: UseCameraOptions = {}): CameraState => {
     facing,
     isLoading,
     permission,
-    
+
     // Refs
     cameraRef,
-    
+
     // Actions
     takePicture,
     pickImageFromLibrary,

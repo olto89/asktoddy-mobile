@@ -45,10 +45,10 @@ export interface ProjectAnalysis {
   projectType: string;
   description: string;
   difficultyLevel: 'Easy' | 'Moderate' | 'Difficult' | 'Professional Required';
-  
+
   // Cost breakdown
   costBreakdown: QuoteBreakdown;
-  
+
   // Timeline estimates
   timeline: {
     diy: string;
@@ -59,21 +59,21 @@ export interface ProjectAnalysis {
       description: string;
     }>;
   };
-  
+
   // Tools and equipment
   toolsRequired: ToolRequirement[];
-  
+
   // Safety and compliance
   safetyConsiderations: string[];
   permitsRequired: string[];
   requiresProfessional: boolean;
   professionalReasons?: string[];
-  
+
   // Additional data
   confidence: number; // 0-100% confidence in analysis
   recommendations: string[];
   warnings?: string[];
-  
+
   // Metadata
   analysisId: string;
   timestamp: string;

@@ -11,7 +11,7 @@ import { useCameraPermissions } from 'expo-camera';
 export interface ImagePickerState {
   selectedImage: string | null;
   isLoading: boolean;
-  
+
   // Actions
   pickImage: () => Promise<void>;
   takePhoto: () => Promise<void>;
@@ -46,18 +46,16 @@ export const useImagePicker = (options: UseImagePickerOptions = {}): ImagePicker
     try {
       // Request permission
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
+
       if (permissionResult.granted === false) {
-        Alert.alert(
-          'Permission Required',
-          'Please enable photo library access to select images.',
-          [{ text: 'OK' }]
-        );
+        Alert.alert('Permission Required', 'Please enable photo library access to select images.', [
+          { text: 'OK' },
+        ]);
         return;
       }
 
       setIsLoading(true);
-      
+
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing,
@@ -74,12 +72,8 @@ export const useImagePicker = (options: UseImagePickerOptions = {}): ImagePicker
       const errorMessage = error instanceof Error ? error : new Error('Failed to pick image');
       console.error('Image picker error:', errorMessage);
       onError?.(errorMessage);
-      
-      Alert.alert(
-        'Gallery Error',
-        'Failed to pick image. Please try again.',
-        [{ text: 'OK' }]
-      );
+
+      Alert.alert('Gallery Error', 'Failed to pick image. Please try again.', [{ text: 'OK' }]);
     } finally {
       setIsLoading(false);
     }
@@ -92,18 +86,16 @@ export const useImagePicker = (options: UseImagePickerOptions = {}): ImagePicker
     try {
       // Request camera permission
       const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-      
+
       if (permissionResult.granted === false) {
-        Alert.alert(
-          'Permission Required',
-          'Please enable camera access to take photos.',
-          [{ text: 'OK' }]
-        );
+        Alert.alert('Permission Required', 'Please enable camera access to take photos.', [
+          { text: 'OK' },
+        ]);
         return;
       }
 
       setIsLoading(true);
-      
+
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing,
@@ -120,12 +112,8 @@ export const useImagePicker = (options: UseImagePickerOptions = {}): ImagePicker
       const errorMessage = error instanceof Error ? error : new Error('Failed to take photo');
       console.error('Camera error:', errorMessage);
       onError?.(errorMessage);
-      
-      Alert.alert(
-        'Camera Error',
-        'Failed to take photo. Please try again.',
-        [{ text: 'OK' }]
-      );
+
+      Alert.alert('Camera Error', 'Failed to take photo. Please try again.', [{ text: 'OK' }]);
     } finally {
       setIsLoading(false);
     }
@@ -149,7 +137,7 @@ export const useImagePicker = (options: UseImagePickerOptions = {}): ImagePicker
           options: ['Cancel', 'Camera', 'Photo Library'],
           cancelButtonIndex: 0,
         },
-        (buttonIndex) => {
+        buttonIndex => {
           if (buttonIndex === 1) {
             takePhoto();
           } else if (buttonIndex === 2) {
@@ -159,15 +147,11 @@ export const useImagePicker = (options: UseImagePickerOptions = {}): ImagePicker
       );
     } else {
       // Android Alert Dialog
-      Alert.alert(
-        'Select Image',
-        'Choose an option to add an image',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Camera', onPress: takePhoto },
-          { text: 'Photo Library', onPress: pickImage },
-        ]
-      );
+      Alert.alert('Select Image', 'Choose an option to add an image', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Camera', onPress: takePhoto },
+        { text: 'Photo Library', onPress: pickImage },
+      ]);
     }
   };
 

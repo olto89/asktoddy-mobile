@@ -3,12 +3,15 @@
 ## 🍎 **Required Information from Your Friend**
 
 ### **1. Apple Developer Account Details**
+
 - [ ] **Apple ID email**: `friend@example.com`
 - [ ] **Team ID**: Found in Apple Developer Portal > Membership
 - [ ] **Preferred bundle ID pattern**: `com.friendsname.asktoddy` or `com.friendsapps.asktoddy`
 
 ### **2. App Store Connect Setup**
+
 Your friend needs to:
+
 1. Go to [App Store Connect](https://appstoreconnect.apple.com)
 2. Create new app with these details:
    - **Name**: AskToddy
@@ -17,7 +20,9 @@ Your friend needs to:
    - **SKU**: asktoddy-mobile-001
 
 ### **3. Get App Store Connect App ID**
+
 After creating the app, your friend should:
+
 - Go to App Information
 - Copy the **Apple ID** number (10-digit number)
 - Send this to you
@@ -25,6 +30,7 @@ After creating the app, your friend should:
 ## 🔧 **Files We Need to Update**
 
 ### **app.json** - Bundle Identifier
+
 ```json
 {
   "ios": {
@@ -37,6 +43,7 @@ After creating the app, your friend should:
 ```
 
 ### **eas.json** - Apple ID and App Store ID
+
 ```json
 {
   "submit": {
@@ -48,7 +55,7 @@ After creating the app, your friend should:
     },
     "production": {
       "ios": {
-        "appleId": "friend@example.com", 
+        "appleId": "friend@example.com",
         "ascAppId": "1234567890"
       }
     }
@@ -84,6 +91,7 @@ eas submit --platform ios --profile staging
 ## 📋 **TestFlight Build Workflow**
 
 ### **Staging Builds** (Internal Testing)
+
 ```bash
 # Switch to staging environment
 npm run env:use staging
@@ -96,8 +104,9 @@ eas submit --platform ios --profile staging
 ```
 
 ### **Production Builds** (App Store)
+
 ```bash
-# Switch to production environment  
+# Switch to production environment
 npm run env:use production
 
 # Build production version
@@ -112,7 +121,7 @@ eas submit --platform ios --profile production
 Once your friend provides the details, we can:
 
 1. **Update configs** (5 minutes)
-2. **Build staging** (15-30 minutes) 
+2. **Build staging** (15-30 minutes)
 3. **Submit to TestFlight** (5 minutes)
 4. **Available for testing** (15-30 minutes processing)
 

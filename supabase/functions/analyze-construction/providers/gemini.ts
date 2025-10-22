@@ -19,7 +19,7 @@ export class GeminiProvider implements AIProvider {
     if (!this.apiKey || this.apiKey === 'your_api_key_here') {
       return false;
     }
-    
+
     try {
       // Quick health check with a simple prompt
       const response = await this.generateContent('Test health check');
@@ -38,10 +38,10 @@ export class GeminiProvider implements AIProvider {
     try {
       await this.generateContent('Health check');
       const latency = Date.now() - startTime;
-      
-      return { 
-        status: latency < 2000 ? 'healthy' : 'degraded', 
-        latency 
+
+      return {
+        status: latency < 2000 ? 'healthy' : 'degraded',
+        latency,
       };
     } catch (error) {
       console.error('Gemini health check failed:', error);
@@ -53,9 +53,9 @@ export class GeminiProvider implements AIProvider {
     try {
       // Create comprehensive analysis prompt
       const prompt = this.createAnalysisPrompt(request);
-      
+
       let response: string;
-      
+
       if (request.imageUri) {
         // Image analysis
         const imageData = await this.prepareImageData(request.imageUri);
@@ -67,29 +67,32 @@ export class GeminiProvider implements AIProvider {
       } else {
         throw new Error('Either imageUri or message is required');
       }
-      
+
       // Parse and validate the response
       return this.parseGeminiResponse(response);
-      
     } catch (error) {
       console.error('Gemini analysis failed:', error);
-      throw new Error(`Gemini analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Gemini analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
   private async generateContent(prompt: string): Promise<string> {
     const url = `${this.endpoint}/${this.model}:generateContent?key=${this.apiKey}`;
-    
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        contents: [{
-          parts: [{ text: prompt }]
-        }]
-      })
+        contents: [
+          {
+            parts: [{ text: prompt }],
+          },
+        ],
+      }),
     });
 
     if (!response.ok) {
@@ -97,7 +100,7 @@ export class GeminiProvider implements AIProvider {
     }
 
     const data = await response.json();
-    
+
     if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
       throw new Error('Invalid response from Gemini API');
     }
@@ -107,20 +110,19 @@ export class GeminiProvider implements AIProvider {
 
   private async generateContentWithImage(prompt: string, imageData: any): Promise<string> {
     const url = `${this.endpoint}/${this.model}:generateContent?key=${this.apiKey}`;
-    
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: prompt },
-            imageData
-          ]
-        }]
-      })
+        contents: [
+          {
+            parts: [{ text: prompt }, imageData],
+          },
+        ],
+      }),
     });
 
     if (!response.ok) {
@@ -128,7 +130,7 @@ export class GeminiProvider implements AIProvider {
     }
 
     const data = await response.json();
-    
+
     if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
       throw new Error('Invalid response from Gemini API');
     }
@@ -162,8 +164,8 @@ export class GeminiProvider implements AIProvider {
       return {
         inlineData: {
           data: imageData,
-          mimeType: mimeType
-        }
+          mimeType: mimeType,
+        },
       };
     } catch (error) {
       throw new Error(`Failed to prepare image data: ${error}`);
@@ -172,7 +174,7 @@ export class GeminiProvider implements AIProvider {
 
   private createAnalysisPrompt(request: AnalysisRequest): string {
     const { context } = request;
-    
+
     return `You are a highly experienced construction contractor and estimator with 20+ years in the industry. Analyze this construction project and provide a comprehensive, accurate quote and project analysis.
 
 CONTEXT:
@@ -273,7 +275,7 @@ Ensure all costs are in GBP (£) and realistic for 2024 UK market rates.`;
       }
 
       const parsed = JSON.parse(jsonMatch[0]);
-      
+
       // Validate and enhance the response
       return {
         projectType: parsed.projectType || 'Construction Project',
@@ -283,7 +285,7 @@ Ensure all costs are in GBP (£) and realistic for 2024 UK market rates.`;
         timeline: parsed.timeline || {
           diy: '1-2 weeks',
           professional: '3-5 days',
-          phases: []
+          phases: [],
         },
         toolsRequired: parsed.toolsRequired || [],
         safetyConsiderations: parsed.safetyConsiderations || [],
@@ -293,12 +295,12 @@ Ensure all costs are in GBP (£) and realistic for 2024 UK market rates.`;
         confidence: Math.min(100, Math.max(0, parsed.confidence || 75)),
         recommendations: parsed.recommendations || [],
         warnings: parsed.warnings || [],
-        
+
         // Will be set by middleware
         analysisId: '',
         timestamp: '',
         aiProvider: this.name,
-        processingTimeMs: 0
+        processingTimeMs: 0,
       };
     } catch (error) {
       throw new Error(`Failed to parse Gemini response: ${error}`);
@@ -310,30 +312,30 @@ Ensure all costs are in GBP (£) and realistic for 2024 UK market rates.`;
       return {
         materials: { min: 100, max: 500, items: [] },
         labor: { min: 200, max: 800, hourlyRate: 30, estimatedHours: 8 },
-        total: { min: 300, max: 1300 }
+        total: { min: 300, max: 1300 },
       };
     }
 
     // Ensure minimum viable cost structure
     const materials = breakdown.materials || { min: 100, max: 500, items: [] };
     const labor = breakdown.labor || { min: 200, max: 800, hourlyRate: 30, estimatedHours: 8 };
-    
+
     return {
       materials: {
         min: Math.max(0, materials.min || 0),
         max: Math.max(materials.min || 0, materials.max || 0),
-        items: Array.isArray(materials.items) ? materials.items : []
+        items: Array.isArray(materials.items) ? materials.items : [],
       },
       labor: {
         min: Math.max(0, labor.min || 0),
         max: Math.max(labor.min || 0, labor.max || 0),
         hourlyRate: Math.max(20, labor.hourlyRate || 30),
-        estimatedHours: Math.max(1, labor.estimatedHours || 8)
+        estimatedHours: Math.max(1, labor.estimatedHours || 8),
       },
       total: {
         min: (materials.min || 0) + (labor.min || 0),
-        max: (materials.max || 0) + (labor.max || 0)
-      }
+        max: (materials.max || 0) + (labor.max || 0),
+      },
     };
   }
 }

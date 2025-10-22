@@ -60,41 +60,45 @@ export default function ChatScreen() {
   const { user } = useAuth();
   const navigation = useNavigation();
   const { location, region, pricingContext, loading: locationLoading } = useLocation(true);
-  
+
   // Update greeting message when location is loaded
   useEffect(() => {
     if (pricingContext && !locationLoading) {
-      const locationInfo = region?.name !== 'Midlands' 
-        ? `\n\n📍 I've detected you're in ${pricingContext.city}, ${region?.name}. I'll use local pricing for your area (${region?.pricingMultiplier === 1 ? 'baseline' : region?.pricingMultiplier > 1 ? `+${Math.round((region?.pricingMultiplier - 1) * 100)}%` : `-${Math.round((1 - region?.pricingMultiplier) * 100)}%`} vs UK average).`
-        : `\n\n📍 I'm using ${pricingContext.city} pricing for your quotes.`;
-        
-      setMessages([{
-        id: '1',
-        role: 'assistant',
-        content: `Hi! I'm Toddy, your construction cost expert 👋\n\nI provide detailed quotes for any building project:\n• Full cost breakdowns (materials + labour + tools)\n• Project timelines and phases\n• What each trade will charge\n• VAT and contingency costs${locationInfo}\n\nTell me about your project and I'll give you a comprehensive quote! You can also upload photos.`,
-        timestamp: new Date().toISOString(),
-      }]);
+      const locationInfo =
+        region?.name !== 'Midlands'
+          ? `\n\n📍 I've detected you're in ${pricingContext.city}, ${region?.name}. I'll use local pricing for your area (${region?.pricingMultiplier === 1 ? 'baseline' : region?.pricingMultiplier > 1 ? `+${Math.round((region?.pricingMultiplier - 1) * 100)}%` : `-${Math.round((1 - region?.pricingMultiplier) * 100)}%`} vs UK average).`
+          : `\n\n📍 I'm using ${pricingContext.city} pricing for your quotes.`;
+
+      setMessages([
+        {
+          id: '1',
+          role: 'assistant',
+          content: `Hi! I'm Toddy, your construction cost expert 👋\n\nI provide detailed quotes for any building project:\n• Full cost breakdowns (materials + labour + tools)\n• Project timelines and phases\n• What each trade will charge\n• VAT and contingency costs${locationInfo}\n\nTell me about your project and I'll give you a comprehensive quote! You can also upload photos.`,
+          timestamp: new Date().toISOString(),
+        },
+      ]);
     }
   }, [pricingContext, region, locationLoading]);
-  
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       role: 'assistant',
-      content: "Hi! I'm Toddy, your construction cost expert 👋\n\nI provide detailed quotes for any building project:\n• Full cost breakdowns (materials + labour + tools)\n• Project timelines and phases\n• What each trade will charge\n• VAT and contingency costs\n\nTell me about your project and I'll give you a comprehensive quote! You can also upload photos.",
+      content:
+        "Hi! I'm Toddy, your construction cost expert 👋\n\nI provide detailed quotes for any building project:\n• Full cost breakdowns (materials + labour + tools)\n• Project timelines and phases\n• What each trade will charge\n• VAT and contingency costs\n\nTell me about your project and I'll give you a comprehensive quote! You can also upload photos.",
       timestamp: new Date().toISOString(),
-    }
+    },
   ]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // Use image picker hook
   const { selectedImage, showImagePicker, clearImage } = useImagePicker({
-    onImageSelected: (uri) => {
+    onImageSelected: uri => {
       console.log('Image selected:', uri);
     },
   });
-  
+
   const flatListRef = useRef<FlatList>(null);
   const inputRef = useRef<TextInput>(null);
 
@@ -152,50 +156,51 @@ export default function ChatScreen() {
     try {
       // Development fallback - check if we're in development mode
       const isDevelopment = __DEV__ || process.env.EXPO_PUBLIC_APP_ENV === 'development';
-      
+
       let analysis;
-      
+
       if (isDevelopment) {
         // MOCK DATA: Replace with real Edge Function in production
         // See MOCK_DATA_TRACKING.md for details
         console.log('🔧 Using development mock response with regional pricing');
         await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API delay
-        
+
         // Apply regional pricing multiplier to mock data
         const multiplier = pricingContext?.pricingMultiplier || 1.0;
         const baseMaterials = { min: 1500, max: 3500 };
         const baseLabor = { min: 2000, max: 4500 };
-        
+
         analysis = {
           projectType: detectProjectType(userMessage.content),
           description: `I can help you with your ${detectProjectType(userMessage.content).toLowerCase()} project! Based on your location in ${pricingContext?.city || 'your area'}, ${pricingContext?.region || 'UK'}, here's what I found.`,
           costBreakdown: {
-            materials: { 
-              min: Math.round(baseMaterials.min * multiplier), 
-              max: Math.round(baseMaterials.max * multiplier) 
+            materials: {
+              min: Math.round(baseMaterials.min * multiplier),
+              max: Math.round(baseMaterials.max * multiplier),
             },
-            labor: { 
-              min: Math.round(baseLabor.min * multiplier), 
-              max: Math.round(baseLabor.max * multiplier) 
+            labor: {
+              min: Math.round(baseLabor.min * multiplier),
+              max: Math.round(baseLabor.max * multiplier),
             },
-            total: { 
-              min: Math.round((baseMaterials.min + baseLabor.min) * multiplier), 
-              max: Math.round((baseMaterials.max + baseLabor.max) * multiplier) 
-            }
+            total: {
+              min: Math.round((baseMaterials.min + baseLabor.min) * multiplier),
+              max: Math.round((baseMaterials.max + baseLabor.max) * multiplier),
+            },
           },
           timeline: {
-            diy: '2-3 weeks',         // HARDCODED: Replace with real AI analysis
-            professional: '1-2 weeks' // HARDCODED: Replace with real AI analysis
+            diy: '2-3 weeks', // HARDCODED: Replace with real AI analysis
+            professional: '1-2 weeks', // HARDCODED: Replace with real AI analysis
           },
-          recommendations: [          // HARDCODED: Replace with real AI recommendations
+          recommendations: [
+            // HARDCODED: Replace with real AI recommendations
             'Get multiple quotes from local contractors',
             'Consider seasonal pricing variations',
-            'Check building regulations in your area'
+            'Check building regulations in your area',
           ],
           requiresProfessional: true, // HARDCODED: Replace with real AI analysis
           professionalReasons: ['Safety requirements', 'Building regulations'], // HARDCODED
-          confidence: 85,             // HARDCODED: Replace with real AI confidence score
-          aiProvider: 'development-mock' // HARDCODED: Development identifier
+          confidence: 85, // HARDCODED: Replace with real AI confidence score
+          aiProvider: 'development-mock', // HARDCODED: Development identifier
         };
       } else {
         // Call analyze-construction Edge Function with real location
@@ -233,35 +238,39 @@ export default function ChatScreen() {
 
       // Format response message
       const responseContent = formatAnalysisResponse(analysis);
-      
+
       // Replace loading message with actual response
-      setMessages(prev => prev.map(msg => 
-        msg.id === loadingMessage.id
-          ? {
-              id: `${Date.now()}_response`,
-              role: 'assistant',
-              content: responseContent,
-              timestamp: new Date().toISOString(),
-              showDocumentButtons: true,
-              analysis: analysis, // Store for document generation
-            }
-          : msg
-      ));
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === loadingMessage.id
+            ? {
+                id: `${Date.now()}_response`,
+                role: 'assistant',
+                content: responseContent,
+                timestamp: new Date().toISOString(),
+                showDocumentButtons: true,
+                analysis: analysis, // Store for document generation
+              }
+            : msg
+        )
+      );
     } catch (error) {
       console.error('Chat error:', error);
-      
+
       // Replace loading message with error
-      setMessages(prev => prev.map(msg => 
-        msg.id === loadingMessage.id
-          ? {
-              id: `${Date.now()}_error`,
-              role: 'assistant',
-              content: 'Sorry, I encountered an error analyzing your request. Please try again.',
-              timestamp: new Date().toISOString(),
-              error: true,
-            }
-          : msg
-      ));
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === loadingMessage.id
+            ? {
+                id: `${Date.now()}_error`,
+                role: 'assistant',
+                content: 'Sorry, I encountered an error analyzing your request. Please try again.',
+                timestamp: new Date().toISOString(),
+                error: true,
+              }
+            : msg
+        )
+      );
     } finally {
       setIsLoading(false);
     }
@@ -288,29 +297,29 @@ export default function ChatScreen() {
   const formatAnalysisResponse = (analysis: any): string => {
     let response = `**${analysis.projectType}**\n\n`;
     response += `${analysis.description}\n\n`;
-    
+
     response += `💰 **Estimated Cost:**\n`;
     response += `Materials: £${analysis.costBreakdown.materials.min}-£${analysis.costBreakdown.materials.max}\n`;
     response += `Labour: £${analysis.costBreakdown.labor.min}-£${analysis.costBreakdown.labor.max}\n`;
     response += `**Total: £${analysis.costBreakdown.total.min}-£${analysis.costBreakdown.total.max}**\n\n`;
-    
+
     response += `⏱️ **Timeline:**\n`;
     response += `DIY: ${analysis.timeline.diy}\n`;
     response += `Professional: ${analysis.timeline.professional}\n\n`;
-    
+
     if (analysis.recommendations && analysis.recommendations.length > 0) {
       response += `💡 **Recommendations:**\n`;
       analysis.recommendations.forEach((rec: string) => {
         response += `• ${rec}\n`;
       });
     }
-    
+
     if (analysis.requiresProfessional) {
       response += `\n⚠️ **Professional Required:** ${analysis.professionalReasons?.join(', ')}`;
     }
-    
+
     response += `\n\n*Analysis confidence: ${analysis.confidence}% | Provider: ${analysis.aiProvider}*`;
-    
+
     return response;
   };
 
@@ -318,63 +327,62 @@ export default function ChatScreen() {
    * Handle document generation (calls generate-document Edge Function)
    */
   const handleGenerateDocument = async (type: 'quote' | 'timeline' | 'tasklist', analysis: any) => {
-    Alert.alert(
-      'Generate Document',
-      `Generate ${type} PDF for this project?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Generate',
-          onPress: async () => {
-            try {
-              setIsLoading(true);
-              
-              // Development fallback for document generation
-              const isDevelopment = __DEV__ || process.env.EXPO_PUBLIC_APP_ENV === 'development';
-              
-              if (isDevelopment) {
-                // MOCK DATA: Replace with real document generation in production
-                // See MOCK_DATA_TRACKING.md for details
-                console.log(`🔧 Mock generating ${type} document`);
-                await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate processing
-                
-                Alert.alert(
-                  'Success (Development)',
-                  `Your ${type} would be generated in production. Download link would be sent to your email.`,
-                );
-              } else {
-                // Call generate-document Edge Function
-                const { data, error } = await supabase.functions.invoke('generate-document', {
-                  body: {
-                    type,
-                    projectType: analysis.projectType,
-                    analysis,
-                    pricing: {}, // TODO: Include pricing data if needed
-                  },
-                });
+    Alert.alert('Generate Document', `Generate ${type} PDF for this project?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Generate',
+        onPress: async () => {
+          try {
+            setIsLoading(true);
 
-                if (error) throw error;
+            // Development fallback for document generation
+            const isDevelopment = __DEV__ || process.env.EXPO_PUBLIC_APP_ENV === 'development';
 
-                Alert.alert(
-                  'Success',
-                  `Your ${type} has been generated. Download link will be sent to your email.`,
-                );
-              }
-            } catch (error) {
-              Alert.alert('Error', 'Failed to generate document. Please try again.');
-            } finally {
-              setIsLoading(false);
+            if (isDevelopment) {
+              // MOCK DATA: Replace with real document generation in production
+              // See MOCK_DATA_TRACKING.md for details
+              console.log(`🔧 Mock generating ${type} document`);
+              await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate processing
+
+              Alert.alert(
+                'Success (Development)',
+                `Your ${type} would be generated in production. Download link would be sent to your email.`
+              );
+            } else {
+              // Call generate-document Edge Function
+              const { data, error } = await supabase.functions.invoke('generate-document', {
+                body: {
+                  type,
+                  projectType: analysis.projectType,
+                  analysis,
+                  pricing: {}, // TODO: Include pricing data if needed
+                },
+              });
+
+              if (error) throw error;
+
+              Alert.alert(
+                'Success',
+                `Your ${type} has been generated. Download link will be sent to your email.`
+              );
             }
-          },
+          } catch (error) {
+            Alert.alert('Error', 'Failed to generate document. Please try again.');
+          } finally {
+            setIsLoading(false);
+          }
         },
-      ],
-    );
+      },
+    ]);
   };
 
   /**
    * Handle document button press with haptic feedback
    */
-  const handleDocumentButtonPress = async (type: 'quote' | 'timeline' | 'tasklist', analysis: any) => {
+  const handleDocumentButtonPress = async (
+    type: 'quote' | 'timeline' | 'tasklist',
+    analysis: any
+  ) => {
     // Native haptic feedback
     if (isIOS) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -391,48 +399,58 @@ export default function ChatScreen() {
     return (
       <View style={[styles.messageContainer, isUser && styles.userMessageContainer]}>
         {/* Avatar with platform-specific styling */}
-        <View style={[
-          styles.avatar, 
-          isUser ? styles.userAvatar : styles.assistantAvatar,
-          isIOS && styles.avatarIOS,
-          !isIOS && styles.avatarAndroid
-        ]}>
+        <View
+          style={[
+            styles.avatar,
+            isUser ? styles.userAvatar : styles.assistantAvatar,
+            isIOS && styles.avatarIOS,
+            !isIOS && styles.avatarAndroid,
+          ]}
+        >
           {isUser ? (
-            <Ionicons name="person" size={isSmallDevice ? 18 : 20} color={designTokens.colors.text.inverse} />
+            <Ionicons
+              name="person"
+              size={isSmallDevice ? 18 : 20}
+              color={designTokens.colors.text.inverse}
+            />
           ) : (
             <Text style={[styles.avatarText, isSmallDevice && styles.avatarTextSmall]}>T</Text>
           )}
         </View>
 
         {/* Message bubble with native shadows and styling */}
-        <View style={[
-          styles.messageBubble, 
-          isUser ? styles.userBubble : styles.assistantBubble,
-          isIOS && (isUser ? styles.userBubbleIOS : styles.assistantBubbleIOS),
-          !isIOS && (isUser ? styles.userBubbleAndroid : styles.assistantBubbleAndroid)
-        ]}>
+        <View
+          style={[
+            styles.messageBubble,
+            isUser ? styles.userBubble : styles.assistantBubble,
+            isIOS && (isUser ? styles.userBubbleIOS : styles.assistantBubbleIOS),
+            !isIOS && (isUser ? styles.userBubbleAndroid : styles.assistantBubbleAndroid),
+          ]}
+        >
           {item.imageUri && (
-            <Image 
-              source={{ uri: item.imageUri }} 
-              style={[styles.messageImage, isSmallDevice && styles.messageImageSmall]} 
+            <Image
+              source={{ uri: item.imageUri }}
+              style={[styles.messageImage, isSmallDevice && styles.messageImageSmall]}
             />
           )}
-          
+
           {item.isLoading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="small" color={designTokens.colors.primary[500]} />
               <Text style={styles.loadingText}>Analyzing...</Text>
             </View>
           ) : (
-            <Text style={[
-              styles.messageText, 
-              isUser && styles.userMessageText,
-              isSmallDevice && styles.messageTextSmall
-            ]}>
+            <Text
+              style={[
+                styles.messageText,
+                isUser && styles.userMessageText,
+                isSmallDevice && styles.messageTextSmall,
+              ]}
+            >
               {item.content}
             </Text>
           )}
-          
+
           {/* Document generation buttons with native touch feedback */}
           {item.showDocumentButtons && item.analysis && (
             <View style={styles.documentButtons}>
@@ -444,7 +462,7 @@ export default function ChatScreen() {
                 <Ionicons name="document-text" size={16} color={designTokens.colors.primary[500]} />
                 <Text style={styles.documentButtonText}>PDF Quote</Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 style={[styles.documentButton, isIOS && styles.documentButtonIOS]}
                 onPress={() => handleDocumentButtonPress('timeline', item.analysis)}
@@ -453,7 +471,7 @@ export default function ChatScreen() {
                 <Ionicons name="calendar" size={16} color={designTokens.colors.primary[500]} />
                 <Text style={styles.documentButtonText}>Timeline</Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 style={[styles.documentButton, isIOS && styles.documentButtonIOS]}
                 onPress={() => handleDocumentButtonPress('tasklist', item.analysis)}
@@ -481,15 +499,15 @@ export default function ChatScreen() {
   return (
     <View style={styles.container}>
       {/* Native status bar styling */}
-      <StatusBar 
-        barStyle="light-content" 
-        backgroundColor={isIOS ? 'transparent' : '#FF6B35'} 
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={isIOS ? 'transparent' : '#FF6B35'}
         translucent={isIOS}
       />
-      
+
       {/* Custom Header */}
       <ToddyHeader onMenuPress={handleMenuPress} />
-      
+
       <KeyboardAvoidingView
         style={styles.chatContainer}
         behavior={isIOS ? 'padding' : 'height'}
@@ -514,11 +532,13 @@ export default function ChatScreen() {
 
         {/* Attached image preview with native styling */}
         {selectedImage && (
-          <View style={[
-            styles.attachmentPreview,
-            isIOS && styles.attachmentPreviewIOS,
-            !isIOS && styles.attachmentPreviewAndroid
-          ]}>
+          <View
+            style={[
+              styles.attachmentPreview,
+              isIOS && styles.attachmentPreviewIOS,
+              !isIOS && styles.attachmentPreviewAndroid,
+            ]}
+          >
             <Image source={{ uri: selectedImage }} style={styles.attachmentImage} />
             <TouchableOpacity
               style={styles.removeAttachment}
@@ -534,11 +554,13 @@ export default function ChatScreen() {
         )}
 
         {/* Input bar with native styling */}
-        <View style={[
-          styles.inputContainer,
-          isIOS && styles.inputContainerIOS,
-          !isIOS && styles.inputContainerAndroid
-        ]}>
+        <View
+          style={[
+            styles.inputContainer,
+            isIOS && styles.inputContainerIOS,
+            !isIOS && styles.inputContainerAndroid,
+          ]}
+        >
           <TouchableOpacity
             style={[styles.attachButton, isIOS && styles.attachButtonIOS]}
             onPress={() => {
@@ -556,7 +578,7 @@ export default function ChatScreen() {
               styles.textInput,
               isIOS && styles.textInputIOS,
               !isIOS && styles.textInputAndroid,
-              isSmallDevice && styles.textInputSmall
+              isSmallDevice && styles.textInputSmall,
             ]}
             value={inputText}
             onChangeText={setInputText}
@@ -574,12 +596,12 @@ export default function ChatScreen() {
           <TouchableOpacity
             style={[
               styles.sendButton,
-              (!inputText.trim() && !selectedImage) && styles.sendButtonDisabled,
+              !inputText.trim() && !selectedImage && styles.sendButtonDisabled,
               isIOS && styles.sendButtonIOS,
-              !isIOS && styles.sendButtonAndroid
+              !isIOS && styles.sendButtonAndroid,
             ]}
             onPress={handleSend}
-            disabled={!inputText.trim() && !selectedImage || isLoading}
+            disabled={(!inputText.trim() && !selectedImage) || isLoading}
             activeOpacity={0.8}
           >
             {isLoading ? (

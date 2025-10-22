@@ -1,11 +1,5 @@
 import React, { useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
 import designTokens from '../styles/designTokens';
@@ -39,9 +33,9 @@ export default function SplashScreen({ navigation }: Props) {
         </View>
 
         <View style={styles.footer}>
-          <ActivityIndicator 
-            size="large" 
-            color={designTokens.colors.primary[500]} 
+          <ActivityIndicator
+            size="large"
+            color={designTokens.colors.primary[500]}
             style={styles.spinner}
           />
           <Text style={styles.loadingText}>Getting ready...</Text>

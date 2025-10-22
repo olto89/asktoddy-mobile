@@ -18,7 +18,7 @@ export type {
   MaterialItem,
   ToolRequirement,
   AIProviderConfig,
-  AIMiddlewareConfig
+  AIMiddlewareConfig,
 } from './types';
 
 // Default export (now uses Edge Function)

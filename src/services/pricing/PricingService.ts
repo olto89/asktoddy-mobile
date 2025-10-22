@@ -1,11 +1,11 @@
-import { 
-  PricingContext, 
-  PricingResponse, 
-  MaterialPricing, 
-  ToolHirePricing, 
-  LaborPricing, 
+import {
+  PricingContext,
+  PricingResponse,
+  MaterialPricing,
+  ToolHirePricing,
+  LaborPricing,
   AggregatePricing,
-  PricingConfig 
+  PricingConfig,
 } from './types';
 
 export class PricingService {
@@ -19,7 +19,7 @@ export class PricingService {
       fallbackToEstimates: true,
       maxDeliveryRadius: 25, // 25km radius
       priceVarianceThreshold: 0.15, // 15%
-      ...config
+      ...config,
     };
   }
 
@@ -28,7 +28,7 @@ export class PricingService {
    */
   async getPricingData(context: PricingContext): Promise<PricingResponse> {
     const cacheKey = this.generateCacheKey(context);
-    
+
     // Check cache first
     if (this.isCacheValid(cacheKey)) {
       console.log('📊 Using cached pricing data');
@@ -43,7 +43,7 @@ export class PricingService {
         this.getMaterialPricing(context),
         this.getToolHirePricing(context),
         this.getLaborPricing(context),
-        this.getAggregatePricing(context)
+        this.getAggregatePricing(context),
       ]);
 
       // Calculate context factors
@@ -55,7 +55,7 @@ export class PricingService {
         toolHire,
         labor,
         aggregates,
-        contextFactors
+        contextFactors,
       });
 
       const response: PricingResponse = {
@@ -66,25 +66,24 @@ export class PricingService {
         contextFactors,
         recommendations,
         lastUpdated: new Date().toISOString(),
-        source: 'PricingService'
+        source: 'PricingService',
       };
 
       // Cache the response
       this.cache.set(cacheKey, {
         data: response,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       return response;
-
     } catch (error) {
       console.error('❌ Failed to fetch pricing data:', error);
-      
+
       if (this.config.fallbackToEstimates) {
         console.log('📊 Falling back to estimated pricing');
         return this.getFallbackPricing(context);
       }
-      
+
       throw error;
     }
   }
@@ -95,15 +94,15 @@ export class PricingService {
   private async getMaterialPricing(context: PricingContext): Promise<MaterialPricing[]> {
     // In production, this would integrate with suppliers' APIs, government data, etc.
     // For MVP, we'll use realistic estimates based on current UK market rates
-    
+
     const baseMaterials = this.getBaseMaterialsForProject(context.projectType);
-    
+
     return baseMaterials.map(material => ({
       ...material,
       priceRange: this.adjustPriceForContext(material.priceRange, context),
       location: context.location.city || context.location.region,
       lastUpdated: new Date().toISOString(),
-      source: 'estimated' as const
+      source: 'estimated' as const,
     }));
   }
 
@@ -112,12 +111,12 @@ export class PricingService {
    */
   private async getToolHirePricing(context: PricingContext): Promise<ToolHirePricing[]> {
     const baseTools = this.getBaseToolsForProject(context.projectType);
-    
+
     return baseTools.map(tool => ({
       ...tool,
       dailyRate: this.adjustToolRateForContext(tool.dailyRate, context),
       location: `${context.location.city || context.location.region} area`,
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
     }));
   }
 
@@ -126,7 +125,7 @@ export class PricingService {
    */
   private async getLaborPricing(context: PricingContext): Promise<LaborPricing[]> {
     const laborTypes = this.getLaborTypesForProject(context.projectType);
-    
+
     return laborTypes.map(labor => ({
       ...labor,
       region: context.location.region,
@@ -134,10 +133,10 @@ export class PricingService {
       dayRate: {
         min: labor.hourlyRate.min * 7.5, // 7.5 hour day
         max: labor.hourlyRate.max * 8.5, // 8.5 hour day with overtime
-        average: labor.hourlyRate.average * 8
+        average: labor.hourlyRate.average * 8,
       },
       demandMultiplier: this.calculateDemandMultiplier(context),
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
     }));
   }
 
@@ -146,12 +145,12 @@ export class PricingService {
    */
   private async getAggregatePricing(context: PricingContext): Promise<AggregatePricing[]> {
     const aggregates = this.getAggregatesForProject(context.projectType);
-    
+
     return aggregates.map(aggregate => ({
       ...aggregate,
       priceRange: this.adjustPriceForContext(aggregate.priceRange, context),
       deliveryArea: [context.location.region],
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
     }));
   }
 
@@ -168,7 +167,7 @@ export class PricingService {
       regionMultiplier,
       seasonalMultiplier,
       demandMultiplier,
-      accessibilityMultiplier
+      accessibilityMultiplier,
     };
   }
 
@@ -183,7 +182,7 @@ export class PricingService {
       recommendations.push({
         type: 'cost_saving' as const,
         message: `Prices in ${context.location.region} are ${Math.round((data.contextFactors.regionMultiplier - 1) * 100)}% above national average. Consider sourcing from nearby areas.`,
-        impact: `Potential saving: 5-15%`
+        impact: `Potential saving: 5-15%`,
       });
     }
 
@@ -191,8 +190,9 @@ export class PricingService {
     if (data.contextFactors.seasonalMultiplier > 1.05) {
       recommendations.push({
         type: 'timing' as const,
-        message: 'Current season has higher pricing. Consider delaying non-urgent work to shoulder seasons.',
-        impact: `Potential saving: ${Math.round((data.contextFactors.seasonalMultiplier - 1) * 100)}%`
+        message:
+          'Current season has higher pricing. Consider delaying non-urgent work to shoulder seasons.',
+        impact: `Potential saving: ${Math.round((data.contextFactors.seasonalMultiplier - 1) * 100)}%`,
       });
     }
 
@@ -201,7 +201,7 @@ export class PricingService {
       recommendations.push({
         type: 'supplier' as const,
         message: 'For large projects, consider direct supplier relationships for bulk discounts.',
-        impact: 'Potential saving: 10-20%'
+        impact: 'Potential saving: 10-20%',
       });
     }
 
@@ -209,8 +209,9 @@ export class PricingService {
     if (context.userPreferences?.priceRange === 'budget') {
       recommendations.push({
         type: 'quality' as const,
-        message: 'Budget materials selected. Ensure they meet building regulations and consider long-term value.',
-        impact: 'Consider spending 15-20% more on critical structural elements'
+        message:
+          'Budget materials selected. Ensure they meet building regulations and consider long-term value.',
+        impact: 'Consider spending 15-20% more on critical structural elements',
       });
     }
 
@@ -230,7 +231,7 @@ export class PricingService {
           unit: 'per linear meter',
           priceRange: { min: 300, max: 1200, average: 650 },
           availability: 'in_stock',
-          wasteFactor: 0.05
+          wasteFactor: 0.05,
         },
         {
           id: 'worktop',
@@ -240,8 +241,8 @@ export class PricingService {
           priceRange: { min: 80, max: 400, average: 180 },
           availability: 'order_required',
           leadTime: 7,
-          wasteFactor: 0.1
-        }
+          wasteFactor: 0.1,
+        },
       ],
       'Bathroom Remodel': [
         {
@@ -251,7 +252,7 @@ export class PricingService {
           unit: 'per unit',
           priceRange: { min: 400, max: 2000, average: 900 },
           availability: 'in_stock',
-          wasteFactor: 0.02
+          wasteFactor: 0.02,
         },
         {
           id: 'tiles',
@@ -260,22 +261,24 @@ export class PricingService {
           unit: 'per m²',
           priceRange: { min: 15, max: 80, average: 35 },
           availability: 'in_stock',
-          wasteFactor: 0.15
-        }
-      ]
+          wasteFactor: 0.15,
+        },
+      ],
     };
 
-    return materialDb[projectType] || [
-      {
-        id: 'general_materials',
-        name: 'General Construction Materials',
-        category: 'other',
-        unit: 'per project',
-        priceRange: { min: 500, max: 2000, average: 1000 },
-        availability: 'in_stock',
-        wasteFactor: 0.1
-      }
-    ];
+    return (
+      materialDb[projectType] || [
+        {
+          id: 'general_materials',
+          name: 'General Construction Materials',
+          category: 'other',
+          unit: 'per project',
+          priceRange: { min: 500, max: 2000, average: 1000 },
+          availability: 'in_stock',
+          wasteFactor: 0.1,
+        },
+      ]
+    );
   }
 
   /**
@@ -291,7 +294,7 @@ export class PricingService {
           dailyRate: 15,
           supplier: 'Local Tool Hire',
           availability: 'available',
-          minimumHire: 1
+          minimumHire: 1,
         },
         {
           id: 'circular_saw',
@@ -300,8 +303,8 @@ export class PricingService {
           dailyRate: 25,
           supplier: 'Local Tool Hire',
           availability: 'available',
-          minimumHire: 1
-        }
+          minimumHire: 1,
+        },
       ],
       'Bathroom Remodel': [
         {
@@ -311,7 +314,7 @@ export class PricingService {
           dailyRate: 30,
           supplier: 'Local Tool Hire',
           availability: 'limited',
-          minimumHire: 1
+          minimumHire: 1,
         },
         {
           id: 'angle_grinder',
@@ -320,22 +323,24 @@ export class PricingService {
           dailyRate: 20,
           supplier: 'Local Tool Hire',
           availability: 'available',
-          minimumHire: 1
-        }
-      ]
+          minimumHire: 1,
+        },
+      ],
     };
 
-    return toolDb[projectType] || [
-      {
-        id: 'basic_tools',
-        name: 'Basic Tool Set',
-        category: 'hand_tools',
-        dailyRate: 20,
-        supplier: 'Local Tool Hire',
-        availability: 'available',
-        minimumHire: 1
-      }
-    ];
+    return (
+      toolDb[projectType] || [
+        {
+          id: 'basic_tools',
+          name: 'Basic Tool Set',
+          category: 'hand_tools',
+          dailyRate: 20,
+          supplier: 'Local Tool Hire',
+          availability: 'available',
+          minimumHire: 1,
+        },
+      ]
+    );
   }
 
   /**
@@ -347,14 +352,14 @@ export class PricingService {
         tradeType: 'general',
         skillLevel: 'skilled',
         hourlyRate: { min: 25, max: 45, average: 35 },
-        availability: 'medium'
+        availability: 'medium',
       },
       {
         tradeType: 'carpenter',
         skillLevel: 'skilled',
         hourlyRate: { min: 30, max: 50, average: 40 },
-        availability: 'medium'
-      }
+        availability: 'medium',
+      },
     ];
   }
 
@@ -370,21 +375,22 @@ export class PricingService {
         supplier: 'Local Supplier',
         deliveryArea: ['Local area'],
         minimumOrder: 1,
-        deliveryCost: 25
-      }
+        deliveryCost: 25,
+      },
     ];
   }
 
   // Helper methods for price adjustments
   private adjustPriceForContext(priceRange: any, context: PricingContext) {
-    const multiplier = this.getRegionMultiplier(context.location.region) * 
-                     this.getSeasonalMultiplier() *
-                     this.getScaleMultiplier(context.projectScale);
+    const multiplier =
+      this.getRegionMultiplier(context.location.region) *
+      this.getSeasonalMultiplier() *
+      this.getScaleMultiplier(context.projectScale);
 
     return {
       min: Math.round(priceRange.min * multiplier),
       max: Math.round(priceRange.max * multiplier),
-      average: Math.round(priceRange.average * multiplier)
+      average: Math.round(priceRange.average * multiplier),
     };
   }
 
@@ -394,26 +400,26 @@ export class PricingService {
   }
 
   private adjustLaborRateForContext(hourlyRate: any, context: PricingContext) {
-    const multiplier = this.getRegionMultiplier(context.location.region) * 
-                     this.calculateDemandMultiplier(context);
+    const multiplier =
+      this.getRegionMultiplier(context.location.region) * this.calculateDemandMultiplier(context);
 
     return {
       min: Math.round(hourlyRate.min * multiplier),
       max: Math.round(hourlyRate.max * multiplier),
-      average: Math.round(hourlyRate.average * multiplier)
+      average: Math.round(hourlyRate.average * multiplier),
     };
   }
 
   private getRegionMultiplier(region: string): number {
     const regionMultipliers: Record<string, number> = {
-      'London': 1.3,
+      London: 1.3,
       'South East': 1.15,
       'South West': 1.05,
-      'Scotland': 0.95,
+      Scotland: 0.95,
       'North East': 0.85,
       'North West': 0.9,
-      'Wales': 0.88,
-      'Northern Ireland': 0.82
+      Wales: 0.88,
+      'Northern Ireland': 0.82,
     };
     return regionMultipliers[region] || 1.0;
   }
@@ -429,9 +435,9 @@ export class PricingService {
 
   private getScaleMultiplier(scale: string): number {
     const scaleMultipliers = {
-      'small': 1.1, // Small projects pay premium
-      'medium': 1.0,
-      'large': 0.9 // Large projects get bulk discount
+      small: 1.1, // Small projects pay premium
+      medium: 1.0,
+      large: 0.9, // Large projects get bulk discount
     };
     return scaleMultipliers[scale as keyof typeof scaleMultipliers] || 1.0;
   }
@@ -439,12 +445,12 @@ export class PricingService {
   private calculateDemandMultiplier(context: PricingContext): number {
     // Simplified demand calculation - in production would use real market data
     const baseDemand = 1.0;
-    
+
     // High demand periods
     if (context.projectType.includes('Extension') || context.projectType.includes('Conversion')) {
       return baseDemand + 0.15; // 15% premium for complex work
     }
-    
+
     return baseDemand;
   }
 
@@ -464,7 +470,7 @@ export class PricingService {
   private isCacheValid(cacheKey: string): boolean {
     const cached = this.cache.get(cacheKey);
     if (!cached) return false;
-    
+
     const age = Date.now() - cached.timestamp;
     return age < this.config.cacheDurationMs;
   }
@@ -474,7 +480,7 @@ export class PricingService {
    */
   private async getFallbackPricing(context: PricingContext): Promise<PricingResponse> {
     console.log('📊 Generating fallback pricing estimates');
-    
+
     return {
       materials: this.getBaseMaterialsForProject(context.projectType) as MaterialPricing[],
       toolHire: this.getBaseToolsForProject(context.projectType) as ToolHirePricing[],
@@ -484,15 +490,18 @@ export class PricingService {
         regionMultiplier: 1.0,
         seasonalMultiplier: 1.0,
         demandMultiplier: 1.0,
-        accessibilityMultiplier: 1.0
+        accessibilityMultiplier: 1.0,
       },
-      recommendations: [{
-        type: 'cost_saving',
-        message: 'Pricing estimates based on historical data. Verify with local suppliers for current rates.',
-        impact: 'Estimates may vary ±20% from current market rates'
-      }],
+      recommendations: [
+        {
+          type: 'cost_saving',
+          message:
+            'Pricing estimates based on historical data. Verify with local suppliers for current rates.',
+          impact: 'Estimates may vary ±20% from current market rates',
+        },
+      ],
       lastUpdated: new Date().toISOString(),
-      source: 'fallback_estimates'
+      source: 'fallback_estimates',
     };
   }
 
@@ -505,22 +514,22 @@ export class PricingService {
       const testContext: PricingContext = {
         location: { region: 'London' },
         projectType: 'test',
-        projectScale: 'small'
+        projectScale: 'small',
       };
-      
+
       await this.getPricingData(testContext);
-      
+
       return {
         status: 'healthy',
         details: {
           cacheSize: this.cache.size,
-          lastUpdate: new Date().toISOString()
-        }
+          lastUpdate: new Date().toISOString(),
+        },
       };
     } catch (error) {
       return {
         status: 'down',
-        details: { error: error instanceof Error ? error.message : 'Unknown error' }
+        details: { error: error instanceof Error ? error.message : 'Unknown error' },
       };
     }
   }

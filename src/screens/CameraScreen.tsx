@@ -57,7 +57,8 @@ export default function CameraScreen({ navigation }: Props) {
         <View style={styles.permissionContent}>
           <Text style={styles.permissionTitle}>📷 Camera Access Required</Text>
           <Text style={styles.permissionText}>
-            AskToddy needs camera access to analyze your construction projects and provide accurate quotes.
+            AskToddy needs camera access to analyze your construction projects and provide accurate
+            quotes.
           </Text>
           <Button
             title="Enable Camera Access"
@@ -88,18 +89,14 @@ export default function CameraScreen({ navigation }: Props) {
       if (photo?.uri) {
         // Navigate to results (analysis now happens in Edge Functions via ResultsScreen)
         console.log('📷 Image captured, navigating to results...');
-        navigation.navigate('Results', { 
+        navigation.navigate('Results', {
           imageUri: photo.uri,
-          analysis: null // Analysis will happen in ResultsScreen using Edge Functions
+          analysis: null, // Analysis will happen in ResultsScreen using Edge Functions
         });
       }
     } catch (error) {
       console.error('Camera error:', error);
-      Alert.alert(
-        'Camera Error', 
-        'Failed to take picture. Please try again.',
-        [{ text: 'OK' }]
-      );
+      Alert.alert('Camera Error', 'Failed to take picture. Please try again.', [{ text: 'OK' }]);
     } finally {
       setIsLoading(false);
     }
@@ -117,21 +114,17 @@ export default function CameraScreen({ navigation }: Props) {
 
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
-        
+
         // Navigate to results (analysis now happens in Edge Functions via ResultsScreen)
         console.log('📁 Image selected from library, navigating to results...');
-        navigation.navigate('Results', { 
+        navigation.navigate('Results', {
           imageUri: asset.uri,
-          analysis: null // Analysis will happen in ResultsScreen using Edge Functions
+          analysis: null, // Analysis will happen in ResultsScreen using Edge Functions
         });
       }
     } catch (error) {
       console.error('Image picker error:', error);
-      Alert.alert(
-        'Gallery Error', 
-        'Failed to pick image. Please try again.',
-        [{ text: 'OK' }]
-      );
+      Alert.alert('Gallery Error', 'Failed to pick image. Please try again.', [{ text: 'OK' }]);
     } finally {
       setIsLoading(false);
     }
@@ -173,25 +166,15 @@ export default function CameraScreen({ navigation }: Props) {
 
         {/* Bottom controls */}
         <View style={styles.controlsContainer}>
-          <TouchableOpacity 
-            style={styles.galleryButton} 
-            onPress={pickImageFromLibrary}
-          >
+          <TouchableOpacity style={styles.galleryButton} onPress={pickImageFromLibrary}>
             <Text style={styles.controlButtonText}>📁</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.captureButton} 
-            onPress={takePicture}
-            disabled={isLoading}
-          >
+
+          <TouchableOpacity style={styles.captureButton} onPress={takePicture} disabled={isLoading}>
             <View style={styles.captureButtonInner} />
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.flipButton} 
-            onPress={toggleCameraFacing}
-          >
+
+          <TouchableOpacity style={styles.flipButton} onPress={toggleCameraFacing}>
             <Text style={styles.controlButtonText}>🔄</Text>
           </TouchableOpacity>
         </View>
@@ -215,7 +198,7 @@ const styles = StyleSheet.create({
   camera: {
     flex: 1,
   },
-  
+
   // Permission screens
   permissionContainer: {
     flex: 1,

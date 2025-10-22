@@ -4,13 +4,7 @@
  */
 
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -38,7 +32,7 @@ export default function ToddyHeader({ onMenuPress, showMenuButton = true }: Todd
               {/* TODO: Replace with actual Toddy character image */}
               {/* <Image source={require('../../assets/toddy-character.png')} style={styles.avatarImage} /> */}
             </View>
-            
+
             {/* Brand Text */}
             <View style={styles.brandText}>
               <Text style={styles.title}>AskToddy</Text>

@@ -28,10 +28,14 @@ export interface AnalysisResult {
 export interface ImageAnalysisState {
   isAnalyzing: boolean;
   lastResult: AnalysisResult | null;
-  
+
   // Actions
   analyzeImage: (imageUri: string, context?: AnalysisContext) => Promise<AnalysisResult>;
-  analyzeWithMessage: (imageUri: string, message: string, context?: AnalysisContext) => Promise<AnalysisResult>;
+  analyzeWithMessage: (
+    imageUri: string,
+    message: string,
+    context?: AnalysisContext
+  ) => Promise<AnalysisResult>;
   clearResult: () => void;
 }
 
@@ -63,10 +67,10 @@ export const useImageAnalysis = (options: UseImageAnalysisOptions = {}): ImageAn
     context: AnalysisContext = {}
   ): Promise<AnalysisResult> => {
     setIsAnalyzing(true);
-    
+
     try {
       console.log('🤖 Starting image analysis with Edge Function...');
-      
+
       const { data, error } = await supabase.functions.invoke('analyze-construction', {
         body: {
           imageUri,
@@ -90,14 +94,13 @@ export const useImageAnalysis = (options: UseImageAnalysisOptions = {}): ImageAn
 
       setLastResult(result);
       onAnalysisComplete?.(result);
-      
+
       console.log('✅ Image analysis complete:', result.data?.projectType);
       return result;
-
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Analysis failed';
       console.error('Image analysis error:', errorMessage);
-      
+
       const result: AnalysisResult = {
         success: false,
         error: errorMessage,
@@ -105,7 +108,7 @@ export const useImageAnalysis = (options: UseImageAnalysisOptions = {}): ImageAn
 
       setLastResult(result);
       onError?.(new Error(errorMessage));
-      
+
       return result;
     } finally {
       setIsAnalyzing(false);
@@ -121,10 +124,10 @@ export const useImageAnalysis = (options: UseImageAnalysisOptions = {}): ImageAn
     context: AnalysisContext = {}
   ): Promise<AnalysisResult> => {
     setIsAnalyzing(true);
-    
+
     try {
       console.log('🤖 Starting image + message analysis with Edge Function...');
-      
+
       const { data, error } = await supabase.functions.invoke('analyze-construction', {
         body: {
           message,
@@ -149,14 +152,13 @@ export const useImageAnalysis = (options: UseImageAnalysisOptions = {}): ImageAn
 
       setLastResult(result);
       onAnalysisComplete?.(result);
-      
+
       console.log('✅ Multi-modal analysis complete:', result.data?.projectType);
       return result;
-
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Analysis failed';
       console.error('Multi-modal analysis error:', errorMessage);
-      
+
       const result: AnalysisResult = {
         success: false,
         error: errorMessage,
@@ -164,7 +166,7 @@ export const useImageAnalysis = (options: UseImageAnalysisOptions = {}): ImageAn
 
       setLastResult(result);
       onError?.(new Error(errorMessage));
-      
+
       return result;
     } finally {
       setIsAnalyzing(false);

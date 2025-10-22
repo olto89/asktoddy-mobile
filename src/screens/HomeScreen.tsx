@@ -1,12 +1,5 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  ScrollView,
-  TouchableOpacity,
-} from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
 import { useAuth } from '../contexts/AuthContext';
@@ -33,9 +26,7 @@ export default function HomeScreen({ navigation }: Props) {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>Welcome to AskToddy</Text>
-          <Text style={styles.subtitle}>
-            AI-powered construction quoting at your fingertips
-          </Text>
+          <Text style={styles.subtitle}>AI-powered construction quoting at your fingertips</Text>
         </View>
 
         <View style={styles.features}>
@@ -56,7 +47,8 @@ export default function HomeScreen({ navigation }: Props) {
           <Card variant="elevated" style={styles.featureCard}>
             <Text style={styles.featureTitle}>🔧 Smart Recommendations</Text>
             <Text style={styles.featureText}>
-              Find the right tools, materials, and contractors based on your location and project needs
+              Find the right tools, materials, and contractors based on your location and project
+              needs
             </Text>
           </Card>
 

@@ -7,6 +7,7 @@
 ## 📋 Not Started
 
 ### [ASK-35] [API-002] Migrate AIMiddleware to analyze-construction Edge Function
+
 - **Status:** Backlog
 - **Priority:** Urgent
 - **Estimate:** 5 points
@@ -21,6 +22,7 @@ Transfer the complete AIMiddleware system (455 lines) from mobile to server-side
 ---
 
 ### [ASK-12] 🔌 Set up Supabase Edge Functions API ✅ COMPLETED
+
 - **Status:** Backlog
 - **Priority:** Urgent
 - **Estimate:** 5 points
@@ -38,6 +40,7 @@ Chose Supabase over NestJS for better integration with existing infrastructure.
 ---
 
 ### [ASK-6] 📦 Create monorepo structure for shared code ✅ COMPLETED
+
 - **Status:** Backlog
 - **Priority:** Urgent
 - **Estimate:** 5 points
@@ -588,3 +591,4 @@ Create camera screen with photo capture functionality for construction project a
 - [Create New Issue](https://linear.app/new)
 - [View All My Issues](https://linear.app/issues?filter=assigned:me)
 - [Mobile Project Board](https://linear.app/toddy/project/mobile)
+```

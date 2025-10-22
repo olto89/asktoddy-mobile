@@ -145,7 +145,6 @@ eas submit --platform ios --profile staging
    - Add "Test Details":
      - **What to Test**: Construction quote generation, photo analysis, chat interface
      - **App Description**: AI-powered construction cost estimator
-   
 3. **Add Testers**
    - **Internal Testing** (immediate):
      - Add up to 100 Apple IDs
@@ -157,12 +156,12 @@ eas submit --platform ios --profile staging
 
 ## 💰 Cost Breakdown
 
-| Service | Cost | What You Get |
-|---------|------|--------------|
-| Apple Developer | $99/year | TestFlight + App Store |
-| Expo EAS | Free tier | 30 builds/month |
-| Supabase | Free tier | 2 projects |
-| Total | $99/year | Full deployment pipeline |
+| Service         | Cost      | What You Get             |
+| --------------- | --------- | ------------------------ |
+| Apple Developer | $99/year  | TestFlight + App Store   |
+| Expo EAS        | Free tier | 30 builds/month          |
+| Supabase        | Free tier | 2 projects               |
+| Total           | $99/year  | Full deployment pipeline |
 
 ## 🚀 Quick Deploy Commands (After Setup)
 
@@ -197,6 +196,7 @@ For EAS Submit, you need an app-specific password:
 ## 📝 Pre-Flight Checklist
 
 Before first build:
+
 - [ ] Apple Developer account active
 - [ ] App created in App Store Connect
 - [ ] Bundle ID matches app.json
@@ -208,15 +208,19 @@ Before first build:
 ## 🆘 Common Issues
 
 ### "Bundle ID already exists"
+
 - Use a unique identifier like `com.olivertodd.asktoddy`
 
 ### "No suitable signing identity"
+
 - Run `eas credentials` to manage certificates
 
 ### "Build failing"
+
 - Check `eas build --platform ios --clear-cache`
 
-### "Submit failing"  
+### "Submit failing"
+
 - Create app-specific password at appleid.apple.com
 
 ## 📞 Support Links

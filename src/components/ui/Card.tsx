@@ -1,9 +1,5 @@
 import React from 'react';
-import {
-  View,
-  ViewStyle,
-  StyleSheet,
-} from 'react-native';
+import { View, ViewStyle, StyleSheet } from 'react-native';
 import designTokens from '../../styles/designTokens';
 
 export interface CardProps {
@@ -13,12 +9,7 @@ export interface CardProps {
   style?: ViewStyle;
 }
 
-export default function Card({ 
-  children, 
-  variant = 'default',
-  padding = 'lg',
-  style 
-}: CardProps) {
+export default function Card({ children, variant = 'default', padding = 'lg', style }: CardProps) {
   const cardStyles = [
     styles.base,
     styles[variant],
@@ -26,11 +17,7 @@ export default function Card({
     style,
   ];
 
-  return (
-    <View style={cardStyles}>
-      {children}
-    </View>
-  );
+  return <View style={cardStyles}>{children}</View>;
 }
 
 const styles = StyleSheet.create({
@@ -38,15 +25,15 @@ const styles = StyleSheet.create({
     borderRadius: designTokens.borderRadius.xl,
     backgroundColor: designTokens.colors.background,
   },
-  
+
   default: {
     ...designTokens.shadows.sm,
   },
-  
+
   elevated: {
     ...designTokens.shadows.lg,
   },
-  
+
   outlined: {
     borderWidth: 1,
     borderColor: designTokens.colors.border,

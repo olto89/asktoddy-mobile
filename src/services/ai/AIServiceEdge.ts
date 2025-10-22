@@ -40,9 +40,9 @@ class AIServiceEdge {
       const response = await fetch(this.baseUrl, {
         method: 'GET',
         headers: {
-          'apikey': config.supabase.anonKey,
-          'Authorization': `Bearer ${config.supabase.anonKey}`
-        }
+          apikey: config.supabase.anonKey,
+          Authorization: `Bearer ${config.supabase.anonKey}`,
+        },
       });
 
       if (!response.ok) {
@@ -51,7 +51,7 @@ class AIServiceEdge {
 
       const health = await response.json();
       console.log('✅ Edge AI Service initialized:', health);
-      
+
       this.isInitialized = true;
     } catch (error) {
       console.error('❌ Failed to initialize Edge AI Service:', error);
@@ -76,10 +76,10 @@ class AIServiceEdge {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'apikey': config.supabase.anonKey,
-          'Authorization': `Bearer ${config.supabase.anonKey}`
+          apikey: config.supabase.anonKey,
+          Authorization: `Bearer ${config.supabase.anonKey}`,
         },
-        body: JSON.stringify(request)
+        body: JSON.stringify(request),
       });
 
       if (!response.ok) {
@@ -88,7 +88,7 @@ class AIServiceEdge {
       }
 
       const result: AnalysisResponse = await response.json();
-      
+
       if (!result.success || !result.data) {
         throw new Error(result.error?.message || 'Analysis failed');
       }
@@ -111,7 +111,7 @@ class AIServiceEdge {
       message,
       analysisType: 'chat',
       location: context?.location,
-      previousAnalysis: context?.previousAnalysis
+      previousAnalysis: context?.previousAnalysis,
     });
   }
 
@@ -123,9 +123,9 @@ class AIServiceEdge {
       const response = await fetch(this.baseUrl, {
         method: 'GET',
         headers: {
-          'apikey': config.supabase.anonKey,
-          'Authorization': `Bearer ${config.supabase.anonKey}`
-        }
+          apikey: config.supabase.anonKey,
+          Authorization: `Bearer ${config.supabase.anonKey}`,
+        },
       });
 
       if (response.ok) {

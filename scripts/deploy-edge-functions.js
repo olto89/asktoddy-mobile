@@ -18,12 +18,12 @@ console.log(`🚀 Deploying Edge Functions to ${environment}...`);
 const configs = {
   staging: {
     projectRef: 'tggvoqhewfmczyjoxrqu', // Current project as staging
-    envFile: '.env.staging'
+    envFile: '.env.staging',
   },
   production: {
     projectRef: 'YOUR_PRODUCTION_PROJECT_REF', // TODO: Update when created
-    envFile: '.env.production'
-  }
+    envFile: '.env.production',
+  },
 };
 
 const config = configs[environment];
@@ -45,11 +45,7 @@ if (environment === 'production' && config.projectRef === 'YOUR_PRODUCTION_PROJE
 
 try {
   // List of Edge Functions to deploy
-  const functions = [
-    'analyze-construction',
-    'generate-document',
-    'get-pricing'
-  ];
+  const functions = ['analyze-construction', 'generate-document', 'get-pricing'];
 
   console.log(`📦 Deploying to project: ${config.projectRef}`);
   console.log(`📋 Functions to deploy: ${functions.join(', ')}`);
@@ -57,13 +53,13 @@ try {
   // Deploy each function
   functions.forEach(func => {
     console.log(`\n🔧 Deploying ${func}...`);
-    
+
     const command = `supabase functions deploy ${func} --project-ref ${config.projectRef}`;
-    
+
     try {
-      execSync(command, { 
+      execSync(command, {
         stdio: 'inherit',
-        cwd: path.join(__dirname, '..')
+        cwd: path.join(__dirname, '..'),
       });
       console.log(`✅ ${func} deployed successfully`);
     } catch (error) {
@@ -75,7 +71,7 @@ try {
   console.log('\n✨ All Edge Functions deployed successfully!');
   console.log(`🌐 Environment: ${environment}`);
   console.log(`🔗 Project: https://app.supabase.com/project/${config.projectRef}`);
-  
+
   // Show next steps
   console.log('\n📝 Next steps:');
   if (environment === 'staging') {
@@ -87,7 +83,6 @@ try {
     console.log('   2. Build for App Store: eas build --profile production --platform ios');
     console.log('   3. Submit to App Store: eas submit --profile production --platform ios');
   }
-
 } catch (error) {
   console.error('❌ Deployment failed:', error.message);
   process.exit(1);

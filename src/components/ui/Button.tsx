@@ -61,7 +61,11 @@ export default function Button({
       {loading ? (
         <ActivityIndicator
           size="small"
-          color={variant === 'primary' ? designTokens.colors.text.inverse : designTokens.colors.primary[500]}
+          color={
+            variant === 'primary'
+              ? designTokens.colors.text.inverse
+              : designTokens.colors.primary[500]
+          }
         />
       ) : (
         <>
@@ -83,7 +87,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
     ...designTokens.shadows.sm,
   },
-  
+
   // Variants
   primary: {
     backgroundColor: designTokens.colors.primary[500],

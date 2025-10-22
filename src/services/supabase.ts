@@ -55,13 +55,19 @@ export const authHelpers = {
 
   // Get current session
   getSession: async () => {
-    const { data: { session }, error } = await supabase.auth.getSession();
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.getSession();
     return { session, error };
   },
 
   // Get current user
   getUser: async () => {
-    const { data: { user }, error } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
     return { user, error };
   },
 
@@ -85,7 +91,7 @@ export const authHelpers = {
         },
       },
     });
-    
+
     if (error) {
       return { data, error };
     }
@@ -112,34 +118,30 @@ export const dbHelpers = {
       // Convert URI to blob for upload
       const response = await fetch(uri);
       const blob = await response.blob();
-      
+
       // Create unique filename with timestamp
       const fileExt = filename.split('.').pop();
       const fileName = `${Date.now()}.${fileExt}`;
-      
-      const { data, error } = await supabase.storage
-        .from(bucket)
-        .upload(fileName, blob, {
-          cacheControl: '3600',
-          upsert: false,
-        });
+
+      const { data, error } = await supabase.storage.from(bucket).upload(fileName, blob, {
+        cacheControl: '3600',
+        upsert: false,
+      });
 
       if (error) {
         throw error;
       }
 
       // Get public URL
-      const { data: urlData } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(fileName);
+      const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(fileName);
 
-      return { 
-        data: { 
-          path: data.path, 
+      return {
+        data: {
+          path: data.path,
           fullPath: data.fullPath,
-          publicUrl: urlData.publicUrl 
-        }, 
-        error: null 
+          publicUrl: urlData.publicUrl,
+        },
+        error: null,
       };
     } catch (error) {
       return { data: null, error };

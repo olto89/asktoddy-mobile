@@ -22,6 +22,7 @@
         "NSCameraUsageDescription": "AskToddy needs camera access to photograph construction projects for instant quotes.",
         "NSPhotoLibraryUsageDescription": "AskToddy needs photo library access to select construction project images.",
         "NSLocationWhenInUseUsageDescription": "AskToddy uses your location to find local suppliers and provide accurate regional pricing.",
+        "ITSAppUsesNonExemptEncryption": false,
         "LSApplicationQueriesSchemes": [
           "mailto",
           "tel"
@@ -71,8 +72,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "2CA2FCBD-1FC7-4C6F-BBA2-3DF133D1AE63"
+        "projectId": "02ce6196-de22-4b18-9d92-85da24f079b4"
       }
-    }
+    },
+    "owner": "olto89"
   }
 }
