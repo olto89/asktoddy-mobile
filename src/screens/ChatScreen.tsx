@@ -492,8 +492,8 @@ export default function ChatScreen() {
     if (isIOS) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-    // For now, just show an alert - we'll add drawer later
-    Alert.alert('Menu', 'Side menu coming soon!');
+    // Navigate to Account screen
+    navigation.navigate('Account' as never);
   };
 
   return (
