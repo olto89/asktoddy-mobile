@@ -1,11 +1,11 @@
 {
-  "lastUpdated": "2025-10-22T10:30:00.000Z",
+  "lastUpdated": "2025-10-23T11:27:09.791Z",
   "project": {
     "name": "asktoddy-mobile",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "dependencies": {
-      "expo": "54.0.15",
-      "react-native": "0.81.4",
+      "expo": "54.0.17",
+      "react-native": "0.81.5",
       "@google/generative-ai": "^0.24.1"
     }
   },
@@ -30,9 +30,7 @@
       "Update EAS configuration with environment-specific URLs",
       "Fix TestFlight deployment with store distribution profile"
     ],
-    "inProgress": [
-      "Ready to build staging app with proper environment separation"
-    ],
+    "inProgress": ["Ready to build staging app with proper environment separation"],
     "nextTasks": [
       "Build staging app with new Supabase environment",
       "Test staging environment functionality",
@@ -58,38 +56,21 @@
   },
   "recentFiles": [
     "src/contexts/AuthContext.tsx",
-    "src/config/index.ts",
     "src/navigation/AuthNavigator.tsx",
-    "src/screens/CameraScreen.tsx",
-    "src/screens/SplashScreen.tsx",
-    "src/screens/ChatScreen.tsx",
-    "src/screens/CameraScreenExample.tsx",
-    "src/screens/ResultsScreen.tsx",
-    "src/screens/HomeScreen.tsx",
+    "src/utils/authErrors.ts",
+    "src/screens/EmailVerificationScreen.tsx",
+    "src/screens/VerificationSuccessScreen.tsx",
     "src/screens/LoginScreen.tsx",
-    "src/styles/designTokens.ts",
-    "src/components/ui/Card.tsx",
-    "src/components/ui/Button.tsx",
-    "src/components/ui/Input.tsx",
+    "src/components/ui/ErrorAlert.tsx",
     "src/components/ToddyHeader.tsx",
-    "src/hooks/useImageAnalysis.ts",
-    "src/hooks/useCamera.ts",
-    "src/hooks/useImagePicker.ts",
-    "src/hooks/index.ts",
-    "src/hooks/useLocation.ts"
+    "src/hooks/useLoadingWithTimeout.ts",
+    "src/services/NavigationService.ts"
   ],
-  "runningProcesses": [
-    {
-      "command": "npm start",
-      "port": 8081,
-      "status": "running",
-      "service": "Expo Dev Server"
-    }
-  ],
+  "runningProcesses": [],
   "git": {
     "branch": "main",
-    "lastCommit": "staging/production Supabase architecture setup",
+    "lastCommit": "0c0feab chore: Bump version to 1.0.1 for TestFlight release",
     "hasUncommittedChanges": true,
-    "changedFiles": 0
+    "changedFiles": 1
   }
 }
