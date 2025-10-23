@@ -16,6 +16,7 @@ export type RootStackParamList = {
   Chat: undefined;
   Camera: undefined;
   Results: { imageUri: string; analysis?: any };
+  Account: undefined;
 };
 
 export default function App() {

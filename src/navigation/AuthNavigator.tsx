@@ -17,6 +17,7 @@ import HomeScreen from '../screens/HomeScreen';
 import ChatScreen from '../screens/ChatScreen';
 import CameraScreen from '../screens/CameraScreen';
 import ResultsScreen from '../screens/ResultsScreen';
+import AccountScreen from '../screens/AccountScreen';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -56,8 +57,16 @@ export default function AuthNavigator() {
         <Stack.Group>
           <Stack.Screen name="Splash" component={SplashScreen} options={{ headerShown: false }} />
           <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="EmailVerification" component={EmailVerificationScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="VerificationSuccess" component={VerificationSuccessScreen} options={{ headerShown: false }} />
+          <Stack.Screen
+            name="EmailVerification"
+            component={EmailVerificationScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="VerificationSuccess"
+            component={VerificationSuccessScreen}
+            options={{ headerShown: false }}
+          />
         </Stack.Group>
       ) : (
         // App stack - user logged in - go directly to Chat with custom header
@@ -70,6 +79,7 @@ export default function AuthNavigator() {
             component={ResultsScreen}
             options={{ title: 'Quote Results' }}
           />
+          <Stack.Screen name="Account" component={AccountScreen} options={{ headerShown: false }} />
         </Stack.Group>
       )}
     </Stack.Navigator>
