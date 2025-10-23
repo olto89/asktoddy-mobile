@@ -2,9 +2,9 @@
 
 _Last Updated: October 23, 2025_
 
-## 🎯 Current Version: 1.0.1 (Build 2)
+## 🎯 Current Version: 1.0.2 (Build 3) - READY FOR DEPLOYMENT
 
-**Status**: In TestFlight build process
+**Status**: AI Conversation Intelligence implemented, ready for TestFlight
 
 ---
 
@@ -33,7 +33,26 @@ _Last Updated: October 23, 2025_
 - **Asset Organization**: Created dedicated characters directory
 - **Character**: Friendly man with glasses and flat cap/beret
 
-### 4. Infrastructure Improvements
+### 4. AI Conversation Intelligence - MAJOR UPGRADE ⭐
+
+- **Smart Information Assessment**: 8-point scoring system for project details
+- **Three Response Modes**:
+  - Conversation Mode (0-2 points): Ask clarifying questions
+  - Estimation Mode (3-5 points): Rough estimates with caveats
+  - Quote Mode (6-8 points): Detailed cost breakdowns
+- **Professional Question Templates**: Extension, kitchen, bathroom specific questions
+- **Problem Solved**: No more random £3,500-8,000 quotes for vague "extension" requests
+- **Edge Function Updated**: Smart prompts deployed to staging environment
+
+### 5. Account Management System
+
+- **AccountScreen**: Professional layout with user info and settings
+- **Logout Functionality**: Confirmation dialog with proper session clearing
+- **Navigation Integration**: Menu button in ToddyHeader → Account screen
+- **Session Persistence**: Users stay logged in until manual logout (industry standard)
+- **Future Ready**: Placeholders for profile management features
+
+### 6. Infrastructure Improvements
 
 - **Dual Environments**: Staging (iezmuqawughmwsxlqrim) and Production (tggvoqhewfmczyjoxrqu)
 - **Edge Functions**: 3 deployed functions (analyze-construction, generate-document, get-pricing)
