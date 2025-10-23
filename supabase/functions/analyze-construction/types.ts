@@ -44,7 +44,27 @@ export interface ToolRequirement {
 export interface ProjectAnalysis {
   projectType: string;
   description: string;
-  difficultyLevel: 'Easy' | 'Moderate' | 'Difficult' | 'Professional Required';
+  difficultyLevel:
+    | 'Easy'
+    | 'Moderate'
+    | 'Difficult'
+    | 'Professional Required'
+    | 'Information Needed'
+    | 'Preliminary Estimate';
+
+  // Response type for new conversation logic
+  responseType?: 'conversation' | 'estimation' | 'quote';
+
+  // Conversation mode fields
+  questionsAsked?: string[];
+  informationNeeded?: string[];
+
+  // Estimation mode fields
+  roughEstimate?: {
+    min: number;
+    max: number;
+    caveats: string[];
+  };
 
   // Cost breakdown
   costBreakdown: QuoteBreakdown;
