@@ -9,6 +9,8 @@ import designTokens from '../styles/designTokens';
 // Auth screens
 import SplashScreen from '../screens/SplashScreen';
 import LoginScreen from '../screens/LoginScreen';
+import EmailVerificationScreen from '../screens/EmailVerificationScreen';
+import VerificationSuccessScreen from '../screens/VerificationSuccessScreen';
 
 // App screens
 import HomeScreen from '../screens/HomeScreen';
@@ -54,6 +56,8 @@ export default function AuthNavigator() {
         <Stack.Group>
           <Stack.Screen name="Splash" component={SplashScreen} options={{ headerShown: false }} />
           <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="EmailVerification" component={EmailVerificationScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="VerificationSuccess" component={VerificationSuccessScreen} options={{ headerShown: false }} />
         </Stack.Group>
       ) : (
         // App stack - user logged in - go directly to Chat with custom header

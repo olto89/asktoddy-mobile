@@ -2,13 +2,14 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { Linking } from 'react-native';
 import { supabase, authHelpers } from '../services/supabase';
+import { navigate } from '../services/NavigationService';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string) => Promise<{ error: any; needsVerification?: boolean }>;
   signUpTest: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   isAuthenticated: boolean;
@@ -67,10 +68,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const urlParams = new URL(url).searchParams;
         const access_token = urlParams.get('access_token');
         const refresh_token = urlParams.get('refresh_token');
+        const type = urlParams.get('type');
 
         if (access_token && refresh_token) {
           console.log('Setting session from deep link tokens');
-          supabase.auth.setSession({ access_token, refresh_token });
+          
+          // Set the session first
+          supabase.auth.setSession({ access_token, refresh_token }).then(() => {
+            // If this is an email confirmation, navigate to success screen
+            if (type === 'signup' || type === 'email_change') {
+              console.log('Email verification successful, navigating to success screen');
+              setTimeout(() => {
+                navigate('VerificationSuccess');
+              }, 1000); // Small delay to ensure navigation is ready
+            }
+          }).catch((error) => {
+            console.error('Error setting session from deep link:', error);
+          });
+        } else {
+          console.log('Invalid or missing tokens in deep link');
         }
       }
     };
@@ -94,8 +110,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
+    let timeoutId: NodeJS.Timeout | null = null;
+    
     try {
       setLoading(true);
+      
+      // Set a timeout to force loading to false after 30 seconds
+      timeoutId = setTimeout(() => {
+        console.warn('SignIn timeout reached, forcing loading to stop');
+        setLoading(false);
+      }, 30000);
+
       const { data, error } = await authHelpers.signIn(email, password);
 
       if (error) {
@@ -106,28 +131,38 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error) {
       return { error };
     } finally {
+      // Clear timeout and set loading to false
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
       setLoading(false);
     }
   };
 
   const signUp = async (email: string, password: string) => {
+    let timeoutId: NodeJS.Timeout | null = null;
+    
     try {
       setLoading(true);
+      
+      // Set a timeout to force loading to false after 30 seconds
+      timeoutId = setTimeout(() => {
+        console.warn('SignUp timeout reached, forcing loading to stop');
+        setLoading(false);
+      }, 30000);
+
       const { data, error } = await authHelpers.signUp(email, password);
 
       if (error) {
         return { error };
       }
 
-      // For demo purposes, we'll auto-sign in after signup
-      // In production, you might want email confirmation
+      // Check if user needs email verification
       if (data.user && !data.session) {
         // User created but needs email confirmation
         return {
-          error: {
-            message:
-              'Account created! Please check your email to confirm your account. After clicking the link in the email, return to the app and try logging in.',
-          },
+          error: null,
+          needsVerification: true,
         };
       }
 
@@ -135,6 +170,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error) {
       return { error };
     } finally {
+      // Clear timeout and set loading to false
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
       setLoading(false);
     }
   };
