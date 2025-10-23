@@ -28,9 +28,11 @@ export default function ToddyHeader({ onMenuPress, showMenuButton = true }: Todd
           <View style={styles.leftSection}>
             {/* Toddy Character Avatar */}
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>T</Text>
-              {/* TODO: Replace with actual Toddy character image */}
-              {/* <Image source={require('../../assets/toddy-character.png')} style={styles.avatarImage} /> */}
+              <Image
+                source={require('../../assets/characters/toddy-character.png')}
+                style={styles.avatarImage}
+                resizeMode="contain"
+              />
             </View>
 
             {/* Brand Text */}
@@ -102,9 +104,9 @@ const styles = StyleSheet.create({
     color: designTokens.colors.primary[500],
   },
   avatarImage: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
   },
   brandText: {
     flex: 1,
