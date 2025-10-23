@@ -173,97 +173,96 @@ export class GeminiProvider implements AIProvider {
   }
 
   private createAnalysisPrompt(request: AnalysisRequest): string {
-    const { context } = request;
+    const { context, message, history } = request;
 
-    return `You are a highly experienced construction contractor and estimator with 20+ years in the industry. Analyze this construction project and provide a comprehensive, accurate quote and project analysis.
+    return `You are a highly experienced construction contractor and estimator with 20+ years in the industry. You provide professional consultation by first assessing if you have enough information to give accurate quotes.
 
 CONTEXT:
 ${context?.projectType ? `Project Type: ${context.projectType}` : ''}
-${context?.budgetRange ? `Budget Range: £${context.budgetRange.min} - £${context.budgetRange.max}` : ''}
 ${context?.location ? `Location: ${context.location}` : 'UK-based project'}
+${history ? `Previous Conversation: ${JSON.stringify(history.slice(-3))}` : ''}
 
-ANALYSIS REQUIREMENTS:
-1. VISUAL INSPECTION: Carefully examine the image/description for:
-   - Space dimensions (estimate from visible references)
-   - Current condition of surfaces, fixtures, and materials
-   - Structural elements visible
-   - Complexity factors (electrical, plumbing, access)
-   - Quality of existing work
+PHASE 1: INFORMATION ASSESSMENT
+Analyze the user's input and conversation history to score information completeness (0-8 points total):
 
-2. PROJECT IDENTIFICATION: Determine the specific type of work needed
+1. PROJECT TYPE CLARITY (0-2 points):
+   - 0: Vague ("renovation", "work needed")
+   - 1: General ("kitchen", "bathroom", "extension") 
+   - 2: Specific ("single-story kitchen extension", "ensuite bathroom renovation")
 
-3. ACCURATE COSTING (2024 UK market rates):
-   - Materials: Include VAT, waste factors, delivery
-   - Labor: Use current UK trade rates (£200-400/day skilled)
-   - Account for regional variations
-   - Include hidden costs (building control, skips, etc.)
+2. SIZE AND SCOPE (0-2 points):
+   - 0: No size mentioned
+   - 1: Vague size ("small", "big", "standard")
+   - 2: Specific dimensions (sqm, room count, measurements)
 
-4. REALISTIC TIMELINES: Factor in preparation, drying times, inspections
+3. QUALITY REQUIREMENTS (0-2 points):
+   - 0: No quality level mentioned
+   - 1: General preference ("nice", "good quality")
+   - 2: Specific finish level ("mid-range", "luxury", "budget", specific brands)
 
-5. TOOL REQUIREMENTS: Specify tools needed with realistic rental costs
+4. PROJECT CONSTRAINTS (0-2 points):
+   - 0: No additional details
+   - 1: Some context (budget range, timing, existing conditions)
+   - 2: Detailed constraints (access issues, planning permission, structural work, utilities)
 
-CRITICAL: Return ONLY a valid JSON object with this exact structure:
+TOTAL SCORE: Add all points (0-8)
 
+PHASE 2: RESPONSE MODE SELECTION
+Based on total score:
+
+• 0-2 POINTS: CONVERSATION MODE
+- Ask 2-3 specific clarifying questions about the project
+- Provide helpful guidance on information needed
+- DO NOT provide cost estimates
+- Be professional and educational
+
+• 3-5 POINTS: ESTIMATION MODE  
+- Provide very rough cost range with major caveats
+- Ask for remaining critical details
+- Include strong disclaimers about accuracy
+- Return simplified JSON with ranges only
+
+• 6-8 POINTS: QUOTE MODE
+- Generate detailed cost breakdown
+- Include comprehensive analysis
+- Return full JSON structure with detailed quotes
+- Include professional disclaimers
+
+CRITICAL RESPONSE FORMATS:
+
+FOR CONVERSATION MODE (0-2 points):
+Return a JSON object with this structure:
 {
-  "projectType": "Specific project description",
-  "description": "Detailed description of work needed",
-  "difficultyLevel": "Easy|Moderate|Difficult|Professional Required",
-  "costBreakdown": {
-    "materials": {
-      "min": 0,
-      "max": 0,
-      "items": [
-        {
-          "name": "Material name",
-          "quantity": "Amount with units",
-          "unitPrice": 0,
-          "totalPrice": 0,
-          "category": "structural|finishing|electrical|plumbing|other"
-        }
-      ]
-    },
-    "labor": {
-      "min": 0,
-      "max": 0,
-      "hourlyRate": 0,
-      "estimatedHours": 0
-    },
-    "total": {
-      "min": 0,
-      "max": 0
-    }
-  },
-  "timeline": {
-    "diy": "X days/weeks",
-    "professional": "X days",
-    "phases": [
-      {
-        "name": "Phase name",
-        "duration": "X days",
-        "description": "What happens in this phase"
-      }
-    ]
-  },
-  "toolsRequired": [
-    {
-      "name": "Tool name",
-      "category": "power_tools|hand_tools|heavy_machinery|safety",
-      "dailyRentalPrice": 0,
-      "estimatedDays": 0,
-      "required": true,
-      "alternatives": ["Alternative tools"]
-    }
-  ],
-  "safetyConsiderations": ["Safety point 1", "Safety point 2"],
-  "permitsRequired": ["Required permits"],
-  "requiresProfessional": true,
-  "professionalReasons": ["Reason if professional required"],
-  "confidence": 85,
-  "recommendations": ["Recommendation 1", "Recommendation 2"],
-  "warnings": ["Warning 1 if any"]
+  "responseType": "conversation",
+  "projectType": "Extension",
+  "message": "I'd love to help with your extension! To provide an accurate quote, I need some details:\n\n📐 **Size & Type:**\n- What type of extension? (single-story, two-story, conservatory)\n- Approximate dimensions or square meters?\n- How many rooms will it include?\n\n🏠 **Purpose & Finish:**\n- What's the main use? (kitchen, living space, bedrooms)\n- Desired finish level? (basic, mid-range, high-end)\n\n📋 **Additional Details:**\n- Do you have any photos, plans, or drawings?\n- What's your rough budget expectation?\n- Any specific challenges? (access, existing utilities)",
+  "questionsAsked": ["extension type", "dimensions", "purpose", "finish level"],
+  "informationNeeded": ["size", "scope", "quality"],
+  "confidence": 0
 }
 
-Ensure all costs are in GBP (£) and realistic for 2024 UK market rates.`;
+FOR ESTIMATION MODE (3-5 points):
+Return a JSON object with this structure:
+{
+  "responseType": "estimation", 
+  "projectType": "Single-story Extension",
+  "message": "Based on the details provided, here's a rough estimate with important caveats:",
+  "roughEstimate": {
+    "min": 8000,
+    "max": 15000,
+    "caveats": ["Site survey needed for accuracy", "Based on assumed standard finishes", "Prices subject to planning requirements"]
+  },
+  "questionsAsked": ["finish specifications", "existing layout", "access considerations"],
+  "confidence": 50,
+  "recommendations": ["Get site survey", "Consider planning permission requirements"]
+}
+
+FOR QUOTE MODE (6-8 points):
+Return the full detailed JSON structure with costBreakdown, timeline, etc. (use existing format)
+
+USER INPUT: "${message || 'No specific message provided'}"
+
+Analyze the above input and respond accordingly.`;
   }
 
   private parseGeminiResponse(text: string): ProjectAnalysis {
@@ -276,11 +275,96 @@ Ensure all costs are in GBP (£) and realistic for 2024 UK market rates.`;
 
       const parsed = JSON.parse(jsonMatch[0]);
 
-      // Validate and enhance the response
+      // Handle different response types
+      if (parsed.responseType === 'conversation') {
+        // Conversation mode - ask clarifying questions
+        return {
+          projectType: parsed.projectType || 'Construction Project',
+          description: parsed.message || 'I need more information to provide an accurate quote.',
+          difficultyLevel: 'Information Needed',
+          responseType: 'conversation',
+          questionsAsked: parsed.questionsAsked || [],
+          informationNeeded: parsed.informationNeeded || [],
+          costBreakdown: {
+            materials: { min: 0, max: 0, items: [] },
+            labor: { min: 0, max: 0, hourlyRate: 0, estimatedHours: 0 },
+            total: { min: 0, max: 0 },
+          },
+          timeline: {
+            diy: 'Information needed',
+            professional: 'Information needed',
+            phases: [],
+          },
+          toolsRequired: [],
+          safetyConsiderations: [],
+          permitsRequired: [],
+          requiresProfessional: false,
+          professionalReasons: [],
+          confidence: parsed.confidence || 0,
+          recommendations: parsed.recommendations || [],
+          warnings: [],
+          analysisId: '',
+          timestamp: '',
+          aiProvider: this.name,
+          processingTimeMs: 0,
+        };
+      }
+
+      if (parsed.responseType === 'estimation') {
+        // Estimation mode - rough estimates with caveats
+        return {
+          projectType: parsed.projectType || 'Construction Project',
+          description: parsed.message || 'Rough estimate provided with caveats.',
+          difficultyLevel: 'Preliminary Estimate',
+          responseType: 'estimation',
+          questionsAsked: parsed.questionsAsked || [],
+          roughEstimate: parsed.roughEstimate,
+          costBreakdown: {
+            materials: {
+              min: Math.round((parsed.roughEstimate?.min || 0) * 0.4),
+              max: Math.round((parsed.roughEstimate?.max || 0) * 0.6),
+              items: [],
+            },
+            labor: {
+              min: Math.round((parsed.roughEstimate?.min || 0) * 0.4),
+              max: Math.round((parsed.roughEstimate?.max || 0) * 0.4),
+              hourlyRate: 35,
+              estimatedHours: 20,
+            },
+            total: {
+              min: parsed.roughEstimate?.min || 0,
+              max: parsed.roughEstimate?.max || 0,
+            },
+          },
+          timeline: {
+            diy: 'Requires detailed assessment',
+            professional: 'Requires detailed assessment',
+            phases: [],
+          },
+          toolsRequired: [],
+          safetyConsiderations: parsed.roughEstimate?.caveats || [],
+          permitsRequired: [],
+          requiresProfessional: true,
+          professionalReasons: ['Detailed assessment required'],
+          confidence: parsed.confidence || 50,
+          recommendations: parsed.recommendations || [
+            'Site survey recommended',
+            'Get multiple quotes',
+          ],
+          warnings: parsed.roughEstimate?.caveats || [],
+          analysisId: '',
+          timestamp: '',
+          aiProvider: this.name,
+          processingTimeMs: 0,
+        };
+      }
+
+      // Quote mode - full detailed response (existing logic)
       return {
         projectType: parsed.projectType || 'Construction Project',
         description: parsed.description || 'Project analysis completed',
         difficultyLevel: parsed.difficultyLevel || 'Moderate',
+        responseType: 'quote',
         costBreakdown: this.validateCostBreakdown(parsed.costBreakdown),
         timeline: parsed.timeline || {
           diy: '1-2 weeks',
@@ -295,8 +379,6 @@ Ensure all costs are in GBP (£) and realistic for 2024 UK market rates.`;
         confidence: Math.min(100, Math.max(0, parsed.confidence || 75)),
         recommendations: parsed.recommendations || [],
         warnings: parsed.warnings || [],
-
-        // Will be set by middleware
         analysisId: '',
         timestamp: '',
         aiProvider: this.name,

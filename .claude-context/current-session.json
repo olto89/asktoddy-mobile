@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2025-10-23T11:27:09.791Z",
+  "lastUpdated": "2025-10-23T13:01:52.901Z",
   "project": {
     "name": "asktoddy-mobile",
     "version": "1.0.1",
@@ -58,8 +58,10 @@
     "src/contexts/AuthContext.tsx",
     "src/navigation/AuthNavigator.tsx",
     "src/utils/authErrors.ts",
+    "src/screens/AccountScreen.tsx",
     "src/screens/EmailVerificationScreen.tsx",
     "src/screens/VerificationSuccessScreen.tsx",
+    "src/screens/ChatScreen.tsx",
     "src/screens/LoginScreen.tsx",
     "src/components/ui/ErrorAlert.tsx",
     "src/components/ToddyHeader.tsx",
@@ -69,8 +71,8 @@
   "runningProcesses": [],
   "git": {
     "branch": "main",
-    "lastCommit": "0c0feab chore: Bump version to 1.0.1 for TestFlight release",
+    "lastCommit": "91b916b docs: Comprehensive project baseline and next phase planning",
     "hasUncommittedChanges": true,
-    "changedFiles": 1
+    "changedFiles": 4
   }
 }

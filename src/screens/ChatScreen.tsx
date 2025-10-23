@@ -292,33 +292,73 @@ export default function ChatScreen() {
   };
 
   /**
-   * Format analysis response for display
+   * Format analysis response for display - handles conversation, estimation, and quote modes
    */
   const formatAnalysisResponse = (analysis: any): string => {
+    // Handle conversation mode - just show the questions
+    if (analysis.responseType === 'conversation') {
+      return analysis.description;
+    }
+
+    // Handle estimation mode - show rough estimate with caveats
+    if (analysis.responseType === 'estimation') {
+      let response = `**${analysis.projectType}**\n\n`;
+      response += `${analysis.description}\n\n`;
+
+      if (analysis.roughEstimate) {
+        response += `💰 **Rough Estimate:**\n`;
+        response += `**£${analysis.roughEstimate.min.toLocaleString()}-£${analysis.roughEstimate.max.toLocaleString()}**\n\n`;
+
+        if (analysis.roughEstimate.caveats && analysis.roughEstimate.caveats.length > 0) {
+          response += `⚠️ **Important Caveats:**\n`;
+          analysis.roughEstimate.caveats.forEach((caveat: string) => {
+            response += `• ${caveat}\n`;
+          });
+          response += '\n';
+        }
+      }
+
+      if (analysis.questionsAsked && analysis.questionsAsked.length > 0) {
+        response += `❓ **For a more accurate quote, please provide:**\n`;
+        analysis.questionsAsked.forEach((question: string) => {
+          response += `• ${question}\n`;
+        });
+        response += '\n';
+      }
+
+      response += `*Confidence: ${analysis.confidence}% | This is a preliminary estimate*`;
+      return response;
+    }
+
+    // Quote mode - full detailed response (existing logic)
     let response = `**${analysis.projectType}**\n\n`;
     response += `${analysis.description}\n\n`;
 
-    response += `💰 **Estimated Cost:**\n`;
-    response += `Materials: £${analysis.costBreakdown.materials.min}-£${analysis.costBreakdown.materials.max}\n`;
-    response += `Labour: £${analysis.costBreakdown.labor.min}-£${analysis.costBreakdown.labor.max}\n`;
-    response += `**Total: £${analysis.costBreakdown.total.min}-£${analysis.costBreakdown.total.max}**\n\n`;
+    // Only show cost breakdown if we have meaningful values
+    if (analysis.costBreakdown?.total?.max > 0) {
+      response += `💰 **Estimated Cost:**\n`;
+      response += `Materials: £${analysis.costBreakdown.materials.min.toLocaleString()}-£${analysis.costBreakdown.materials.max.toLocaleString()}\n`;
+      response += `Labour: £${analysis.costBreakdown.labor.min.toLocaleString()}-£${analysis.costBreakdown.labor.max.toLocaleString()}\n`;
+      response += `**Total: £${analysis.costBreakdown.total.min.toLocaleString()}-£${analysis.costBreakdown.total.max.toLocaleString()}**\n\n`;
 
-    response += `⏱️ **Timeline:**\n`;
-    response += `DIY: ${analysis.timeline.diy}\n`;
-    response += `Professional: ${analysis.timeline.professional}\n\n`;
+      response += `⏱️ **Timeline:**\n`;
+      response += `DIY: ${analysis.timeline.diy}\n`;
+      response += `Professional: ${analysis.timeline.professional}\n\n`;
+    }
 
     if (analysis.recommendations && analysis.recommendations.length > 0) {
       response += `💡 **Recommendations:**\n`;
       analysis.recommendations.forEach((rec: string) => {
         response += `• ${rec}\n`;
       });
+      response += '\n';
     }
 
     if (analysis.requiresProfessional) {
-      response += `\n⚠️ **Professional Required:** ${analysis.professionalReasons?.join(', ')}`;
+      response += `⚠️ **Professional Required:** ${analysis.professionalReasons?.join(', ')}\n\n`;
     }
 
-    response += `\n\n*Analysis confidence: ${analysis.confidence}% | Provider: ${analysis.aiProvider}*`;
+    response += `*Analysis confidence: ${analysis.confidence}% | Provider: ${analysis.aiProvider}*`;
 
     return response;
   };
