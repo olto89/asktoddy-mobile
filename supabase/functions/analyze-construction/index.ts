@@ -11,6 +11,42 @@ import { AnalysisRequest, AnalysisResponse } from './types.ts';
 
 console.log('🏗️ Analyze Construction Edge Function initialized with AI Middleware');
 
+/**
+ * Transform analysis response for mobile app compatibility
+ * Mobile app expects: estimatedCost.total and timeline.totalDays
+ * Edge function provides: costBreakdown.total and timeline (without totalDays)
+ */
+function transformAnalysisForMobile(analysis: ProjectAnalysis): any {
+  // Calculate total days from timeline phases
+  let totalDays = 0;
+  if (analysis.timeline?.phases) {
+    for (const phase of analysis.timeline.phases) {
+      const days = parseInt(phase.duration.match(/\d+/)?.[0] || '1');
+      totalDays += days;
+    }
+  }
+  
+  // If no phases, estimate from professional timeline
+  if (totalDays === 0 && analysis.timeline?.professional) {
+    totalDays = parseInt(analysis.timeline.professional.match(/\d+/)?.[0] || '5');
+  }
+
+  return {
+    ...analysis,
+    // Add estimatedCost field for mobile compatibility
+    estimatedCost: {
+      total: analysis.costBreakdown?.total,
+      materials: analysis.costBreakdown?.materials,
+      labor: analysis.costBreakdown?.labor,
+    },
+    // Add totalDays to timeline for mobile compatibility
+    timeline: {
+      ...analysis.timeline,
+      totalDays: totalDays || 5, // Default fallback
+    },
+  };
+}
+
 // Initialize AI Middleware with configuration
 const middlewareConfig = {
   primaryProvider: 'gemini',
@@ -77,9 +113,12 @@ Deno.serve(async req => {
         // Process through AI Middleware (all 455 lines of business logic)
         const analysis = await aiMiddleware.analyzeImageWithValidation(requestData);
 
+        // Transform response for mobile app compatibility
+        const transformedAnalysis = transformAnalysisForMobile(analysis);
+
         const response: AnalysisResponse = {
           success: true,
-          data: analysis,
+          data: transformedAnalysis,
           processingTimeMs: Date.now() - startTime,
           aiProvider: analysis.aiProvider,
         };

@@ -17,11 +17,11 @@ console.log(`🚀 Deploying Edge Functions to ${environment}...`);
 // Environment-specific configurations
 const configs = {
   staging: {
-    projectRef: 'tggvoqhewfmczyjoxrqu', // Current project as staging
+    projectRef: 'iezmuqawughmwsxlqrim', // Staging project (asktoddy-staging)
     envFile: '.env.staging',
   },
   production: {
-    projectRef: 'YOUR_PRODUCTION_PROJECT_REF', // TODO: Update when created
+    projectRef: 'tggvoqhewfmczyjoxrqu', // Production project (AskToddy)
     envFile: '.env.production',
   },
 };
