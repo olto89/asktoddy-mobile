@@ -15,6 +15,8 @@ import designTokens from '../styles/designTokens';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Card from '../components/ui/Card';
+import ErrorAlert from '../components/ui/ErrorAlert';
+import { getAuthErrorMessage, getActionButtonText } from '../utils/authErrors';
 
 type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -28,55 +30,143 @@ export default function LoginScreen({ navigation }: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [localLoading, setLocalLoading] = useState(false);
+  const [error, setError] = useState<{
+    title: string;
+    message: string;
+    suggestion?: string;
+    action?: string;
+  } | null>(null);
 
   const handleAuth = async () => {
-    if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
-      return;
-    }
+    // Clear any existing errors
+    setError(null);
+    setLocalLoading(true);
 
-    if (!isLogin && password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
-      return;
-    }
-
-    if (!isLogin && password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters long');
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      Alert.alert('Error', 'Please enter a valid email address');
-      return;
-    }
+    // Safety timeout to prevent stuck loading
+    const safetyTimeout = setTimeout(() => {
+      console.warn('Login safety timeout reached, stopping local loading');
+      setLocalLoading(false);
+    }, 35000); // 35 seconds - slightly longer than AuthContext timeout
 
     try {
+      // Basic validation
+      if (!email || !password) {
+        setError({
+          title: 'Missing Information',
+          message: 'Please fill in all fields',
+          suggestion: 'Both email and password are required',
+        });
+        return;
+      }
+
+      if (!isLogin && password !== confirmPassword) {
+        setError({
+          title: 'Password Mismatch',
+          message: 'Passwords do not match',
+          suggestion: 'Please make sure both password fields are identical',
+        });
+        return;
+      }
+
+      if (!isLogin && password.length < 6) {
+        setError({
+          title: 'Weak Password',
+          message: 'Password must be at least 6 characters long',
+          suggestion: 'Use a stronger password for better security',
+        });
+        return;
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        setError({
+          title: 'Invalid Email',
+          message: 'Please enter a valid email address',
+          suggestion: 'Check the email format (example@domain.com)',
+        });
+        return;
+      }
+
+      // Perform authentication
       if (isLogin) {
         const { error } = await signIn(email, password);
         if (error) {
-          Alert.alert('Sign In Failed', error.message || 'Invalid email or password');
+          const errorInfo = getAuthErrorMessage(error);
+          setError({
+            title: 'Sign In Failed',
+            message: errorInfo.message,
+            suggestion: errorInfo.suggestion,
+            action: errorInfo.action,
+          });
           return;
         }
       } else {
-        const { error } = await signUp(email, password);
+        const { error, needsVerification } = await signUp(email, password);
         if (error) {
-          Alert.alert('Sign Up Failed', error.message || 'Failed to create account');
+          const errorInfo = getAuthErrorMessage(error);
+          setError({
+            title: 'Sign Up Failed',
+            message: errorInfo.message,
+            suggestion: errorInfo.suggestion,
+            action: errorInfo.action,
+          });
           return;
         }
+        
+        if (needsVerification) {
+          // Navigate to email verification screen
+          navigation.navigate('EmailVerification', { email, password });
+          return;
+        }
+        
+        // If no verification needed, user is automatically signed in
         Alert.alert('Success', 'Account created successfully! You are now signed in.');
       }
 
       // Navigation will be handled by auth state change
     } catch (error) {
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      const errorInfo = getAuthErrorMessage(error);
+      setError({
+        title: 'Connection Error',
+        message: errorInfo.message,
+        suggestion: errorInfo.suggestion,
+        action: errorInfo.action,
+      });
       console.error('Auth error:', error);
+    } finally {
+      // Always clear loading and timeout
+      clearTimeout(safetyTimeout);
+      setLocalLoading(false);
     }
   };
 
   const toggleAuthMode = () => {
     setIsLogin(!isLogin);
     setConfirmPassword('');
+    setError(null); // Clear errors when switching modes
+  };
+
+  const handleErrorAction = () => {
+    if (!error?.action) return;
+
+    switch (error.action) {
+      case 'forgot_password':
+        // TODO: Implement forgot password functionality
+        Alert.alert('Forgot Password', 'This feature will be available soon!');
+        break;
+      case 'signup':
+        setIsLogin(false);
+        setError(null);
+        break;
+      case 'contact_support':
+        Alert.alert('Contact Support', 'Email us at support@asktoddy.com for help');
+        break;
+      case 'retry':
+      default:
+        setError(null);
+        break;
+    }
   };
 
   return (
@@ -98,6 +188,17 @@ export default function LoginScreen({ navigation }: Props) {
               : 'Create your free account to get started'}
           </Text>
         </View>
+
+        {/* Error Alert */}
+        <ErrorAlert
+          title={error?.title || ''}
+          message={error?.message || ''}
+          suggestion={error?.suggestion}
+          actionText={error?.action ? getActionButtonText(error.action) : undefined}
+          onActionPress={handleErrorAction}
+          onDismiss={() => setError(null)}
+          visible={!!error}
+        />
 
         {/* Auth Form */}
         <Card variant="elevated" style={styles.authCard}>
@@ -136,7 +237,7 @@ export default function LoginScreen({ navigation }: Props) {
           <Button
             title={isLogin ? 'Sign In' : 'Create Account'}
             onPress={handleAuth}
-            loading={loading}
+            loading={loading || localLoading}
             fullWidth
             style={styles.authButton}
           />
