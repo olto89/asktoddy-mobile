@@ -1,4 +1,5 @@
 import { createClient, AuthSession } from '@supabase/supabase-js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Get environment variables directly from process.env for Expo
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -8,13 +9,15 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-// Create Supabase client
+// Create Supabase client with AsyncStorage for session persistence
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    // Disable automatic session refresh to handle it manually
+    storage: AsyncStorage,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
+    // Refresh session 60 seconds before expiry
+    refreshThreshold: 60,
   },
 });
 

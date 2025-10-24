@@ -1,8 +1,8 @@
 {
-  "lastUpdated": "2025-10-23T14:16:46.173Z",
+  "lastUpdated": "2025-10-23T14:19:43.249Z",
   "project": {
     "name": "asktoddy-mobile",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "dependencies": {
       "expo": "54.0.17",
       "react-native": "0.81.5",
@@ -73,6 +73,6 @@
     "branch": "main",
     "lastCommit": "10cb75e feat: Implement AI Conversation Intelligence - Information Sufficiency Detection",
     "hasUncommittedChanges": true,
-    "changedFiles": 1
+    "changedFiles": 5
   }
 }

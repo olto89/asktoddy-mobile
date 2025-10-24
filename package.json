@@ -1,6 +1,6 @@
 {
   "name": "asktoddy-mobile",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
@@ -23,14 +23,12 @@
     "setup:complete": "npm run setup:hooks && npm run session:start",
     "linear:create-tickets": "node scripts/create-linear-tickets.js",
     "deploy:testflight": "./scripts/deploy-testflight.sh",
-    "deploy:staging": "eas build --platform ios --profile staging --non-interactive --wait && eas submit --platform ios --profile staging --non-interactive",
-    "deploy:production": "eas build --platform ios --profile production --wait && eas submit --platform ios --profile production",
+    "deploy:staging": "node scripts/deploy-edge-functions.js staging",
+    "deploy:production": "node scripts/deploy-edge-functions.js production",
     "supabase:validate": "node scripts/validate-edge-functions.js",
     "supabase:serve": "supabase functions serve --no-verify-jwt",
     "supabase:test": "npm run supabase:validate && echo 'Install Docker Desktop to run: npm run supabase:serve'",
     "supabase:lines": "wc -l supabase/functions/analyze-construction/*.ts supabase/functions/analyze-construction/providers/*.ts",
-    "deploy:staging": "node scripts/deploy-edge-functions.js staging",
-    "deploy:production": "node scripts/deploy-edge-functions.js production",
     "build:staging": "eas build --profile staging --platform ios",
     "build:production": "eas build --profile production --platform ios",
     "submit:testflight": "eas submit --profile staging --platform ios",
@@ -46,6 +44,7 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
+    "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-navigation/drawer": "^7.5.10",
     "@react-navigation/native": "^7.1.18",
     "@react-navigation/stack": "^7.4.10",
