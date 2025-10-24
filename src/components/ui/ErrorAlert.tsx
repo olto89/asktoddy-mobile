@@ -1,10 +1,5 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-} from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import designTokens from '../../styles/designTokens';
 import Card from './Card';
 
@@ -16,6 +11,7 @@ interface ErrorAlertProps {
   onActionPress?: () => void;
   onDismiss?: () => void;
   visible: boolean;
+  persistent?: boolean; // If true, error stays until manually dismissed
 }
 
 export default function ErrorAlert({
@@ -26,39 +22,60 @@ export default function ErrorAlert({
   onActionPress,
   onDismiss,
   visible,
+  persistent = true, // Default to persistent for login errors
 }: ErrorAlertProps) {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (visible) {
+      // Fade in animation
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      // Fade out animation
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [visible, fadeAnim]);
+
   if (!visible) return null;
 
   return (
-    <Card variant="outlined" style={styles.container}>
-      {/* Error Icon and Dismiss */}
-      <View style={styles.header}>
-        <View style={styles.iconContainer}>
-          <Text style={styles.icon}>⚠️</Text>
-          <Text style={styles.title}>{title}</Text>
+    <Animated.View style={{ opacity: fadeAnim }}>
+      <Card variant="outlined" style={styles.container}>
+        {/* Error Icon and Dismiss */}
+        <View style={styles.header}>
+          <View style={styles.iconContainer}>
+            <Text style={styles.icon}>⚠️</Text>
+            <Text style={styles.title}>{title}</Text>
+          </View>
+          {onDismiss && (
+            <TouchableOpacity onPress={onDismiss} style={styles.dismissButton}>
+              <Text style={styles.dismissText}>✕</Text>
+            </TouchableOpacity>
+          )}
         </View>
-        {onDismiss && (
-          <TouchableOpacity onPress={onDismiss} style={styles.dismissButton}>
-            <Text style={styles.dismissText}>✕</Text>
+
+        {/* Error Message */}
+        <Text style={styles.message}>{message}</Text>
+
+        {/* Suggestion */}
+        {suggestion && <Text style={styles.suggestion}>{suggestion}</Text>}
+
+        {/* Action Button */}
+        {actionText && onActionPress && (
+          <TouchableOpacity onPress={onActionPress} style={styles.actionButton}>
+            <Text style={styles.actionText}>{actionText}</Text>
           </TouchableOpacity>
         )}
-      </View>
-
-      {/* Error Message */}
-      <Text style={styles.message}>{message}</Text>
-      
-      {/* Suggestion */}
-      {suggestion && (
-        <Text style={styles.suggestion}>{suggestion}</Text>
-      )}
-
-      {/* Action Button */}
-      {actionText && onActionPress && (
-        <TouchableOpacity onPress={onActionPress} style={styles.actionButton}>
-          <Text style={styles.actionText}>{actionText}</Text>
-        </TouchableOpacity>
-      )}
-    </Card>
+      </Card>
+    </Animated.View>
   );
 }
 

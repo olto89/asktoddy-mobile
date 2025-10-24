@@ -39,7 +39,7 @@ export default function LoginScreen({ navigation }: Props) {
   } | null>(null);
 
   const handleAuth = async () => {
-    // Clear any existing errors
+    // Clear any existing errors at the start of a new attempt
     setError(null);
     setLocalLoading(true);
 
@@ -47,6 +47,13 @@ export default function LoginScreen({ navigation }: Props) {
     const safetyTimeout = setTimeout(() => {
       console.warn('Login safety timeout reached, stopping local loading');
       setLocalLoading(false);
+      // Show timeout error
+      setError({
+        title: 'Connection Timeout',
+        message: 'Login attempt timed out',
+        suggestion: 'Please check your internet connection and try again',
+        action: 'retry',
+      });
     }, 35000); // 35 seconds - slightly longer than AuthContext timeout
 
     try {
@@ -90,8 +97,10 @@ export default function LoginScreen({ navigation }: Props) {
 
       // Perform authentication
       if (isLogin) {
+        console.log('🔐 Attempting login for:', email);
         const { error } = await signIn(email, password);
         if (error) {
+          console.error('❌ Login failed:', error);
           const errorInfo = getAuthErrorMessage(error);
           setError({
             title: 'Sign In Failed',
@@ -100,6 +109,8 @@ export default function LoginScreen({ navigation }: Props) {
             action: errorInfo.action,
           });
           return;
+        } else {
+          console.log('✅ Login successful');
         }
       } else {
         const { error, needsVerification } = await signUp(email, password);
@@ -113,13 +124,13 @@ export default function LoginScreen({ navigation }: Props) {
           });
           return;
         }
-        
+
         if (needsVerification) {
           // Navigate to email verification screen
           navigation.navigate('EmailVerification', { email, password });
           return;
         }
-        
+
         // If no verification needed, user is automatically signed in
         Alert.alert('Success', 'Account created successfully! You are now signed in.');
       }
@@ -198,6 +209,7 @@ export default function LoginScreen({ navigation }: Props) {
           onActionPress={handleErrorAction}
           onDismiss={() => setError(null)}
           visible={!!error}
+          persistent={true}
         />
 
         {/* Auth Form */}
@@ -235,11 +247,14 @@ export default function LoginScreen({ navigation }: Props) {
           )}
 
           <Button
-            title={isLogin ? 'Sign In' : 'Create Account'}
+            title={
+              loading || localLoading ? 'Connecting...' : isLogin ? 'Sign In' : 'Create Account'
+            }
             onPress={handleAuth}
             loading={loading || localLoading}
             fullWidth
             style={styles.authButton}
+            disabled={loading || localLoading}
           />
 
           {isLogin && (
@@ -258,15 +273,6 @@ export default function LoginScreen({ navigation }: Props) {
             <Text style={styles.switchAuthLink}>{isLogin ? 'Sign Up' : 'Sign In'}</Text>
           </TouchableOpacity>
         </View>
-
-        {/* Free Tier Notice */}
-        <Card variant="outlined" style={styles.freeNotice}>
-          <Text style={styles.freeNoticeTitle}>🎉 Free Tier Includes:</Text>
-          <Text style={styles.freeNoticeText}>
-            • Unlimited photo analysis{'\n'}• Instant cost estimates{'\n'}• Basic material
-            recommendations{'\n'}• Community support
-          </Text>
-        </Card>
       </ScrollView>
     </SafeAreaView>
   );
@@ -279,11 +285,12 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    padding: designTokens.spacing.xl,
+    padding: designTokens.spacing['2xl'],
+    paddingTop: designTokens.spacing['3xl'],
   },
   header: {
     alignItems: 'center',
-    marginBottom: designTokens.spacing['2xl'],
+    marginBottom: designTokens.spacing['3xl'],
   },
   logoContainer: {
     alignItems: 'center',
@@ -323,17 +330,19 @@ const styles = StyleSheet.create({
     lineHeight: designTokens.typography.lineHeight.lg,
   },
   authCard: {
-    marginBottom: designTokens.spacing.lg,
+    marginBottom: designTokens.spacing['2xl'],
+    paddingHorizontal: designTokens.spacing.xl,
+    paddingVertical: designTokens.spacing['2xl'],
   },
   formTitle: {
     fontSize: designTokens.typography.fontSize.lg,
     fontWeight: designTokens.typography.fontWeight.semibold,
     color: designTokens.colors.text.primary,
     textAlign: 'center',
-    marginBottom: designTokens.spacing.lg,
+    marginBottom: designTokens.spacing['2xl'],
   },
   authButton: {
-    marginTop: designTokens.spacing.md,
+    marginTop: designTokens.spacing.xl,
   },
   forgotPassword: {
     alignItems: 'center',
@@ -348,7 +357,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: designTokens.spacing.lg,
+    marginBottom: designTokens.spacing['2xl'],
+    marginTop: designTokens.spacing.xl,
   },
   switchAuthText: {
     fontSize: designTokens.typography.fontSize.sm,
@@ -358,20 +368,5 @@ const styles = StyleSheet.create({
     fontSize: designTokens.typography.fontSize.sm,
     color: designTokens.colors.primary[500],
     fontWeight: designTokens.typography.fontWeight.semibold,
-  },
-  freeNotice: {
-    backgroundColor: designTokens.colors.primary[50],
-    borderColor: designTokens.colors.primary[200],
-  },
-  freeNoticeTitle: {
-    fontSize: designTokens.typography.fontSize.base,
-    fontWeight: designTokens.typography.fontWeight.semibold,
-    color: designTokens.colors.primary[700],
-    marginBottom: designTokens.spacing.sm,
-  },
-  freeNoticeText: {
-    fontSize: designTokens.typography.fontSize.sm,
-    color: designTokens.colors.primary[600],
-    lineHeight: designTokens.typography.lineHeight.lg,
   },
 });
