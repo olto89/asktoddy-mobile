@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { Linking, AppState, AppStateStatus } from 'react-native';
 import { supabase, authHelpers } from '../services/supabase';
@@ -34,56 +34,57 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Get initial session from storage
-    const getInitialSession = async () => {
-      try {
-        console.log('🔄 Checking for existing session...');
+  // Use ref to track current session for intervals without causing re-renders
+  const sessionRef = useRef<Session | null>(null);
 
-        // First try to get the stored session
-        const { session: initialSession, error } = await authHelpers.getSession();
+  // Update ref whenever session changes
+  useEffect(() => {
+    sessionRef.current = session;
+  }, [session]);
+
+  useEffect(() => {
+    // Initialize auth state and set up listeners
+    let mounted = true;
+
+    const initializeAuth = async () => {
+      try {
+        console.log('🔄 Initializing authentication...');
+
+        // Get initial session - let Supabase handle this naturally
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession();
+
+        if (!mounted) return; // Component unmounted
 
         if (error) {
-          console.error('❌ Error getting session:', error);
-        } else if (initialSession) {
-          console.log('✅ Found existing session for:', initialSession.user?.email);
-          setSession(initialSession);
-          setUser(initialSession.user ?? null);
-
-          // Refresh the session to ensure it's valid
-          const {
-            data: { session: refreshedSession },
-            error: refreshError,
-          } = await supabase.auth.refreshSession();
-
-          if (refreshError) {
-            console.warn('⚠️ Session refresh failed:', refreshError);
-            // Session might be expired, clear it
-            if (
-              refreshError.message?.includes('refresh_token_not_found') ||
-              refreshError.message?.includes('invalid')
-            ) {
-              console.log('🔄 Session expired, clearing...');
-              await supabase.auth.signOut();
-              setSession(null);
-              setUser(null);
-            }
-          } else if (refreshedSession) {
-            console.log('✅ Session refreshed successfully');
-            setSession(refreshedSession);
-            setUser(refreshedSession.user ?? null);
-          }
+          console.error('❌ Error getting initial session:', error);
+          setSession(null);
+          setUser(null);
+        } else if (session) {
+          console.log('✅ Initial session found for:', session.user?.email);
+          setSession(session);
+          setUser(session.user);
         } else {
-          console.log('ℹ️ No existing session found');
+          console.log('ℹ️ No initial session found');
+          setSession(null);
+          setUser(null);
         }
       } catch (error) {
-        console.error('❌ Error during session initialization:', error);
+        console.error('❌ Error during auth initialization:', error);
+        if (mounted) {
+          setSession(null);
+          setUser(null);
+        }
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
-    getInitialSession();
+    initializeAuth();
 
     // Listen for auth changes
     const {
@@ -91,31 +92,43 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('🔔 Auth state changed:', event, session?.user?.email);
 
+      if (!mounted) return; // Component unmounted
+
       switch (event) {
         case 'INITIAL_SESSION':
-          // Initial session is loaded
           console.log('📱 Initial session loaded');
-          break;
+          // Don't override our initialization above
+          return;
         case 'SIGNED_IN':
           console.log('✅ User signed in');
+          setSession(session);
+          setUser(session?.user ?? null);
+          setLoading(false);
           break;
         case 'SIGNED_OUT':
           console.log('👋 User signed out');
+          setSession(null);
+          setUser(null);
+          setLoading(false);
           break;
         case 'TOKEN_REFRESHED':
           console.log('🔄 Token refreshed successfully');
+          if (session) {
+            setSession(session);
+            setUser(session.user);
+          }
           break;
         case 'USER_UPDATED':
           console.log('👤 User data updated');
+          if (session) {
+            setSession(session);
+            setUser(session.user);
+          }
           break;
-      }
-
-      setSession(session);
-      setUser(session?.user ?? null);
-
-      // Only set loading to false if it's not the initial load
-      if (event !== 'INITIAL_SESSION') {
-        setLoading(false);
+        default:
+          console.log('🔔 Other auth event:', event);
+          setSession(session);
+          setUser(session?.user ?? null);
       }
     });
 
@@ -165,90 +178,117 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     });
 
-    // Handle app state changes (background/foreground)
+    // Handle app state changes (background/foreground) - simplified
     const handleAppStateChange = async (nextAppState: AppStateStatus) => {
       console.log('📱 App state changed to:', nextAppState);
 
-      if (nextAppState === 'active' && session) {
-        // App came to foreground, check if session is still valid
-        console.log('🔄 App activated, checking session...');
-        const {
-          data: { session: currentSession },
-          error,
-        } = await supabase.auth.getSession();
-
-        if (error || !currentSession) {
-          console.warn('⚠️ Session invalid after app resume');
-          setSession(null);
-          setUser(null);
-        } else {
-          // Try to refresh the session
+      if (nextAppState === 'active' && sessionRef.current && mounted) {
+        // App came to foreground, do a gentle session check
+        console.log('🔄 App activated, gentle session check...');
+        try {
           const {
-            data: { session: refreshedSession },
-            error: refreshError,
-          } = await supabase.auth.refreshSession();
+            data: { session: currentSession },
+            error,
+          } = await supabase.auth.getSession();
 
-          if (!refreshError && refreshedSession) {
-            console.log('✅ Session refreshed after app resume');
-            setSession(refreshedSession);
-            setUser(refreshedSession.user ?? null);
+          if (!mounted) return; // Component unmounted
+
+          if (error || !currentSession) {
+            console.warn('⚠️ Session invalid after app resume');
+            setSession(null);
+            setUser(null);
+          } else if (currentSession.expires_at) {
+            // Only refresh if close to expiry (within 5 minutes)
+            const expiryTime = new Date(currentSession.expires_at * 1000);
+            const minutesUntilExpiry = (expiryTime.getTime() - Date.now()) / (1000 * 60);
+
+            if (minutesUntilExpiry < 5) {
+              console.log('🔄 Refreshing session on app resume');
+              try {
+                const {
+                  data: { session: refreshedSession },
+                } = await supabase.auth.refreshSession();
+                if (mounted && refreshedSession) {
+                  console.log('✅ Session refreshed after app resume');
+                  setSession(refreshedSession);
+                  setUser(refreshedSession.user);
+                }
+              } catch (refreshError) {
+                console.warn('⚠️ Session refresh failed on app resume:', refreshError);
+              }
+            }
           }
+        } catch (checkError) {
+          console.warn('⚠️ App resume session check error:', checkError);
         }
       }
     };
 
     const appStateSubscription = AppState.addEventListener('change', handleAppStateChange);
 
-    // Set up periodic session check (every 5 minutes)
+    // Set up periodic session check (every 10 minutes - less aggressive)
     const sessionCheckInterval = setInterval(
       async () => {
-        if (session) {
+        const currentSession = sessionRef.current;
+        if (currentSession && mounted) {
           console.log('⏰ Periodic session check...');
-          const {
-            data: { session: currentSession },
-            error,
-          } = await supabase.auth.getSession();
+          try {
+            const {
+              data: { session: freshSession },
+              error,
+            } = await supabase.auth.getSession();
 
-          if (error || !currentSession) {
-            console.warn('⚠️ Session check failed, might be expired');
-            // Session is invalid, clear it
-            setSession(null);
-            setUser(null);
-          } else {
-            // Check if token needs refresh (within 5 minutes of expiry)
-            const expiresAt = currentSession.expires_at;
-            if (expiresAt) {
-              const expiryTime = new Date(expiresAt * 1000);
-              const now = new Date();
-              const minutesUntilExpiry = (expiryTime.getTime() - now.getTime()) / (1000 * 60);
+            if (!mounted) return; // Component unmounted
 
-              console.log(`⏱️ Token expires in ${minutesUntilExpiry.toFixed(1)} minutes`);
+            if (error || !freshSession) {
+              console.warn('⚠️ Session check failed, might be expired');
+              // Session is invalid, clear it
+              setSession(null);
+              setUser(null);
+            } else {
+              // Check if token needs refresh (within 10 minutes of expiry)
+              const expiresAt = freshSession.expires_at;
+              if (expiresAt) {
+                const expiryTime = new Date(expiresAt * 1000);
+                const now = new Date();
+                const minutesUntilExpiry = (expiryTime.getTime() - now.getTime()) / (1000 * 60);
 
-              if (minutesUntilExpiry < 5) {
-                console.log('🔄 Token expiring soon, refreshing...');
-                const {
-                  data: { session: refreshedSession },
-                } = await supabase.auth.refreshSession();
-                if (refreshedSession) {
-                  console.log('✅ Token refreshed proactively');
-                  setSession(refreshedSession);
-                  setUser(refreshedSession.user ?? null);
+                console.log(`⏱️ Token expires in ${minutesUntilExpiry.toFixed(1)} minutes`);
+
+                if (minutesUntilExpiry < 10) {
+                  console.log('🔄 Token expiring soon, refreshing...');
+                  try {
+                    const {
+                      data: { session: refreshedSession },
+                    } = await supabase.auth.refreshSession();
+
+                    if (mounted && refreshedSession) {
+                      console.log('✅ Token refreshed proactively');
+                      setSession(refreshedSession);
+                      setUser(refreshedSession.user ?? null);
+                    }
+                  } catch (refreshError) {
+                    console.warn('⚠️ Token refresh failed:', refreshError);
+                  }
                 }
               }
             }
+          } catch (checkError) {
+            console.warn('⚠️ Session check error:', checkError);
           }
         }
       },
-      5 * 60 * 1000
-    ); // Check every 5 minutes
+      10 * 60 * 1000
+    ); // Check every 10 minutes
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
       linkingSubscription?.remove();
       appStateSubscription?.remove();
       clearInterval(sessionCheckInterval);
     };
-  }, [session]);
+  }, []); // Remove session dependency to prevent re-running
 
   const signIn = async (email: string, password: string) => {
     let timeoutId: NodeJS.Timeout | null = null;
@@ -256,6 +296,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setLoading(true);
       console.log('🔐 Attempting sign in for:', email);
+      console.log('🔐 Current session before sign in:', session?.user?.email || 'none');
 
       // Set a timeout to force loading to false after 30 seconds
       timeoutId = setTimeout(() => {
@@ -265,22 +306,46 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       const { data, error } = await authHelpers.signIn(email, password);
 
+      console.log('🔐 SignIn response:', {
+        hasData: !!data,
+        hasUser: !!data?.user,
+        hasSession: !!data?.session,
+        hasError: !!error,
+        errorMessage: error?.message,
+      });
+
       if (error) {
         console.error('❌ Sign in error:', error.message);
-        // Ensure we return the original error object with all properties
+        console.error('❌ Full error object:', error);
         return { error };
       }
 
-      if (data?.user) {
+      if (data?.user && data?.session) {
         console.log('✅ Sign in successful for:', data.user.email);
+        console.log(
+          '✅ Session obtained:',
+          data.session.access_token ? 'token present' : 'no token'
+        );
+        // The auth state change listener will handle setting the session
         return { error: null };
+      }
+
+      if (data?.user && !data?.session) {
+        console.warn('⚠️ User returned but no session - might need email verification');
+        return {
+          error: {
+            message: 'Please check your email to verify your account',
+            code: 'EMAIL_NOT_CONFIRMED',
+          },
+        };
       }
 
       // Handle case where no error but also no user data
       console.warn('⚠️ Sign in completed but no user data received');
+      console.warn('⚠️ Full response:', data);
       return {
         error: {
-          message: 'Login failed - no user data received',
+          message: 'Login failed - please try again',
           code: 'NO_USER_DATA',
         },
       };

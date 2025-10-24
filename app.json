@@ -2,7 +2,7 @@
   "expo": {
     "name": "AskToddy",
     "slug": "asktoddy-mobile",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.asktoddy.staging",
-      "buildNumber": "4",
+      "buildNumber": "5",
       "infoPlist": {
         "NSCameraUsageDescription": "AskToddy needs camera access to photograph construction projects for instant quotes.",
         "NSPhotoLibraryUsageDescription": "AskToddy needs photo library access to select construction project images.",
