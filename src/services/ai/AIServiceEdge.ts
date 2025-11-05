@@ -4,8 +4,9 @@
  * Replaces the 455-line AIMiddleware with API calls
  */
 
-import { AnalysisRequest, ProjectAnalysis } from './types';
+import { AnalysisRequest, ContextualAnalysisRequest, ProjectAnalysis } from './types';
 import { config } from '../../config';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface AnalysisResponse {
   success: boolean;
@@ -21,10 +22,54 @@ interface AnalysisResponse {
 class AIServiceEdge {
   private baseUrl: string;
   private isInitialized = false;
+  private currentSessionId: string | null = null;
 
   constructor() {
     // Use Supabase Edge Function URL
     this.baseUrl = `${config.supabase.url}/functions/v1/analyze-construction`;
+    this.loadOrCreateSession();
+  }
+
+  /**
+   * Load existing session ID or create new one
+   */
+  private async loadOrCreateSession(): Promise<void> {
+    try {
+      const existingSessionId = await AsyncStorage.getItem('conversation_session_id');
+      if (existingSessionId) {
+        this.currentSessionId = existingSessionId;
+        console.log('📱 Loaded existing conversation session:', existingSessionId);
+      } else {
+        await this.createNewSession();
+      }
+    } catch (error) {
+      console.error('Failed to load session:', error);
+      await this.createNewSession();
+    }
+  }
+
+  /**
+   * Create a new conversation session
+   */
+  async createNewSession(): Promise<string> {
+    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    this.currentSessionId = sessionId;
+
+    try {
+      await AsyncStorage.setItem('conversation_session_id', sessionId);
+      console.log('🆕 Created new conversation session:', sessionId);
+    } catch (error) {
+      console.error('Failed to save session ID:', error);
+    }
+
+    return sessionId;
+  }
+
+  /**
+   * Get current session ID
+   */
+  getCurrentSessionId(): string | null {
+    return this.currentSessionId;
   }
 
   /**
@@ -60,7 +105,7 @@ class AIServiceEdge {
   }
 
   /**
-   * Analyze image using Edge Function
+   * Analyze image or message using Edge Function with contextual memory
    * All AI processing happens server-side
    */
   async analyzeImage(request: AnalysisRequest): Promise<ProjectAnalysis> {
@@ -68,10 +113,21 @@ class AIServiceEdge {
       await this.initialize();
     }
 
+    // Ensure session is ready
+    if (!this.currentSessionId) {
+      await this.loadOrCreateSession();
+    }
+
     const startTime = Date.now();
-    console.log('📸 Sending analysis request to Edge Function...');
+    console.log('📸 Sending contextual analysis request to Edge Function...');
 
     try {
+      // Convert to contextual request if sessionId is available
+      const contextualRequest: ContextualAnalysisRequest = {
+        ...request,
+        sessionId: this.currentSessionId!,
+      };
+
       const response = await fetch(this.baseUrl, {
         method: 'POST',
         headers: {
@@ -79,7 +135,7 @@ class AIServiceEdge {
           apikey: config.supabase.anonKey,
           Authorization: `Bearer ${config.supabase.anonKey}`,
         },
-        body: JSON.stringify(request),
+        body: JSON.stringify(contextualRequest),
       });
 
       if (!response.ok) {
@@ -94,24 +150,33 @@ class AIServiceEdge {
       }
 
       const processingTime = Date.now() - startTime;
-      console.log(`✅ Analysis completed in ${processingTime}ms using ${result.aiProvider}`);
+      console.log(
+        `✅ Contextual analysis completed in ${processingTime}ms using ${result.aiProvider}`
+      );
+      console.log(
+        `🧠 Response type: ${result.data.responseType}, Confidence: ${result.data.confidence}%`
+      );
 
       return result.data;
     } catch (error) {
-      console.error('❌ Edge AI analysis failed:', error);
+      console.error('❌ Edge AI contextual analysis failed:', error);
       throw error;
     }
   }
 
   /**
-   * Process chat message using Edge Function
+   * Process chat message using Edge Function with contextual memory
    */
   async processChat(message: string, context?: any): Promise<ProjectAnalysis> {
     return this.analyzeImage({
       message,
       analysisType: 'chat',
-      location: context?.location,
-      previousAnalysis: context?.previousAnalysis,
+      context: context?.location
+        ? {
+            location: context.location,
+            projectType: context?.projectType,
+          }
+        : undefined,
     });
   }
 

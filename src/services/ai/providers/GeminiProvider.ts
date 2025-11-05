@@ -20,9 +20,9 @@ export class GeminiProvider implements AIProvider {
 
     try {
       this.genAI = new GoogleGenerativeAI(this.apiKey);
-      // Use the working model from our web app
-      this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
-      console.log('✅ Gemini provider initialized successfully');
+      // Use stable Gemini 1.5 Flash model
+      this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      console.log('✅ Gemini provider initialized with gemini-1.5-flash');
     } catch (error) {
       console.error('❌ Failed to initialize Gemini provider:', error);
     }

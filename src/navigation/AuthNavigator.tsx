@@ -24,7 +24,7 @@ const Stack = createStackNavigator<RootStackParamList>();
 export default function AuthNavigator() {
   const { isAuthenticated, loading } = useAuth();
 
-  // Show loading spinner while checking auth state
+  // Show loading with orange background to match splash screen
   if (loading) {
     return (
       <View
@@ -32,10 +32,10 @@ export default function AuthNavigator() {
           flex: 1,
           justifyContent: 'center',
           alignItems: 'center',
-          backgroundColor: designTokens.colors.navy[900],
+          backgroundColor: designTokens.colors.primary[500], // Orange background
         }}
       >
-        <ActivityIndicator size="large" color={designTokens.colors.primary[500]} />
+        <ActivityIndicator size="large" color="white" />
       </View>
     );
   }

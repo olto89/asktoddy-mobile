@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ActivityIndicator, Image } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
 import designTokens from '../styles/designTokens';
@@ -21,34 +22,48 @@ export default function SplashScreen({ navigation }: Props) {
   }, [navigation]);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        {/* Logo placeholder - will be replaced with actual logo */}
-        <View style={styles.logoContainer}>
-          <View style={styles.logoPlaceholder}>
-            <Text style={styles.logoText}>AT</Text>
+    <LinearGradient
+      colors={['#FF6B35', '#FF8C42']} // Same gradient as ToddyHeader
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 0 }}
+      style={styles.gradientContainer}
+    >
+      <SafeAreaView style={styles.container}>
+        <View style={styles.content}>
+          {/* Toddy Character Logo */}
+          <View style={styles.logoContainer}>
+            <View style={styles.characterContainer}>
+              <Image
+                source={require('../../assets/characters/toddy-character.png')}
+                style={styles.characterImage}
+                resizeMode="contain"
+              />
+            </View>
+            <Text style={styles.brandName}>AskToddy</Text>
+            <Text style={styles.tagline}>AI-powered construction quotes</Text>
           </View>
-          <Text style={styles.brandName}>AskToddy</Text>
-          <Text style={styles.tagline}>AI-powered construction quotes</Text>
-        </View>
 
-        <View style={styles.footer}>
-          <ActivityIndicator
-            size="large"
-            color={designTokens.colors.primary[500]}
-            style={styles.spinner}
-          />
-          <Text style={styles.loadingText}>Getting ready...</Text>
+          <View style={styles.footer}>
+            <ActivityIndicator
+              size="large"
+              color={designTokens.colors.text.inverse}
+              style={styles.spinner}
+            />
+            <Text style={styles.loadingText}>Getting ready...</Text>
+          </View>
         </View>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
+  gradientContainer: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: designTokens.colors.navy[900],
+    backgroundColor: 'transparent', // Let gradient show through
   },
   content: {
     flex: 1,
@@ -60,33 +75,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: designTokens.spacing['4xl'],
   },
-  logoPlaceholder: {
-    width: 120,
-    height: 120,
-    borderRadius: designTokens.borderRadius['2xl'],
-    backgroundColor: designTokens.colors.primary[500],
+  characterContainer: {
+    width: 160,
+    height: 160,
+    borderRadius: designTokens.borderRadius['3xl'],
+    backgroundColor: designTokens.colors.text.inverse,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: designTokens.spacing.lg,
-    ...designTokens.shadows.lg,
+    marginBottom: designTokens.spacing['2xl'],
+    ...designTokens.shadows.xl,
+    padding: designTokens.spacing.lg,
   },
-  logoText: {
-    fontSize: designTokens.typography.fontSize['4xl'],
-    fontWeight: designTokens.typography.fontWeight.bold,
-    color: designTokens.colors.text.inverse,
+  characterImage: {
+    width: 120,
+    height: 120,
   },
   brandName: {
-    fontSize: designTokens.typography.fontSize['3xl'],
+    fontSize: designTokens.typography.fontSize['5xl'], // Larger text
     fontWeight: designTokens.typography.fontWeight.bold,
     color: designTokens.colors.text.inverse,
-    marginBottom: designTokens.spacing.sm,
+    marginBottom: designTokens.spacing.md,
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   tagline: {
-    fontSize: designTokens.typography.fontSize.lg,
-    fontWeight: designTokens.typography.fontWeight.normal,
-    color: designTokens.colors.navy[300],
+    fontSize: designTokens.typography.fontSize.xl,
+    fontWeight: designTokens.typography.fontWeight.medium,
+    color: designTokens.colors.primary[100], // Light orange for contrast
     textAlign: 'center',
-    lineHeight: designTokens.typography.lineHeight.lg,
+    lineHeight: designTokens.typography.lineHeight.xl,
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   footer: {
     position: 'absolute',
@@ -97,8 +118,11 @@ const styles = StyleSheet.create({
     marginBottom: designTokens.spacing.md,
   },
   loadingText: {
-    fontSize: designTokens.typography.fontSize.sm,
-    color: designTokens.colors.navy[400],
+    fontSize: designTokens.typography.fontSize.base,
+    color: designTokens.colors.primary[100],
     fontWeight: designTokens.typography.fontWeight.medium,
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
 });

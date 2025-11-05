@@ -24,7 +24,7 @@ export default function App() {
     <AuthProvider>
       <NavigationContainer ref={navigationRef}>
         <AuthNavigator />
-        <StatusBar style="light" />
+        <StatusBar style="light" backgroundColor="#FF6B35" translucent={false} />
       </NavigationContainer>
     </AuthProvider>
   );

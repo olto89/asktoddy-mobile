@@ -17,54 +17,59 @@ interface ToddyHeaderProps {
 
 export default function ToddyHeader({ onMenuPress, showMenuButton = true }: ToddyHeaderProps) {
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <LinearGradient
-        colors={['#FF6B35', '#FF8C42']} // Toddy Orange gradient
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={styles.header}
-      >
-        <View style={styles.content}>
-          <View style={styles.leftSection}>
-            {/* Toddy Character Avatar */}
-            <View style={styles.avatar}>
-              <Image
-                source={require('../../assets/characters/toddy-character.png')}
-                style={styles.avatarImage}
-                resizeMode="contain"
-              />
+    <LinearGradient
+      colors={['#FF6B35', '#FF8C42']} // Toddy Orange gradient
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 0 }}
+      style={styles.fullContainer}
+    >
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <View style={styles.content}>
+            <View style={styles.leftSection}>
+              {/* Toddy Character Avatar */}
+              <View style={styles.avatar}>
+                <Image
+                  source={require('../../assets/characters/toddy-character.png')}
+                  style={styles.avatarImage}
+                  resizeMode="contain"
+                />
+              </View>
+
+              {/* Brand Text */}
+              <View style={styles.brandText}>
+                <Text style={styles.title}>AskToddy</Text>
+                <Text style={styles.subtitle}>Your Construction Expert</Text>
+              </View>
             </View>
 
-            {/* Brand Text */}
-            <View style={styles.brandText}>
-              <Text style={styles.title}>AskToddy</Text>
-              <Text style={styles.subtitle}>Your Construction Expert</Text>
-            </View>
+            {/* Menu Button */}
+            {showMenuButton && (
+              <TouchableOpacity
+                style={styles.menuButton}
+                onPress={onMenuPress}
+                accessibilityLabel="Open menu"
+                accessibilityRole="button"
+              >
+                <Ionicons name="menu" size={24} color="rgba(255, 255, 255, 0.9)" />
+              </TouchableOpacity>
+            )}
           </View>
-
-          {/* Menu Button */}
-          {showMenuButton && (
-            <TouchableOpacity
-              style={styles.menuButton}
-              onPress={onMenuPress}
-              accessibilityLabel="Open menu"
-              accessibilityRole="button"
-            >
-              <Ionicons name="menu" size={24} color="rgba(255, 255, 255, 0.9)" />
-            </TouchableOpacity>
-          )}
         </View>
-      </LinearGradient>
-    </SafeAreaView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
+  fullContainer: {
+    // LinearGradient fills entire header including status bar
+  },
   container: {
-    backgroundColor: designTokens.colors.primary[500], // Fallback color
+    backgroundColor: 'transparent', // Let gradient show through
   },
   header: {
-    // LinearGradient component handles the orange gradient
+    // No background color needed - gradient handles it
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,

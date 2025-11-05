@@ -294,14 +294,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     let timeoutId: NodeJS.Timeout | null = null;
 
     try {
-      setLoading(true);
       console.log('🔐 Attempting sign in for:', email);
       console.log('🔐 Current session before sign in:', session?.user?.email || 'none');
 
-      // Set a timeout to force loading to false after 30 seconds
+      // Set a timeout to prevent hanging (but don't set global loading)
       timeoutId = setTimeout(() => {
-        console.warn('SignIn timeout reached, forcing loading to stop');
-        setLoading(false);
+        console.warn('SignIn timeout reached');
       }, 30000);
 
       const { data, error } = await authHelpers.signIn(email, password);
@@ -353,11 +351,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.error('❌ Sign in exception:', error);
       return { error };
     } finally {
-      // Clear timeout and set loading to false
+      // Clear timeout (no global loading to reset)
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
-      setLoading(false);
     }
   };
 
@@ -365,12 +362,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     let timeoutId: NodeJS.Timeout | null = null;
 
     try {
-      setLoading(true);
-
-      // Set a timeout to force loading to false after 30 seconds
+      // Set a timeout to prevent hanging (but don't set global loading)
       timeoutId = setTimeout(() => {
-        console.warn('SignUp timeout reached, forcing loading to stop');
-        setLoading(false);
+        console.warn('SignUp timeout reached');
       }, 30000);
 
       const { data, error } = await authHelpers.signUp(email, password);
@@ -392,11 +386,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error) {
       return { error };
     } finally {
-      // Clear timeout and set loading to false
+      // Clear timeout (no global loading to reset)
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
-      setLoading(false);
     }
   };
 

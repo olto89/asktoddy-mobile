@@ -33,6 +33,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useImagePicker } from '../hooks/useImagePicker';
 import { useLocation } from '../hooks/useLocation';
 import ToddyHeader from '../components/ToddyHeader';
+import QuoteRefinementUI from '../components/QuoteRefinementUI';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Get device dimensions for responsive design
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -60,6 +62,34 @@ export default function ChatScreen() {
   const { user } = useAuth();
   const navigation = useNavigation();
   const { location, region, pricingContext, loading: locationLoading } = useLocation(true);
+
+  // Session management for contextual memory
+  const [sessionId, setSessionId] = useState<string | null>(null);
+
+  // Initialize or load session ID
+  useEffect(() => {
+    const initializeSession = async () => {
+      try {
+        const existingSessionId = await AsyncStorage.getItem('conversation_session_id');
+        if (existingSessionId) {
+          setSessionId(existingSessionId);
+          console.log('📱 Loaded existing conversation session:', existingSessionId);
+        } else {
+          const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          await AsyncStorage.setItem('conversation_session_id', newSessionId);
+          setSessionId(newSessionId);
+          console.log('🆕 Created new conversation session:', newSessionId);
+        }
+      } catch (error) {
+        console.error('Failed to initialize session:', error);
+        // Create fallback session without persistence
+        const fallbackSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        setSessionId(fallbackSessionId);
+      }
+    };
+
+    initializeSession();
+  }, []);
 
   // Update greeting message when location is loaded
   useEffect(() => {
@@ -92,6 +122,10 @@ export default function ChatScreen() {
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  // Quote refinement state
+  const [showRefinementUI, setShowRefinementUI] = useState(false);
+  const [selectedAnalysis, setSelectedAnalysis] = useState<any>(null);
+
   // Use image picker hook
   const { selectedImage, showImagePicker, clearImage } = useImagePicker({
     onImageSelected: uri => {
@@ -101,6 +135,31 @@ export default function ChatScreen() {
 
   const flatListRef = useRef<FlatList>(null);
   const inputRef = useRef<TextInput>(null);
+
+  /**
+   * Start a new conversation session (clear context)
+   */
+  const startNewConversation = async () => {
+    try {
+      const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      await AsyncStorage.setItem('conversation_session_id', newSessionId);
+      setSessionId(newSessionId);
+
+      // Clear messages except welcome message
+      setMessages([
+        {
+          id: '1',
+          role: 'assistant',
+          content: `Hi! I'm Toddy, your construction cost expert 👋\n\nI provide detailed quotes for any building project:\n• Full cost breakdowns (materials + labour + tools)\n• Project timelines and phases\n• What each trade will charge\n• VAT and contingency costs\n\nTell me about your project and I'll give you a comprehensive quote! You can also upload photos.`,
+          timestamp: new Date().toISOString(),
+        },
+      ]);
+
+      console.log('🔄 Started new conversation session:', newSessionId);
+    } catch (error) {
+      console.error('Failed to start new conversation:', error);
+    }
+  };
 
   // Auto-scroll to bottom when new messages are added with animation
   useEffect(() => {
@@ -203,11 +262,13 @@ export default function ChatScreen() {
           aiProvider: 'development-mock', // HARDCODED: Development identifier
         };
       } else {
-        // Call analyze-construction Edge Function with real location
+        // Call analyze-construction Edge Function with contextual memory
         const { data, error } = await supabase.functions.invoke('analyze-construction', {
           body: {
             message: userMessage.content || undefined,
             imageUri: userMessage.imageUri,
+            sessionId: sessionId, // Include session for contextual memory
+            userId: user?.id, // Include user ID if available
             context: {
               location: pricingContext?.location || 'Unknown location',
               city: pricingContext?.city || 'Unknown',
@@ -431,6 +492,86 @@ export default function ChatScreen() {
   };
 
   /**
+   * Handle refine quote button press
+   */
+  const handleRefineQuote = (analysis: any) => {
+    // Native haptic feedback
+    if (isIOS) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+    setSelectedAnalysis(analysis);
+    setShowRefinementUI(true);
+  };
+
+  /**
+   * Handle quote refinement submission
+   */
+  const handleRefineQuoteSubmit = async (refinements: any) => {
+    try {
+      // Call analyze-construction with refinement data
+      const { data, error } = await supabase.functions.invoke('analyze-construction', {
+        body: {
+          message: `Please refine my quote based on this feedback: ${refinements.feedback.comments}`,
+          sessionId: sessionId,
+          userId: user?.id,
+          refinements: refinements,
+          originalAnalysis: selectedAnalysis,
+          context: {
+            location: pricingContext?.location || 'Unknown location',
+            city: pricingContext?.city || 'Unknown',
+            postcode: pricingContext?.postcode,
+            region: pricingContext?.region || 'UK',
+            regionCode: pricingContext?.regionCode,
+            pricingMultiplier: pricingContext?.pricingMultiplier || 1.0,
+            coordinates: pricingContext?.coordinates,
+            projectType: selectedAnalysis?.projectType,
+            preferredProvider: 'auto',
+          },
+          history: messages.slice(-6).map(m => ({
+            role: m.role,
+            content: m.content,
+            timestamp: m.timestamp,
+          })),
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.success && data?.data) {
+        const analysis = data.data;
+        const responseContent = formatAnalysisResponse(analysis);
+
+        // Add refined quote message
+        const refinedMessage = {
+          id: `${Date.now()}_refined`,
+          role: 'assistant',
+          content: `✨ **Refined Quote Based on Your Feedback**\n\n${responseContent}`,
+          timestamp: new Date().toISOString(),
+          showDocumentButtons: true,
+          analysis: analysis,
+        };
+
+        setMessages(prev => [...prev, refinedMessage]);
+
+        // Auto-scroll to new message
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: true });
+        }, 100);
+
+        // Show success feedback
+        if (isIOS) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+      } else {
+        throw new Error('Invalid response from server');
+      }
+    } catch (error) {
+      console.error('Quote refinement error:', error);
+      Alert.alert('Error', 'Failed to refine quote. Please try again.');
+    }
+  };
+
+  /**
    * Render individual message bubble with native styling
    */
   const renderMessage = ({ item }: { item: Message }) => {
@@ -519,6 +660,18 @@ export default function ChatScreen() {
               >
                 <Ionicons name="checkbox" size={16} color={designTokens.colors.primary[500]} />
                 <Text style={styles.documentButtonText}>Task List</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.documentButton,
+                  styles.refineButton,
+                  isIOS && styles.documentButtonIOS,
+                ]}
+                onPress={() => handleRefineQuote(item.analysis)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="settings" size={16} color={designTokens.colors.primary[500]} />
+                <Text style={styles.documentButtonText}>Refine Quote</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -652,6 +805,19 @@ export default function ChatScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Quote Refinement Modal */}
+      {selectedAnalysis && (
+        <QuoteRefinementUI
+          visible={showRefinementUI}
+          onClose={() => {
+            setShowRefinementUI(false);
+            setSelectedAnalysis(null);
+          }}
+          analysis={selectedAnalysis}
+          onRefineQuote={handleRefineQuoteSubmit}
+        />
+      )}
     </View>
   );
 }
@@ -744,6 +910,10 @@ const styles = StyleSheet.create({
     fontSize: designTokens.typography.fontSize.sm,
     color: designTokens.colors.primary[500],
     fontWeight: designTokens.typography.fontWeight.medium,
+  },
+  refineButton: {
+    backgroundColor: '#fff5f2',
+    borderColor: designTokens.colors.primary,
   },
   attachmentPreview: {
     flexDirection: 'row',

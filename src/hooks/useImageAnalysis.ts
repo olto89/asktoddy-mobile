@@ -3,8 +3,9 @@
  * Thin client implementation that delegates to analyze-construction Edge Function
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../services/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface AnalysisContext {
   location?: string;
@@ -58,6 +59,29 @@ export const useImageAnalysis = (options: UseImageAnalysisOptions = {}): ImageAn
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [lastResult, setLastResult] = useState<AnalysisResult | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+
+  // Initialize session ID
+  useEffect(() => {
+    const initializeSession = async () => {
+      try {
+        const existingSessionId = await AsyncStorage.getItem('conversation_session_id');
+        if (existingSessionId) {
+          setSessionId(existingSessionId);
+        } else {
+          const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          await AsyncStorage.setItem('conversation_session_id', newSessionId);
+          setSessionId(newSessionId);
+        }
+      } catch (error) {
+        console.error('Failed to initialize session in useImageAnalysis:', error);
+        const fallbackSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        setSessionId(fallbackSessionId);
+      }
+    };
+
+    initializeSession();
+  }, []);
 
   /**
    * Analyze image only (no text message)
@@ -74,6 +98,7 @@ export const useImageAnalysis = (options: UseImageAnalysisOptions = {}): ImageAn
       const { data, error } = await supabase.functions.invoke('analyze-construction', {
         body: {
           imageUri,
+          sessionId: sessionId, // Include session for contextual memory
           context: {
             ...defaultContext,
             ...context,
@@ -132,6 +157,7 @@ export const useImageAnalysis = (options: UseImageAnalysisOptions = {}): ImageAn
         body: {
           message,
           imageUri,
+          sessionId: sessionId, // Include session for contextual memory
           context: {
             ...defaultContext,
             ...context,

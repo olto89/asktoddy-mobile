@@ -36,7 +36,7 @@ export const getAuthErrorMessage = (error: any): AuthErrorResponse => {
     };
   }
 
-  // Handle specific Supabase error messages
+  // Handle specific Supabase error messages - secure, don't reveal if email exists
   if (
     errorMessage.includes('invalid login credentials') ||
     errorMessage.includes('invalid email or password') ||
@@ -44,8 +44,8 @@ export const getAuthErrorMessage = (error: any): AuthErrorResponse => {
     errorMessage.includes('invalid credentials')
   ) {
     return {
-      message: 'Email or password is incorrect',
-      suggestion: 'Please check your email and password, or try resetting your password',
+      message: 'Invalid email or password',
+      suggestion: 'Please check your credentials and try again',
       action: 'forgot_password',
     };
   }
@@ -80,8 +80,8 @@ export const getAuthErrorMessage = (error: any): AuthErrorResponse => {
 
   if (errorMessage.includes('user not found') || errorMessage.includes('no user found')) {
     return {
-      message: 'No account found with this email',
-      suggestion: 'Would you like to create a new account?',
+      message: 'Invalid email or password',
+      suggestion: 'Please check your credentials and try again',
       action: 'signup',
     };
   }
@@ -116,8 +116,9 @@ export const getAuthErrorMessage = (error: any): AuthErrorResponse => {
   // Generic fallback for unknown errors
   console.warn('⚠️ Unhandled auth error:', error);
   return {
-    message: 'Login failed - please try again',
-    suggestion: `Unexpected error occurred. Please check your connection and try again, or contact support if the problem persists.`,
+    message: 'Something went wrong',
+    suggestion:
+      'Please check your connection and try again, or contact support if the problem continues.',
     action: 'retry',
   };
 };

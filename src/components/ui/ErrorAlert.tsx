@@ -81,8 +81,8 @@ export default function ErrorAlert({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: designTokens.colors.error[25],
-    borderColor: designTokens.colors.error[200],
+    backgroundColor: '#fef2f2', // Light red background
+    borderColor: designTokens.colors.error,
     borderWidth: 1,
     marginVertical: designTokens.spacing.md,
   },
@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: designTokens.typography.fontSize.base,
     fontWeight: designTokens.typography.fontWeight.semibold,
-    color: designTokens.colors.error[700],
+    color: designTokens.colors.error,
     flex: 1,
   },
   dismissButton: {
@@ -113,18 +113,18 @@ const styles = StyleSheet.create({
   },
   dismissText: {
     fontSize: designTokens.typography.fontSize.lg,
-    color: designTokens.colors.error[500],
+    color: designTokens.colors.error,
     fontWeight: designTokens.typography.fontWeight.bold,
   },
   message: {
     fontSize: designTokens.typography.fontSize.sm,
-    color: designTokens.colors.error[600],
+    color: designTokens.colors.error,
     marginBottom: designTokens.spacing.xs,
     lineHeight: designTokens.typography.lineHeight.base,
   },
   suggestion: {
     fontSize: designTokens.typography.fontSize.xs,
-    color: designTokens.colors.error[500],
+    color: designTokens.colors.grey[600],
     marginBottom: designTokens.spacing.md,
     lineHeight: designTokens.typography.lineHeight.base,
     fontStyle: 'italic',
@@ -133,14 +133,14 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingVertical: designTokens.spacing.xs,
     paddingHorizontal: designTokens.spacing.sm,
-    backgroundColor: designTokens.colors.error[100],
+    backgroundColor: '#fee2e2', // Light red background for button
     borderRadius: designTokens.borderRadius.md,
     borderWidth: 1,
-    borderColor: designTokens.colors.error[300],
+    borderColor: designTokens.colors.error,
   },
   actionText: {
     fontSize: designTokens.typography.fontSize.sm,
-    color: designTokens.colors.error[700],
+    color: designTokens.colors.error,
     fontWeight: designTokens.typography.fontWeight.medium,
   },
 });
