@@ -30,9 +30,10 @@ export function getEnvironment(): Environment {
     GEMINI_API_KEY: Deno.env.get('GEMINI_API_KEY') || '',
     OPENAI_API_KEY: Deno.env.get('OPENAI_API_KEY') || '',
 
-    // Supabase Configuration
+    // Supabase Configuration (these are automatically provided by Supabase)
     SUPABASE_URL: Deno.env.get('SUPABASE_URL') || '',
-    SUPABASE_SERVICE_ROLE_KEY: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '',
+    SUPABASE_SERVICE_ROLE_KEY:
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SERVICE_ROLE_KEY') || '',
 
     // External APIs
     HSS_HIRE_API_KEY: Deno.env.get('HSS_HIRE_API_KEY'),

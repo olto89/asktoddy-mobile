@@ -7,7 +7,12 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createResponse, createErrorResponse, getEnvironment, debugLog } from '../_shared/env.ts';
 import { AIMiddleware } from './middleware.ts';
-import { AnalysisRequest, AnalysisResponse } from './types.ts';
+import {
+  AnalysisRequest,
+  AnalysisResponse,
+  ContextualAnalysisRequest,
+  ProjectAnalysis,
+} from './types.ts';
 
 console.log('🏗️ Analyze Construction Edge Function initialized with AI Middleware');
 
@@ -25,7 +30,7 @@ function transformAnalysisForMobile(analysis: ProjectAnalysis): any {
       totalDays += days;
     }
   }
-  
+
   // If no phases, estimate from professional timeline
   if (totalDays === 0 && analysis.timeline?.professional) {
     totalDays = parseInt(analysis.timeline.professional.match(/\d+/)?.[0] || '5');
@@ -66,8 +71,13 @@ Deno.serve(async req => {
     // Initialize middleware on first request
     if (!aiMiddleware) {
       aiMiddleware = new AIMiddleware(middlewareConfig);
-      aiMiddleware.initializeProviders(env.GEMINI_API_KEY, env.OPENAI_API_KEY);
-      console.log('✅ AI Middleware initialized');
+      aiMiddleware.initializeProviders(
+        env.GEMINI_API_KEY,
+        env.OPENAI_API_KEY,
+        env.SUPABASE_URL,
+        env.SUPABASE_SERVICE_ROLE_KEY
+      );
+      console.log('✅ AI Middleware initialized with contextual memory');
     }
 
     // Handle CORS preflight
@@ -102,7 +112,7 @@ Deno.serve(async req => {
       const startTime = Date.now();
 
       try {
-        const requestData: AnalysisRequest = await req.json();
+        const requestData: AnalysisRequest | ContextualAnalysisRequest = await req.json();
         debugLog('Analysis request', requestData);
 
         // Validate request

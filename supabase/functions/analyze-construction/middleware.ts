@@ -14,6 +14,7 @@ import {
 import { GeminiProvider } from './providers/gemini.ts';
 import { OpenAIProvider } from './providers/openai.ts';
 import { MockProvider } from './providers/mock.ts';
+import { ContextManager } from './context/ContextManager.ts';
 
 export class AIMiddleware {
   private providers: Map<string, AIProvider> = new Map();
@@ -26,20 +27,32 @@ export class AIMiddleware {
   /**
    * Initialize providers with API keys from environment
    */
-  initializeProviders(geminiApiKey: string, openaiApiKey?: string): void {
+  initializeProviders(
+    geminiApiKey: string,
+    openaiApiKey?: string,
+    supabaseUrl?: string,
+    supabaseServiceKey?: string
+  ): void {
+    // Create ContextManager if Supabase credentials are available
+    let contextManager: ContextManager | undefined;
+    if (supabaseUrl && supabaseServiceKey) {
+      contextManager = new ContextManager(supabaseUrl, supabaseServiceKey);
+      console.log('✅ ContextManager initialized for conversation memory');
+    }
+
     // Register Gemini provider if API key is available
     if (geminiApiKey && geminiApiKey !== 'your_api_key_here') {
-      const geminiProvider = new GeminiProvider(geminiApiKey);
+      const geminiProvider = new GeminiProvider(geminiApiKey, contextManager);
       this.registerProvider(geminiProvider);
-      console.log('✅ Gemini provider registered');
+      console.log('✅ Gemini provider registered with contextual memory');
     }
 
     // Register OpenAI provider if API key is available
     if (openaiApiKey && openaiApiKey !== 'your_api_key_here' && openaiApiKey.length > 20) {
-      // Default to cost-effective gpt-4o-mini model
-      const openaiProvider = new OpenAIProvider(openaiApiKey, 'gpt-4o-mini');
+      // Default to cost-effective gpt-4o-mini model with contextual memory
+      const openaiProvider = new OpenAIProvider(openaiApiKey, 'gpt-4o-mini', contextManager);
       this.registerProvider(openaiProvider);
-      console.log('✅ OpenAI provider registered');
+      console.log('✅ OpenAI provider registered with contextual memory');
     } else {
       console.log('⚠️ OpenAI provider not configured - API key missing');
     }
@@ -67,16 +80,20 @@ export class AIMiddleware {
   }
 
   /**
-   * Main analysis method - handles provider selection and fallback
+   * Main analysis method - handles intelligent provider selection and fallback
    */
   async analyzeImage(request: AnalysisRequest): Promise<ProjectAnalysis> {
     const startTime = Date.now();
 
-    // Try primary provider first
-    const primaryProvider = this.providers.get(this.config.primaryProvider);
+    // Determine optimal provider based on request characteristics
+    const selectedProvider = this.selectOptimalProvider(request);
+    console.log(`🧠 Intelligent provider selection: ${selectedProvider} for this request`);
+
+    // Try selected provider first
+    const primaryProvider = this.providers.get(selectedProvider);
     if (primaryProvider) {
       try {
-        console.log(`🤖 Attempting analysis with primary provider: ${this.config.primaryProvider}`);
+        console.log(`🤖 Attempting analysis with selected provider: ${selectedProvider}`);
         const result = await this.executeWithTimeout(
           primaryProvider.analyzeImage(request),
           this.config.timeoutMs
@@ -85,15 +102,19 @@ export class AIMiddleware {
         result.processingTimeMs = Date.now() - startTime;
         result.aiProvider = primaryProvider.name;
 
+        // Log performance metrics for provider comparison
+        this.logProviderPerformance(primaryProvider.name, result.processingTimeMs, true);
+
         console.log(
           `✅ Analysis completed with ${primaryProvider.name} in ${result.processingTimeMs}ms`
         );
         return result;
       } catch (error) {
-        console.warn(`❌ Primary provider ${this.config.primaryProvider} failed:`, error);
+        console.warn(`❌ Selected provider ${selectedProvider} failed:`, error);
+        this.logProviderPerformance(selectedProvider, Date.now() - startTime, false);
 
         if (!this.config.enableFallback) {
-          throw new Error(`Primary AI provider failed: ${error}`);
+          throw new Error(`Selected AI provider failed: ${error}`);
         }
       }
     }
@@ -608,5 +629,28 @@ export class AIMiddleware {
       aiProvider: 'fallback',
       processingTimeMs: 0,
     };
+  }
+
+  /**
+   * Log provider performance metrics for analysis and optimization
+   */
+  private logProviderPerformance(
+    providerName: string,
+    processingTimeMs: number,
+    success: boolean
+  ): void {
+    const performance = {
+      provider: providerName,
+      processingTime: processingTimeMs,
+      success,
+      timestamp: new Date().toISOString(),
+    };
+
+    console.log(
+      `📊 Provider Performance: ${providerName} - ${processingTimeMs}ms - ${success ? '✅ Success' : '❌ Failed'}`
+    );
+
+    // In a production environment, you might want to store these metrics
+    // in a database for analysis and automatic provider optimization
   }
 }

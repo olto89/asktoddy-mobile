@@ -2,7 +2,7 @@
   "expo": {
     "name": "AskToddy",
     "slug": "asktoddy-mobile",
-    "version": "1.0.4",
+    "version": "1.1.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -12,12 +12,17 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#FF7A3B"
     },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.asktoddy.staging",
-      "buildNumber": "5",
+      "buildNumber": "10",
+      "splash": {
+        "backgroundColor": "#FF7A3B",
+        "image": "./assets/splash-icon.png",
+        "resizeMode": "contain"
+      },
       "infoPlist": {
         "NSCameraUsageDescription": "AskToddy needs camera access to photograph construction projects for instant quotes.",
         "NSPhotoLibraryUsageDescription": "AskToddy needs photo library access to select construction project images.",

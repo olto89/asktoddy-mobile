@@ -18,6 +18,36 @@ export interface QuoteBreakdown {
   };
 }
 
+// Enhanced Quote System for Structured Refinement
+export interface StructuredQuoteBreakdown {
+  projectType: string;
+  totalCost: number;
+  categories: Array<{
+    id: string;
+    name: string;
+    cost: number;
+    percentage: number;
+    confidence: 'high' | 'medium' | 'low';
+    notes?: string;
+  }>;
+  assumptions: string[];
+  refinementSuggestions: string[];
+}
+
+export interface QuoteRefinementContext {
+  projectType: string;
+  currentIteration: number;
+  maxIterations: number;
+  userConcerns: string[];
+  adjustmentsMade: Array<{
+    category: string;
+    change: string;
+    reasoning: string;
+  }>;
+  validatedCategories: string[];
+  finalQuote: boolean;
+}
+
 export interface MaterialItem {
   name: string;
   quantity: string;
@@ -38,15 +68,28 @@ export interface ToolRequirement {
 export interface ProjectAnalysis {
   projectType: string;
   description: string;
-  difficultyLevel: 'Easy' | 'Moderate' | 'Difficult' | 'Professional Required';
+  difficultyLevel:
+    | 'Easy'
+    | 'Moderate'
+    | 'Difficult'
+    | 'Professional Required'
+    | 'Information Needed'
+    | 'Preliminary Estimate';
+  responseType?: 'conversation' | 'estimation' | 'quote';
 
   // Cost breakdown
   costBreakdown: QuoteBreakdown;
+  roughEstimate?: {
+    min: number;
+    max: number;
+    caveats: string[];
+  };
 
   // Timeline estimates
   timeline: {
     diy: string;
     professional: string;
+    totalDays?: number;
     phases: Array<{
       name: string;
       duration: string;
@@ -67,6 +110,11 @@ export interface ProjectAnalysis {
   confidence: number; // 0-100% confidence in analysis
   recommendations: string[];
   warnings: string[];
+  questionsAsked?: string[];
+  informationNeeded?: string[];
+
+  // Mobile app compatibility
+  estimatedCost?: QuoteBreakdown;
 
   // Metadata
   analysisId: string;
@@ -85,7 +133,8 @@ export interface AIProviderConfig {
 }
 
 export interface AnalysisRequest {
-  imageUri: string;
+  imageUri?: string;
+  message?: string;
   additionalContext?: {
     projectType?: string;
     budgetRange?: { min: number; max: number };
@@ -99,7 +148,32 @@ export interface AnalysisRequest {
       currentMaterialRates?: any[];
     };
   };
+  analysisType?: 'image' | 'chat';
+  location?: string;
+  previousAnalysis?: any;
   userId?: string;
+}
+
+// Extended interface for contextual analysis requests
+export interface ContextualAnalysisRequest extends AnalysisRequest {
+  sessionId: string;
+  userId?: string;
+  context?: {
+    location?: string;
+    city?: string;
+    postcode?: string;
+    region?: string;
+    regionCode?: string;
+    pricingMultiplier?: number;
+    coordinates?: [number, number];
+    projectType?: string;
+    preferredProvider?: string;
+  };
+  history?: Array<{
+    role: 'user' | 'assistant';
+    content: string;
+    timestamp: string;
+  }>;
 }
 
 export interface AIProvider {

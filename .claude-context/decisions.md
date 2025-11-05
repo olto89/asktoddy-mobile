@@ -1,5 +1,103 @@
 # Architecture & Implementation Decisions
 
+## MVP STRATEGIC DECISIONS - October 31, 2025
+
+### Single Provider Focus: Google Gemini
+
+**Decision:** Simplify from multi-provider to single Gemini integration
+**Rationale:**
+
+- **Faster MVP Delivery**: Reduced complexity enables quicker time to market
+- **Simplified Architecture**: Single provider integration reduces codebase complexity by ~40%
+- **Focused Optimization**: Deep optimization of Gemini for construction analysis
+- **Easier Maintenance**: Single provider reduces testing surface and maintenance overhead
+- **Cost Efficiency**: Gemini provides excellent cost/performance ratio for our use case
+
+**Implementation Impact:**
+
+- Remove provider switching logic from AIMiddleware
+- Simplify configuration management
+- Focus prompts specifically for Gemini's capabilities
+- Streamline error handling and response processing
+
+### Business Model: 5 Free PDFs/Month
+
+**Decision:** Freemium model with 5 professional PDFs per month
+**Rationale:**
+
+- **Low Barrier to Entry**: Users can evaluate value before committing to subscription
+- **Sustainable Revenue**: Clear path to monetization through premium tiers
+- **Usage-Based Value**: PDF generation is tangible deliverable users will pay for
+- **Market Validation**: Free tier allows rapid user acquisition and feedback
+
+**Subscription Tiers:**
+
+1. **Free**: 5 PDFs/month, basic customization, standard support
+2. **Professional**: Unlimited PDFs, advanced customization, priority support, £29/month
+3. **Enterprise**: White-label, API access, team management, custom pricing
+
+### Comprehensive Pricing Engine
+
+**Decision:** Implement all construction cost categories in MVP
+**Categories Implemented:**
+
+- Materials and supplies with regional pricing
+- Labor and subcontractor costs with skill-based rates
+- Equipment and plant hire with real-time availability
+- Permits and compliance with regulatory requirements
+- Waste disposal with skip hire integration
+- Project management overhead calculations
+- Regional cost adjustments (London weighting, etc.)
+
+**Data Sources:**
+
+- UK government databases (ONS, BCIS, DBT)
+- Regional supplier APIs
+- Historical project analysis
+- Real-time market adjustments
+
+### PDF Generation with Professional Customization
+
+**Decision:** Advanced PDF customization as core differentiator
+**Features:**
+
+- Company branding with logo integration
+- Custom color schemes and professional layouts
+- Project-specific notes and terms
+- Detailed cost breakdowns with line items
+- Industry-compliant formatting standards
+- Mobile-optimized generation and sharing
+
+**Technical Implementation:**
+
+- Supabase Edge Functions with jsPDF
+- Template-based generation system
+- Real-time customization preview
+- Progressive download with status tracking
+
+### Construction Specialist AI Focus
+
+**Decision:** Position as UK construction industry specialist
+**Specialization Areas:**
+
+- Building regulations and compliance awareness
+- Material recognition and specification accuracy
+- Regional construction practice knowledge
+- Trade-specific cost calculations
+- Timeline estimation with weather considerations
+- Health and safety requirement integration
+
+**Gemini Optimization:**
+
+- Construction-specific prompt engineering
+- Enhanced material recognition training
+- Regional cost awareness
+- Industry terminology accuracy
+
+---
+
+## PREVIOUS ARCHITECTURE DECISIONS
+
 ## AI Service Architecture
 
 ### Provider Pattern

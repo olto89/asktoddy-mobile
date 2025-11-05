@@ -5,19 +5,25 @@
  */
 
 import { AIProvider, AnalysisRequest, ProjectAnalysis, QuoteBreakdown } from '../types.ts';
+import type { ContextualAnalysisRequest, ContextualProjectAnalysis } from '../context/types.ts';
+import { ContextManager } from '../context/ContextManager.ts';
+import { ConversationIntelligence } from '../intelligence/ConversationIntelligence.ts';
 
 export class OpenAIProvider implements AIProvider {
   name = 'openai';
   private apiKey: string;
   private model: string;
   private endpoint = 'https://api.openai.com/v1/chat/completions';
+  private contextManager?: ContextManager;
 
   constructor(
     apiKey: string,
-    model: 'gpt-4-vision-preview' | 'gpt-4o' | 'gpt-4o-mini' = 'gpt-4o-mini'
+    model: 'gpt-4-vision-preview' | 'gpt-4o' | 'gpt-4o-mini' = 'gpt-4o-mini',
+    contextManager?: ContextManager
   ) {
     this.apiKey = apiKey;
     this.model = model;
+    this.contextManager = contextManager;
   }
 
   async isAvailable(): Promise<boolean> {
@@ -57,9 +63,13 @@ export class OpenAIProvider implements AIProvider {
     }
   }
 
-  async analyzeImage(request: AnalysisRequest): Promise<ProjectAnalysis> {
+  async analyzeImage(
+    request: AnalysisRequest | ContextualAnalysisRequest
+  ): Promise<ProjectAnalysis> {
     try {
-      const messages = this.buildMessages(request);
+      // Create comprehensive analysis prompt with context
+      const prompt = await this.createAnalysisPrompt(request);
+      const messages = this.buildMessages(request, prompt);
 
       // Call OpenAI with structured output
       const response = await this.callOpenAI(messages, {
@@ -73,7 +83,14 @@ export class OpenAIProvider implements AIProvider {
       }
 
       // Parse and validate the response
-      return this.parseOpenAIResponse(response);
+      const analysis = this.parseOpenAIResponse(response);
+
+      // Update conversation context if ContextManager is available
+      if (this.contextManager && 'sessionId' in request) {
+        await this.updateConversationContext(request as ContextualAnalysisRequest, analysis);
+      }
+
+      return analysis;
     } catch (error) {
       console.error('OpenAI analysis failed:', error);
       throw new Error(
@@ -82,7 +99,10 @@ export class OpenAIProvider implements AIProvider {
     }
   }
 
-  private buildMessages(request: AnalysisRequest): any[] {
+  private buildMessages(
+    request: AnalysisRequest | ContextualAnalysisRequest,
+    prompt: string
+  ): any[] {
     const messages: any[] = [];
 
     // System prompt for construction expertise
@@ -90,14 +110,14 @@ export class OpenAIProvider implements AIProvider {
       role: 'system',
       content: `You are a highly experienced UK construction contractor and estimator with 20+ years in the industry. 
       Analyze construction projects and provide comprehensive, accurate quotes using current 2024 UK market rates.
-      Always return responses in valid JSON format.`,
+      Always return responses in valid JSON format with the exact structure specified in the prompt.`,
     });
 
     // Build user message with context
     const userContent: any[] = [
       {
         type: 'text',
-        text: this.createAnalysisPrompt(request),
+        text: prompt,
       },
     ];
 
@@ -145,86 +165,175 @@ export class OpenAIProvider implements AIProvider {
     return messages;
   }
 
-  private createAnalysisPrompt(request: AnalysisRequest): string {
-    const { context } = request;
+  private async createAnalysisPrompt(
+    request: AnalysisRequest | ContextualAnalysisRequest
+  ): Promise<string> {
+    const { context, message, history } = request;
 
-    return `Analyze this construction project and provide a detailed quote and analysis.
+    // Get conversation context and intelligence insights if available
+    let conversationSummary = '';
+    let previouslyAskedQuestions: string[] = [];
+    let currentCompleteness = 0;
+    let conversationInsights: any = null;
+    let flowRecommendations: any[] = [];
 
-CONTEXT:
-${context?.projectType ? `Project Type: ${context.projectType}` : ''}
-${context?.budgetRange ? `Budget Range: £${context.budgetRange.min} - £${context.budgetRange.max}` : ''}
-${context?.location ? `Location: ${context.location}` : 'UK-based project'}
-${request.message ? `User Description: "${request.message}"` : ''}
+    if (this.contextManager && 'sessionId' in request) {
+      const contextualRequest = request as ContextualAnalysisRequest;
+      const conversationContext = await this.contextManager.getContext(
+        contextualRequest.sessionId,
+        contextualRequest.userId
+      );
 
-REQUIREMENTS:
-1. Identify the specific type of construction work needed
-2. Provide accurate cost estimates using 2024 UK market rates
-3. Include VAT, waste factors, and delivery charges
-4. Consider regional variations (London +35%, etc.)
-5. Provide realistic timelines with preparation and drying times
-6. Specify required tools with rental costs
-7. List safety considerations and permit requirements
+      if (conversationContext) {
+        // Use enhanced conversation intelligence
+        conversationSummary = ConversationIntelligence.generateEnhancedSummary(conversationContext);
+        conversationInsights = ConversationIntelligence.analyzeConversation(conversationContext);
+        flowRecommendations =
+          ConversationIntelligence.generateFlowRecommendations(conversationContext);
 
-IMPORTANT: Return ONLY a valid JSON object with this structure:
-
-{
-  "projectType": "Specific project description",
-  "description": "Detailed analysis of work required",
-  "difficultyLevel": "Easy|Moderate|Difficult|Professional Required",
-  "costBreakdown": {
-    "materials": {
-      "min": 0,
-      "max": 0,
-      "items": [
-        {
-          "name": "Material name",
-          "quantity": "Amount with units",
-          "unitPrice": 0,
-          "totalPrice": 0,
-          "category": "structural|finishing|electrical|plumbing|other"
-        }
-      ]
-    },
-    "labor": {
-      "min": 0,
-      "max": 0,
-      "hourlyRate": 0,
-      "estimatedHours": 0
-    },
-    "total": {
-      "min": 0,
-      "max": 0
-    }
-  },
-  "timeline": {
-    "diy": "X days/weeks",
-    "professional": "X days",
-    "phases": [
-      {
-        "name": "Phase name",
-        "duration": "X days",
-        "description": "Work in this phase"
+        previouslyAskedQuestions = conversationContext.questionHistory.map(q => q.question);
+        currentCompleteness = conversationContext.completenessScore;
       }
-    ]
-  },
-  "toolsRequired": [
-    {
-      "name": "Tool name",
-      "category": "power_tools|hand_tools|heavy_machinery|safety",
-      "dailyRentalPrice": 0,
-      "estimatedDays": 0,
-      "required": true,
-      "alternatives": []
     }
-  ],
-  "safetyConsiderations": ["Safety points"],
-  "permitsRequired": ["Required permits"],
-  "requiresProfessional": false,
-  "professionalReasons": [],
-  "confidence": 85,
-  "recommendations": ["Recommendations"],
-  "warnings": []
-}`;
+
+    const contextSection = conversationSummary
+      ? `ENHANCED CONVERSATION CONTEXT:
+${conversationSummary}
+
+CONVERSATION INTELLIGENCE INSIGHTS:
+${
+  conversationInsights
+    ? `
+- Current Focus: ${conversationInsights.currentFocus}
+- Conversation Quality: ${conversationInsights.conversationQuality}%
+- Information Gaps: ${conversationInsights.informationGaps.join(', ') || 'None'}
+- Suggested Questions: ${conversationInsights.suggestedQuestions.slice(0, 2).join(' OR ')}
+- Next Best Actions: ${conversationInsights.nextBestActions.join(', ')}
+`
+    : ''
+}
+
+FLOW RECOMMENDATIONS:
+${
+  flowRecommendations.length > 0
+    ? `
+Primary Recommendation: ${flowRecommendations[0].action} - ${flowRecommendations[0].reasoning}
+${flowRecommendations[0].suggestedContent ? `Suggested Content: ${flowRecommendations[0].suggestedContent}` : ''}
+`
+    : 'Continue natural conversation flow'
+}
+
+PREVIOUSLY ASKED QUESTIONS (NEVER REPEAT):
+${previouslyAskedQuestions.length > 0 ? previouslyAskedQuestions.map(q => `- ${q}`).join('\n') : 'None'}
+
+`
+      : `CONTEXT:
+${context?.projectType ? `Project Type: ${context.projectType}` : ''}
+${context?.location ? `Location: ${context.location}` : 'UK-based project'}
+${history ? `Previous Conversation: ${JSON.stringify(history.slice(-3))}` : ''}
+
+`;
+
+    // Add refinement section if present
+    const refinementSection =
+      'refinements' in request && request.refinements
+        ? `QUOTE REFINEMENT REQUEST:
+The user is refining a previous quote with the following feedback:
+
+ORIGINAL QUOTE ANALYSIS:
+${request.originalAnalysis ? JSON.stringify(request.originalAnalysis, null, 2) : 'Not provided'}
+
+USER FEEDBACK:
+- Quote Accuracy: ${request.refinements.feedback.accuracy}
+- Comments: "${request.refinements.feedback.comments}"
+
+USER PREFERENCES:
+- Quality Level: ${request.refinements.preferences.qualityLevel} (budget/standard/premium)
+- Timeline Preference: ${request.refinements.preferences.timelinePreference} (fastest/standard/flexible)
+- Supplier Preference: ${request.refinements.preferences.supplierPreference} (cheapest/local/premium)
+
+ADJUSTMENT INSTRUCTIONS:
+- If accuracy is "too_high": Reduce costs by 10-20% while maintaining quality
+- If accuracy is "too_low": Increase costs by 10-20% and justify with better materials/labour
+- If accuracy is "about_right": Make fine adjustments based on preferences only
+- Apply quality level adjustments: budget (-15%), standard (baseline), premium (+25%)
+- Apply timeline adjustments: fastest (+20%), standard (baseline), flexible (-10%)
+- Apply supplier adjustments: cheapest (-10%), local (baseline), premium (+15%)
+
+IMPORTANT: Generate a completely NEW quote that incorporates this feedback, don't just modify the original.
+
+`
+        : '';
+
+    return `You are a highly experienced construction contractor and estimator with 20+ years in the industry. You provide professional consultation by first assessing if you have enough information to give accurate quotes.
+
+${contextSection}${refinementSection}ENHANCED INTELLIGENCE INSTRUCTIONS:
+${previouslyAskedQuestions.length > 0 ? '- NEVER ask questions that have been previously asked\n- Build upon information already gathered\n- Reference previous answers when relevant\n' : ''}
+${
+  conversationInsights
+    ? `- Current conversation quality is ${conversationInsights.conversationQuality}% - aim to improve this
+- Focus primarily on: ${conversationInsights.currentFocus}
+- Use intelligent question selection based on conversation flow
+`
+    : ''
+}
+${
+  flowRecommendations.length > 0
+    ? `- PRIMARY RECOMMENDATION: ${flowRecommendations[0].action.toUpperCase()} - ${flowRecommendations[0].reasoning}
+${flowRecommendations[0].suggestedContent ? `- SUGGESTED APPROACH: ${flowRecommendations[0].suggestedContent}` : ''}
+`
+    : ''
+}
+
+PHASE 1: INFORMATION ASSESSMENT
+Analyze the user's input and conversation history to score information completeness (0-8 points total):
+
+1. PROJECT TYPE CLARITY (0-2 points):
+   - 0: Vague ("renovation", "work needed")
+   - 1: General ("kitchen", "bathroom", "extension") 
+   - 2: Specific ("single-story kitchen extension", "ensuite bathroom renovation")
+
+2. SIZE AND SCOPE (0-2 points):
+   - 0: No size mentioned
+   - 1: Vague size ("small", "big", "standard")
+   - 2: Specific dimensions (sqm, room count, measurements)
+
+3. QUALITY REQUIREMENTS (0-2 points):
+   - 0: No quality level mentioned
+   - 1: General preference ("nice", "good quality")
+   - 2: Specific finish level ("mid-range", "luxury", "budget", specific brands)
+
+4. PROJECT CONSTRAINTS (0-2 points):
+   - 0: No additional details
+   - 1: Some context (budget range, timing, existing conditions)
+   - 2: Detailed constraints (access issues, planning permission, structural work, utilities)
+
+TOTAL SCORE: Add all points (0-8)${currentCompleteness > 0 ? ` - Consider existing completeness of ${currentCompleteness}%` : ''}
+
+PHASE 2: RESPONSE MODE SELECTION
+Based on total score:
+
+• 0-2 POINTS: CONVERSATION MODE
+- Ask 2-3 specific clarifying questions about the project
+- Focus on gathering missing critical information
+- DO NOT provide cost estimates
+- Be professional and educational
+
+• 3-5 POINTS: ESTIMATION MODE  
+- Provide very rough cost range with major caveats
+- Ask for remaining critical details
+- Include strong disclaimers about accuracy
+- Return simplified JSON with ranges only
+
+• 6-8 POINTS: QUOTE MODE
+- Generate detailed cost breakdown
+- Include comprehensive analysis
+- Return full JSON structure with detailed quotes
+- Include professional disclaimers
+
+${request.message ? `User message: "${request.message}"` : ''}
+
+IMPORTANT: Return ONLY a valid JSON object. No markdown, no explanation text, just pure JSON that matches one of these response modes.`;
   }
 
   private async callOpenAI(messages: any[], options: any = {}): Promise<string | null> {
@@ -348,6 +457,28 @@ IMPORTANT: Return ONLY a valid JSON object with this structure:
         max: (materials.max || 0) + (labor.max || 0),
       },
     };
+  }
+
+  /**
+   * Update conversation context after successful analysis
+   */
+  private async updateConversationContext(
+    request: ContextualAnalysisRequest,
+    analysis: ProjectAnalysis
+  ): Promise<void> {
+    if (!this.contextManager) return;
+
+    try {
+      await this.contextManager.updateContext(request.sessionId, request.userId, {
+        analysis,
+        userMessage: request.message || '',
+        timestamp: new Date().toISOString(),
+      });
+      console.log('📝 Conversation context updated via OpenAI');
+    } catch (error) {
+      console.error('Failed to update conversation context:', error);
+      // Don't throw - context update failure shouldn't break the main flow
+    }
   }
 }
 

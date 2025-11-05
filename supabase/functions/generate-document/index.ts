@@ -5,6 +5,8 @@
 
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createResponse, createErrorResponse, getEnvironment, debugLog } from '../_shared/env.ts';
+import { PDFGenerator } from './pdf-generator.ts';
+import type { DocumentRequest } from './types.ts';
 
 console.log('📄 Generate Document Edge Function initialized');
 
@@ -23,55 +25,62 @@ Deno.serve(async req => {
       return createResponse({
         service: 'generate-document',
         status: 'healthy',
-        version: '1.0.0',
+        version: '2.0.0',
         timestamp: new Date().toISOString(),
         environment: env.APP_ENV,
         supportedFormats: ['pdf'],
         documentTypes: ['quote', 'timeline', 'tasklist'],
+        features: [
+          'professional-branding',
+          'vat-calculations',
+          'task-checklists',
+          'mobile-optimized',
+        ],
       });
     }
 
     // Main document generation endpoint
     if (req.method === 'POST') {
-      const requestData = await req.json();
-      debugLog('Document generation request', requestData);
-
-      // Basic validation
-      if (!requestData.type || !requestData.projectType) {
-        return createErrorResponse('Type and projectType are required', 400);
-      }
-
-      const validTypes = ['quote', 'timeline', 'tasklist'];
-      if (!validTypes.includes(requestData.type)) {
-        return createErrorResponse(
-          `Invalid document type. Must be one of: ${validTypes.join(', ')}`,
-          400
-        );
-      }
-
-      // Mock document generation for now (will be replaced with real PDF logic)
-      const documentData = {
-        documentId: `${requestData.type}-${Date.now()}`,
+      const requestData: DocumentRequest = await req.json();
+      debugLog('Document generation request', {
         type: requestData.type,
         projectType: requestData.projectType,
-        generatedAt: new Date().toISOString(),
-        filename: `${requestData.projectType.toLowerCase().replace(/\s+/g, '-')}-${requestData.type}-${new Date().toISOString().split('T')[0]}.pdf`,
-        size: '2.4 MB',
-        pages: requestData.type === 'quote' ? 3 : requestData.type === 'timeline' ? 2 : 1,
-        downloadUrl: `https://api.asktoddy.com/documents/${requestData.type}-${Date.now()}.pdf`,
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
-      };
+        hasAnalysis: !!requestData.analysis,
+        hasPricing: !!requestData.pricing,
+        hasUserDetails: !!requestData.userDetails,
+      });
 
-      // Mock different response formats based on document type
-      const response = {
-        success: true,
-        document: documentData,
-        message: `${requestData.type.charAt(0).toUpperCase() + requestData.type.slice(1)} document generated successfully`,
-        processingTimeMs: 1200,
-      };
+      try {
+        // Validate the request
+        PDFGenerator.validateRequest(requestData);
 
-      debugLog('Document generation response', response);
-      return createResponse(response);
+        // Generate the PDF
+        const result = await PDFGenerator.generatePDF(requestData);
+
+        // Return PDF as response with proper headers
+        const headers = new Headers({
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename="${result.document.filename}"`,
+          'X-Document-ID': result.document.documentId,
+          'X-Processing-Time': result.processingTimeMs.toString(),
+          'X-Document-Pages': result.document.pages.toString(),
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+        });
+
+        debugLog('PDF generated successfully', {
+          documentId: result.document.documentId,
+          filename: result.document.filename,
+          size: result.document.size,
+          pages: result.document.pages,
+          processingTimeMs: result.processingTimeMs,
+        });
+
+        return new Response(result.pdfBuffer, { headers });
+      } catch (validationError) {
+        console.error('Document generation validation error:', validationError);
+        return createErrorResponse(validationError.message, 400);
+      }
     }
 
     return createErrorResponse('Method not allowed', 405);

@@ -103,7 +103,7 @@ export interface ProjectAnalysis {
 
 // Request/Response types for Edge Function
 export interface AnalysisRequest {
-  imageUri?: string;
+  imageUri?: string; // Support for images, PDFs, videos via URI
   message?: string;
   context?: {
     projectType?: string;
@@ -114,6 +114,47 @@ export interface AnalysisRequest {
   };
   history?: Message[];
   userId?: string;
+  // Media type hint for better processing
+  mediaType?: 'image' | 'pdf' | 'video' | 'document';
+  // Quote refinement support
+  refinements?: QuoteRefinements;
+  originalAnalysis?: ProjectAnalysis;
+}
+
+export interface QuoteRefinements {
+  feedback: {
+    accuracy: 'too_high' | 'too_low' | 'about_right';
+    comments: string;
+  };
+  adjustments: {
+    materials: MaterialAdjustment[];
+    labour: LabourAdjustment[];
+    tools: ToolAdjustment[];
+  };
+  preferences: {
+    qualityLevel: 'budget' | 'standard' | 'premium';
+    timelinePreference: 'fastest' | 'standard' | 'flexible';
+    supplierPreference: 'cheapest' | 'local' | 'premium';
+  };
+}
+
+export interface MaterialAdjustment {
+  item: string;
+  preferredBrand?: string;
+  qualityLevel?: 'budget' | 'standard' | 'premium';
+  adjustedPrice?: number;
+}
+
+export interface LabourAdjustment {
+  trade: string;
+  adjustedRate?: number;
+  preferredExperience?: 'apprentice' | 'experienced' | 'master';
+}
+
+export interface ToolAdjustment {
+  item: string;
+  preferredSource?: 'hire' | 'buy' | 'own';
+  adjustedCost?: number;
 }
 
 export interface Message {

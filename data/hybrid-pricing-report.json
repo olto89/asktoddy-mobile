@@ -1,0 +1,89 @@
+{
+  "summary": {
+    "sourcesProcessed": 7,
+    "pricesExtracted": 15,
+    "uniqueItems": 4,
+    "averageConfidence": 44
+  },
+  "sources": [
+    {
+      "type": "article",
+      "title": "Regional Construction Price Analysis - October 2024",
+      "confidence": 85,
+      "pricesExtracted": 3,
+      "url": "https://www.building.co.uk/data/bcis-house-building-cost-model"
+    },
+    {
+      "type": "article",
+      "title": "Real Extension Costs - What I Actually Paid",
+      "confidence": 90,
+      "pricesExtracted": 2,
+      "url": "https://www.ons.gov.uk/businessindustryandtrade/constructionindustry"
+    },
+    {
+      "type": "article",
+      "title": "Real Extension Costs - What I Actually Paid",
+      "confidence": 90,
+      "pricesExtracted": 2,
+      "url": "https://www.gov.uk/government/statistics/construction-output-price-indices"
+    },
+    {
+      "type": "blog",
+      "title": "Real Extension Costs - What I Actually Paid",
+      "confidence": 70,
+      "pricesExtracted": 2,
+      "url": "https://www.skillbuilder.tv"
+    },
+    {
+      "type": "blog",
+      "title": "Real Extension Costs - What I Actually Paid",
+      "confidence": 70,
+      "pricesExtracted": 2,
+      "url": "https://www.buildit.co.uk/blog"
+    },
+    {
+      "type": "forum",
+      "title": "Real Extension Costs - What I Actually Paid",
+      "confidence": 65,
+      "pricesExtracted": 2,
+      "url": "https://community.screwfix.com/forums/trade-talk.4/"
+    },
+    {
+      "type": "forum",
+      "title": "Real Extension Costs - What I Actually Paid",
+      "confidence": 65,
+      "pricesExtracted": 2,
+      "url": "https://www.diynot.com/diy/forums/electrics-uk.2/"
+    }
+  ],
+  "marketPrices": [
+    {
+      "item": "skilled carpenter labour",
+      "averagePrice": 320,
+      "priceRange": "£320 - £320",
+      "confidence": 46,
+      "sources": 1
+    },
+    {
+      "item": "bricklayer labour",
+      "averagePrice": 350,
+      "priceRange": "£350 - £350",
+      "confidence": 46,
+      "sources": 1
+    },
+    {
+      "item": "readymix concrete c25",
+      "averagePrice": 93.43,
+      "priceRange": "£85 - £95",
+      "confidence": 42,
+      "sources": 7
+    },
+    {
+      "item": "plasterboard 125mm standard",
+      "averagePrice": 8.2,
+      "priceRange": "£8.2 - £8.2",
+      "confidence": 42,
+      "sources": 6
+    }
+  ]
+}
