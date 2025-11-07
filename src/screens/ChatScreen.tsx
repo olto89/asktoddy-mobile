@@ -218,9 +218,17 @@ export default function ChatScreen() {
       // Development fallback - check if we're in development mode
       const isDevelopment = process.env.EXPO_PUBLIC_APP_ENV === 'development';
 
+      // Debug logging
+      console.log('🔍 Environment check:', {
+        EXPO_PUBLIC_APP_ENV: process.env.EXPO_PUBLIC_APP_ENV,
+        isDevelopment,
+        __DEV__,
+      });
+
       let analysis;
 
-      if (isDevelopment) {
+      if (false) {
+        // Temporarily disabled - force real Edge Function
         // MOCK DATA: Replace with real Edge Function in production
         // See MOCK_DATA_TRACKING.md for details
         console.log('🔧 Using development mock response with regional pricing');
