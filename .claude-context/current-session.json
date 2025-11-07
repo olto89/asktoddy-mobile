@@ -106,7 +106,7 @@
     "regionalVariations": true,
     "testingSuite": true
   },
-  "lastUpdated": "2025-11-07T09:20:11.294Z",
+  "lastUpdated": "2025-11-07T12:45:25.537Z",
   "project": {
     "name": "asktoddy-mobile",
     "version": "1.2.0",
@@ -118,14 +118,18 @@
   },
   "git": {
     "branch": "main",
-    "lastCommit": "107b0f1 fix: Upgrade to compatible React and React Native versions for Expo SDK 54",
+    "lastCommit": "adb672a CRITICAL: Fix Gemini model name to resolve API failures",
     "hasUncommittedChanges": true,
-    "changedFiles": 20
+    "changedFiles": 29
   },
   "environment": {
     "nodeVersion": "v24.3.0",
     "platform": "darwin"
   },
   "runningProcesses": [],
-  "recentFiles": ["src/services/ai/providers/GeminiProvider.ts"]
+  "recentFiles": [
+    "src/navigation/AuthNavigator.tsx",
+    "src/screens/ChatScreen.tsx",
+    "src/services/ai/providers/GeminiProvider.ts"
+  ]
 }
