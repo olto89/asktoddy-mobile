@@ -33,7 +33,7 @@ function queryLinear(query) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: LINEAR_API_KEY,
+        Authorization: `${LINEAR_API_KEY}`,
         'Content-Length': Buffer.byteLength(postData),
       },
     };

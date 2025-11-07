@@ -7,7 +7,6 @@ import { RootStackParamList } from '../../App';
 import designTokens from '../styles/designTokens';
 
 // Auth screens
-import SplashScreen from '../screens/SplashScreen';
 import LoginScreen from '../screens/LoginScreen';
 import EmailVerificationScreen from '../screens/EmailVerificationScreen';
 import VerificationSuccessScreen from '../screens/VerificationSuccessScreen';
@@ -55,7 +54,6 @@ export default function AuthNavigator() {
       {!isAuthenticated ? (
         // Auth stack - user not logged in
         <Stack.Group>
-          <Stack.Screen name="Splash" component={SplashScreen} options={{ headerShown: false }} />
           <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
           <Stack.Screen
             name="EmailVerification"

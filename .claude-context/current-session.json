@@ -105,5 +105,27 @@
     "quoteRefinement": true,
     "regionalVariations": true,
     "testingSuite": true
-  }
+  },
+  "lastUpdated": "2025-11-07T09:20:11.294Z",
+  "project": {
+    "name": "asktoddy-mobile",
+    "version": "1.2.0",
+    "dependencies": {
+      "expo": "54.0.17",
+      "react-native": "0.81.5",
+      "@google/generative-ai": "^0.24.1"
+    }
+  },
+  "git": {
+    "branch": "main",
+    "lastCommit": "107b0f1 fix: Upgrade to compatible React and React Native versions for Expo SDK 54",
+    "hasUncommittedChanges": true,
+    "changedFiles": 20
+  },
+  "environment": {
+    "nodeVersion": "v24.3.0",
+    "platform": "darwin"
+  },
+  "runningProcesses": [],
+  "recentFiles": ["src/services/ai/providers/GeminiProvider.ts"]
 }

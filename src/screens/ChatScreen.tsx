@@ -192,13 +192,15 @@ export default function ChatScreen() {
       imageUri: selectedImage || undefined,
     };
 
+    // Clear input immediately to prevent UI issues
+    setInputText('');
+    clearImage();
+
     // Animate message addition
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
 
     // Add user message to chat
     setMessages(prev => [...prev, userMessage]);
-    setInputText('');
-    clearImage();
 
     // Add loading message
     const loadingMessage: Message = {
@@ -214,7 +216,7 @@ export default function ChatScreen() {
 
     try {
       // Development fallback - check if we're in development mode
-      const isDevelopment = __DEV__ || process.env.EXPO_PUBLIC_APP_ENV === 'development';
+      const isDevelopment = process.env.EXPO_PUBLIC_APP_ENV === 'development';
 
       let analysis;
 

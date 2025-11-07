@@ -11,7 +11,7 @@ import { ConversationIntelligence } from '../intelligence/ConversationIntelligen
 export class GeminiProvider implements AIProvider {
   name = 'gemini';
   private apiKey: string;
-  private model = 'models/gemini-2.5-flash-preview-05-20'; // Updated to working model
+  private model = 'gemini-2.5-flash-preview-05-20'; // Updated to working model
   private endpoint = 'https://generativelanguage.googleapis.com/v1beta/models';
   private contextManager?: ContextManager;
 

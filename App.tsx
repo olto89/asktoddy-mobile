@@ -8,7 +8,6 @@ import AuthNavigator from './src/navigation/AuthNavigator';
 import { navigationRef } from './src/services/NavigationService';
 
 export type RootStackParamList = {
-  Splash: undefined;
   Login: undefined;
   EmailVerification: { email: string; password: string };
   VerificationSuccess: undefined;
