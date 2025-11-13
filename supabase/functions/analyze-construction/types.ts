@@ -39,6 +39,11 @@ export interface ToolRequirement {
   required: boolean;
   alternatives?: string[];
   marketData?: any; // Enhanced with real pricing data
+  contingency?: {
+    percentage: number;
+    amount: number;
+    reason: string;
+  };
 }
 
 export interface ProjectAnalysis {

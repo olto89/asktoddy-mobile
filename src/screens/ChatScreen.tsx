@@ -407,7 +407,15 @@ export default function ChatScreen() {
       response += `💰 **Estimated Cost:**\n`;
       response += `Materials: £${analysis.costBreakdown.materials.min.toLocaleString()}-£${analysis.costBreakdown.materials.max.toLocaleString()}\n`;
       response += `Labour: £${analysis.costBreakdown.labor.min.toLocaleString()}-£${analysis.costBreakdown.labor.max.toLocaleString()}\n`;
-      response += `**Total: £${analysis.costBreakdown.total.min.toLocaleString()}-£${analysis.costBreakdown.total.max.toLocaleString()}**\n\n`;
+
+      // Show contingency if present
+      if (analysis.costBreakdown.contingency) {
+        const contingency = analysis.costBreakdown.contingency;
+        response += `\n🌦️ **Seasonal Contingency (${contingency.percentage}%):** £${contingency.amount.toLocaleString()}\n`;
+        response += `*${contingency.reason}*\n`;
+      }
+
+      response += `\n**Total: £${analysis.costBreakdown.total.min.toLocaleString()}-£${analysis.costBreakdown.total.max.toLocaleString()}**\n\n`;
 
       response += `⏱️ **Timeline:**\n`;
       response += `DIY: ${analysis.timeline.diy}\n`;

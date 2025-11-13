@@ -222,6 +222,35 @@ export class PricingEnhancer {
       max: materials.max + labor.max + toolHire.max,
     };
 
+    // Add contingency based on seasonal factors
+    if (marketData.data?.contextFactors?.contingencyPercentage) {
+      const contingencyPercentage = marketData.data.contextFactors.contingencyPercentage;
+      const weatherRisk = marketData.data.contextFactors.weatherRisk;
+
+      const contingencyAmount = {
+        min: Math.round(enhanced.costBreakdown.total.min * (contingencyPercentage / 100)),
+        max: Math.round(enhanced.costBreakdown.total.max * (contingencyPercentage / 100)),
+      };
+
+      enhanced.costBreakdown.contingency = {
+        percentage: contingencyPercentage,
+        amount: contingencyAmount.max, // Use max for safety
+        reason: weatherRisk || `${contingencyPercentage}% seasonal contingency`,
+      };
+
+      // Update totals with contingency
+      enhanced.costBreakdown.total = {
+        min: enhanced.costBreakdown.total.min + contingencyAmount.min,
+        max: enhanced.costBreakdown.total.max + contingencyAmount.max,
+      };
+
+      this.log('🌦️ Applied seasonal contingency', {
+        percentage: contingencyPercentage,
+        amount: contingencyAmount,
+        reason: weatherRisk,
+      });
+    }
+
     // Add pricing recommendations
     enhanced.recommendations = [
       ...(enhanced.recommendations || []),

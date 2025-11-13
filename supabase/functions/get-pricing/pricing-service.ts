@@ -16,6 +16,7 @@ import {
 import {
   UK_REGIONS,
   SEASONAL_FACTORS,
+  CONTINGENCY_FACTORS,
   TOOL_HIRE_RATES,
   MATERIAL_PRICES,
   AGGREGATE_RATES,
@@ -33,6 +34,7 @@ export class UKPricingService {
     // Determine regional context
     const region = this.identifyRegion(request.location);
     const seasonalFactor = this.getSeasonalFactor();
+    const contingency = this.getContingencyFactor();
     const demandIndex = this.calculateDemandIndex(request.projectType, region);
 
     // Filter and adjust pricing based on request
@@ -45,6 +47,7 @@ export class UKPricingService {
     const recommendations = this.generateRecommendations(request, {
       region,
       seasonalFactor,
+      contingency,
       demandIndex,
       toolHire,
       materials,
@@ -61,6 +64,8 @@ export class UKPricingService {
         seasonalMultiplier: seasonalFactor,
         demandIndex,
         vatRate: UK_VAT_RATE,
+        contingencyPercentage: contingency.percentage,
+        weatherRisk: contingency.weatherRisk,
       },
       recommendations,
       lastUpdated: new Date().toISOString(),
@@ -109,6 +114,18 @@ export class UKPricingService {
     if (month >= 6 && month <= 8) return SEASONAL_FACTORS.summer;
     if (month >= 9 && month <= 11) return SEASONAL_FACTORS.autumn;
     return SEASONAL_FACTORS.winter;
+  }
+
+  /**
+   * Get current seasonal contingency factor
+   */
+  private getContingencyFactor() {
+    const month = new Date().getMonth() + 1; // 1-12
+
+    if (month >= 3 && month <= 5) return CONTINGENCY_FACTORS.spring;
+    if (month >= 6 && month <= 8) return CONTINGENCY_FACTORS.summer;
+    if (month >= 9 && month <= 11) return CONTINGENCY_FACTORS.autumn;
+    return CONTINGENCY_FACTORS.winter;
   }
 
   /**
@@ -309,8 +326,16 @@ export class UKPricingService {
       });
     }
 
-    // Seasonal recommendations
-    if (context.seasonalFactor > 1.1) {
+    // Seasonal recommendations with contingency advice
+    const contingency = context.contingency;
+    if (contingency && contingency.percentage >= 15) {
+      recommendations.push({
+        type: 'timing',
+        title: `Consider waiting - ${contingency.percentage}% winter contingency applied`,
+        description: `${contingency.weatherRisk}. ${contingency.laborAvailability}. Consider starting in spring/summer for better conditions and lower risk.`,
+        savingsPotential: `${contingency.percentage - 8}%`, // Compared to summer baseline
+      });
+    } else if (context.seasonalFactor > 1.1) {
       recommendations.push({
         type: 'timing',
         message:

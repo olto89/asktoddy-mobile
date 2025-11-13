@@ -11,6 +11,7 @@ import {
   LabourRate,
   RegionData,
   SeasonalFactors,
+  ContingencyFactors,
 } from '../types.ts';
 
 // Import national hire rates and Toddy Tool Hire rates
@@ -117,6 +118,34 @@ export const SEASONAL_FACTORS: SeasonalFactors = {
   summer: 1.15, // Peak demand - optimal working conditions
   autumn: 1.05, // Moderate demand - last chance before winter
   winter: 0.95, // Lower demand - weather constraints
+};
+
+/**
+ * Weather-based Contingency Percentages
+ * Accounts for weather risks, delays, and labor availability
+ * Applied to total project cost as a risk buffer
+ */
+export const CONTINGENCY_FACTORS: ContingencyFactors = {
+  spring: {
+    percentage: 12, // 12% contingency
+    weatherRisk: 'Moderate - occasional rain, unpredictable weather',
+    laborAvailability: 'Good - contractors returning from winter break',
+  },
+  summer: {
+    percentage: 8, // 8% contingency - lowest risk
+    weatherRisk: 'Low - best working conditions, minimal weather delays',
+    laborAvailability: 'Challenging - high demand, contractors fully booked',
+  },
+  autumn: {
+    percentage: 15, // 15% contingency
+    weatherRisk: 'Increasing - more rain, shorter days, storm risk',
+    laborAvailability: 'Moderate - rush to complete before winter',
+  },
+  winter: {
+    percentage: 20, // 20% contingency - highest risk
+    weatherRisk: 'High - frost delays, snow risk, limited working hours',
+    laborAvailability: 'Limited - many contractors reduce winter work',
+  },
 };
 
 /**

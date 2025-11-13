@@ -120,3 +120,26 @@ export interface SeasonalFactors {
   autumn: number; // September-November
   winter: number; // December-February
 }
+
+export interface ContingencyFactors {
+  spring: {
+    percentage: number; // Base contingency %
+    weatherRisk: string; // Description of weather risks
+    laborAvailability: string; // Impact on labor
+  };
+  summer: {
+    percentage: number;
+    weatherRisk: string;
+    laborAvailability: string;
+  };
+  autumn: {
+    percentage: number;
+    weatherRisk: string;
+    laborAvailability: string;
+  };
+  winter: {
+    percentage: number;
+    weatherRisk: string;
+    laborAvailability: string;
+  };
+}
