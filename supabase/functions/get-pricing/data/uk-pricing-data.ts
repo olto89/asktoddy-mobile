@@ -13,6 +13,10 @@ import {
   SeasonalFactors,
 } from '../types.ts';
 
+// Import national hire rates and Toddy Tool Hire rates
+import { NATIONAL_HIRE_RATES } from './national-hire-rates.ts';
+import { TODDY_TOOL_HIRE_RATES } from './toddy-tool-hire-rates.ts';
+
 /**
  * UK Regional Pricing Multipliers
  * Based on ONS regional price variations and industry research
@@ -116,23 +120,15 @@ export const SEASONAL_FACTORS: SeasonalFactors = {
 };
 
 /**
- * Tool Hire Rates - Based on HSS Hire, Brandon Hire, and local suppliers
- * Prices averaged from multiple sources including online research 2024
+ * Tool Hire Rates - National averages from major UK hire companies
+ * Includes typical rates from multiple suppliers across the UK
  */
 export const TOOL_HIRE_RATES: ToolHireRate[] = [
-  // Power Tools
-  {
-    id: 'drill_sds_plus',
-    name: 'SDS Plus Drill',
-    category: 'power_tools',
-    dailyRate: 28.0,
-    weeklyRate: 112.0,
-    monthlyRate: 336.0,
-    supplier: 'Average Market Rate',
-    availability: 'high',
-    description: 'Professional SDS+ rotary hammer drill for masonry work',
-    alternatives: ['Cordless hammer drill', 'Standard drill with masonry bits'],
-  },
+  // Use national rates as primary source
+  ...NATIONAL_HIRE_RATES,
+  // Add Toddy Tool Hire as local supplier option
+  ...TODDY_TOOL_HIRE_RATES,
+  // Add additional specialty tools from other suppliers
   {
     id: 'angle_grinder_9inch',
     name: 'Angle Grinder (9")',

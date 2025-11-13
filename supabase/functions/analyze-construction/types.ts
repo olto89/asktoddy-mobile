@@ -194,6 +194,8 @@ export interface AIMiddlewareConfig {
   timeoutMs: number;
   retryAttempts: number;
   enableFallback: boolean;
+  providerRetryDelay?: number;
+  userFeedbackEnabled?: boolean;
 }
 
 // Pricing integration types

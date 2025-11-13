@@ -1,29 +1,28 @@
 # Active Linear Tickets (Mobile)
 
-**Last Updated:** 2025-11-05T12:11:56.554Z
+**Last Updated:** 2025-11-12T15:46:42.092Z
 **Assigned to:** Oliver Todd (mrolivertodd@gmail.com)
-**Total Mobile Tickets:** 32
+**Total Mobile Tickets:** 27
 
 ## 📋 Not Started
 
-### [ASK-22] 🌐 Deploy current web app to Vercel
+### [ASK-56] 🚀 Phase 1: Quote Comparison System
 
 - **Status:** Backlog
-- **Priority:** Urgent
-- **Estimate:** 2 points
+- **Priority:** High
+- **Estimate:** 5 points
 
-## Objective
+# Quote Comparison System - Post-MVP Enhancement
 
-Deploy the existing Next.js app for immediate user testing.
+## Summary
 
-## Tasks
+Implement user quote comparison system to collect real-world pricing data for machine learning training.
 
-- [ ] Set up Vercel project
-- [ ] Configure environment variables
-- [ ] Set up custom domain
-- [ ] Configure Sentry...
+## Goals
 
-[View in Linear](https://linear.app/asktoddy/issue/ASK-22/deploy-current-web-app-to-vercel)
+- Collect real-world q...
+
+[View in Linear](https://linear.app/asktoddy/issue/ASK-56/phase-1-quote-comparison-system)
 
 ---
 
@@ -74,85 +73,6 @@ Create document generation service that produces professional, branded PDF docum
 
 ---
 
-### [ASK-11] 📍 Port SmartLocationService to mobile (with GPS)
-
-- **Status:** Backlog
-- **Priority:** High
-- **Estimate:** 3 points
-
-## ARCHITECTURE UPDATE: Mobile-First for Privacy ✅
-
-## Objective
-
-Port location services directly to mobile app for GPS integration and privacy.
-
-## Why Mobile Direct?
-
-- ✅ Needs mobile GPS permission...
-
-[View in Linear](https://linear.app/asktoddy/issue/ASK-11/port-smartlocationservice-to-mobile-with-gps)
-
----
-
-### [ASK-9] 🛠️ Port ToolExpertiseService to mobile (offline)
-
-- **Status:** Backlog
-- **Priority:** High
-- **Estimate:** 2 points
-
-## ARCHITECTURE UPDATE: Mobile-First for Offline Use ✅
-
-## Objective
-
-Port tool expertise knowledge directly to mobile app for instant offline access.
-
-## Why Mobile Direct?
-
-- ✅ Static knowledge base...
-
-[View in Linear](https://linear.app/asktoddy/issue/ASK-9/port-toolexpertiseservice-to-mobile-offline)
-
----
-
-### [ASK-8] 🔨 Build ConstructionDataService API endpoints
-
-- **Status:** Backlog
-- **Priority:** High
-- **Estimate:** 2 points
-
-## ARCHITECTURE UPDATE: API-First Approach ✅
-
-## Objective
-
-Create NestJS API endpoints for UK construction pricing data (moved from direct mobile integration for performance and updates).
-
-## Why API...
-
-[View in Linear](https://linear.app/asktoddy/issue/ASK-8/build-constructiondataservice-api-endpoints)
-
----
-
-### [ASK-20] ✅ End-to-end testing of core flows
-
-- **Status:** Backlog
-- **Priority:** High
-- **Estimate:** 5 points
-
-## Objective
-
-Test complete user journeys on mobile.
-
-## Test Flows
-
-- [ ] Photo upload → Analysis → Results
-- [ ] Chat interaction flow
-- [ ] Project creation and management
-- [ ] Tool hire inquiry f...
-
-[View in Linear](https://linear.app/asktoddy/issue/ASK-20/end-to-end-testing-of-core-flows)
-
----
-
 ### [ASK-43] [MOBILE-104] Add document download integration
 
 - **Status:** Backlog
@@ -169,27 +89,6 @@ Integrate document generation buttons that appear after analysis, calling the do
 - [ ...
 
 [View in Linear](https://linear.app/asktoddy/issue/ASK-43/mobile-104-add-document-download-integration)
-
----
-
-### [ASK-21] 🚀 Deploy MVP to TestFlight/Google Play Beta
-
-- **Status:** Backlog
-- **Priority:** Medium
-- **Estimate:** 3 points
-
-## Objective
-
-Deploy the mobile MVP for testing with friends and family.
-
-## Tasks
-
-- [ ] Configure app signing
-- [ ] Set up CI/CD pipeline
-- [ ] Deploy to TestFlight (iOS)
-- [ ] Deploy to Google Play...
-
-[View in Linear](https://linear.app/asktoddy/issue/ASK-21/deploy-mvp-to-testflightgoogle-play-beta)
 
 ---
 

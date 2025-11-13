@@ -12,16 +12,21 @@ import {
   PricingResponse,
 } from './types.ts';
 import { GeminiProvider } from './providers/gemini.ts';
+import { GeminiSimpleProvider } from './providers/gemini-simple.ts';
+import { GeminiFallbackProvider } from './providers/gemini-fallback.ts';
 import { OpenAIProvider } from './providers/openai.ts';
-import { MockProvider } from './providers/mock.ts';
+import { AnthropicProvider } from './providers/anthropic.ts';
 import { ContextManager } from './context/ContextManager.ts';
+import { PricingEnhancer, EnhancementOptions } from './pricing/PricingEnhancer.ts';
 
 export class AIMiddleware {
   private providers: Map<string, AIProvider> = new Map();
   private config: AIMiddlewareConfig;
+  private pricingEnhancer: PricingEnhancer;
 
   constructor(config: AIMiddlewareConfig) {
     this.config = config;
+    this.pricingEnhancer = new PricingEnhancer(true); // Enable debug logging
   }
 
   /**
@@ -31,7 +36,8 @@ export class AIMiddleware {
     geminiApiKey: string,
     openaiApiKey?: string,
     supabaseUrl?: string,
-    supabaseServiceKey?: string
+    supabaseServiceKey?: string,
+    anthropicApiKey?: string
   ): void {
     // Create ContextManager if Supabase credentials are available
     let contextManager: ContextManager | undefined;
@@ -40,11 +46,31 @@ export class AIMiddleware {
       console.log('✅ ContextManager initialized for conversation memory');
     }
 
-    // Register Gemini provider if API key is available
+    // Register Gemini providers if API key is available
     if (geminiApiKey && geminiApiKey !== 'your_api_key_here') {
+      // Register simple Gemini provider (like direct calls)
+      const geminiSimpleProvider = new GeminiSimpleProvider(geminiApiKey);
+      this.registerProvider(geminiSimpleProvider);
+      console.log('✅ Gemini Simple provider registered (direct-like calls)');
+
+      // Register complex Gemini provider with contextual memory
       const geminiProvider = new GeminiProvider(geminiApiKey, contextManager);
       this.registerProvider(geminiProvider);
       console.log('✅ Gemini provider registered with contextual memory');
+
+      // Register Gemini fallback with alternative models
+      const geminiFallbackProvider = new GeminiFallbackProvider(geminiApiKey, contextManager);
+      this.registerProvider(geminiFallbackProvider);
+      console.log('✅ Gemini fallback provider registered with alternative models');
+    }
+
+    // Register Anthropic provider if API key is available
+    if (anthropicApiKey && anthropicApiKey !== 'your_api_key_here' && anthropicApiKey.length > 20) {
+      const anthropicProvider = new AnthropicProvider(anthropicApiKey, contextManager);
+      this.registerProvider(anthropicProvider);
+      console.log('✅ Anthropic (Claude) provider registered with contextual memory');
+    } else {
+      console.log('⚠️ Anthropic provider not configured - API key missing or invalid');
     }
 
     // Register OpenAI provider if API key is available
@@ -57,11 +83,9 @@ export class AIMiddleware {
       console.log('⚠️ OpenAI provider not configured - API key missing');
     }
 
-    // Always register mock provider as fallback
-    const mockProvider = new MockProvider();
-    this.registerProvider(mockProvider);
-
-    console.log(`✅ AI Middleware initialized with ${this.providers.size} providers`);
+    console.log(
+      `✅ AI Middleware initialized with ${this.providers.size} providers (NO MOCK FALLBACK)`
+    );
   }
 
   /**
@@ -94,6 +118,10 @@ export class AIMiddleware {
     if (primaryProvider) {
       try {
         console.log(`🤖 Attempting analysis with selected provider: ${selectedProvider}`);
+        console.log(
+          `📋 Request details: message="${request.message?.substring(0, 50)}...", hasImage=${!!request.imageUri}`
+        );
+
         const result = await this.executeWithTimeout(
           primaryProvider.analyzeImage(request),
           this.config.timeoutMs
@@ -110,7 +138,8 @@ export class AIMiddleware {
         );
         return result;
       } catch (error) {
-        console.warn(`❌ Selected provider ${selectedProvider} failed:`, error);
+        console.error(`❌ Selected provider ${selectedProvider} failed:`, error);
+        console.error(`❌ Error type: ${error?.constructor?.name}, message: ${error?.message}`);
         this.logProviderPerformance(selectedProvider, Date.now() - startTime, false);
 
         if (!this.config.enableFallback) {
@@ -119,14 +148,27 @@ export class AIMiddleware {
       }
     }
 
-    // Try fallback providers
+    // Try fallback providers with user feedback
     if (this.config.enableFallback) {
+      let attemptCount = 0;
+      const totalProviders = this.config.fallbackProviders.length;
+
       for (const fallbackName of this.config.fallbackProviders) {
         const fallbackProvider = this.providers.get(fallbackName);
         if (!fallbackProvider) continue;
 
+        attemptCount++;
+
         try {
-          console.log(`🔄 Attempting fallback with: ${fallbackName}`);
+          console.log(
+            `🔄 Attempting fallback ${attemptCount}/${totalProviders} with: ${fallbackName}`
+          );
+
+          // Add delay between attempts to prevent overwhelming APIs
+          if (this.config.providerRetryDelay && attemptCount > 1) {
+            await new Promise(resolve => setTimeout(resolve, this.config.providerRetryDelay));
+          }
+
           const result = await this.executeWithTimeout(
             fallbackProvider.analyzeImage(request),
             this.config.timeoutMs
@@ -135,19 +177,42 @@ export class AIMiddleware {
           result.processingTimeMs = Date.now() - startTime;
           result.aiProvider = fallbackProvider.name;
           result.warnings = result.warnings || [];
-          result.warnings.push(`Analysis completed using fallback provider: ${fallbackName}`);
 
-          console.log(`✅ Fallback analysis completed with ${fallbackName}`);
+          // Add user-friendly message about provider switch
+          const providerNames = {
+            'gemini-fallback': 'Gemini (alternative model)',
+            anthropic: 'Claude AI',
+            openai: 'OpenAI',
+          };
+
+          const friendlyName = providerNames[fallbackName] || fallbackName;
+          result.warnings.push(
+            `✨ Successfully completed using ${friendlyName} after ${attemptCount} attempts`
+          );
+
+          console.log(
+            `✅ Fallback analysis completed with ${fallbackName} in ${result.processingTimeMs}ms`
+          );
           return result;
         } catch (error) {
-          console.warn(`❌ Fallback provider ${fallbackName} failed:`, error);
+          console.warn(
+            `❌ Fallback provider ${fallbackName} failed (attempt ${attemptCount}/${totalProviders}):`,
+            error
+          );
+
+          // Continue to next provider - no mock fallback
           continue;
         }
       }
     }
 
-    // All providers failed
-    throw new Error('All AI providers failed to analyze the image');
+    // All providers failed - log details for debugging
+    console.error('🚨 ALL AI PROVIDERS FAILED!');
+    console.error('Available providers:', Array.from(this.providers.keys()));
+    console.error('Fallback providers attempted:', this.config.fallbackProviders);
+    throw new Error(
+      `All AI providers failed to analyze the image. Tried: ${this.config.fallbackProviders.join(', ')}`
+    );
   }
 
   /**
@@ -246,70 +311,70 @@ export class AIMiddleware {
   }
 
   /**
-   * Enhanced analysis with validation, preprocessing, and context-aware pricing
+   * Simplified analysis with validation and failover (pricing integration removed)
    */
   async analyzeImageWithValidation(request: AnalysisRequest): Promise<ProjectAnalysis> {
+    console.log('🔍 [MIDDLEWARE] Step 1: Validating request...');
     // Validate request
     this.validateImageRequest(request);
+    console.log('✅ [MIDDLEWARE] Request validation passed');
 
+    console.log('🔍 [MIDDLEWARE] Step 2: Selecting optimal provider...');
     // Select optimal provider for this request
     const selectedProvider = this.selectOptimalProvider(request);
+    console.log(`✅ [MIDDLEWARE] Selected provider: ${selectedProvider}`);
 
     // Update config to use selected provider
     const originalPrimary = this.config.primaryProvider;
     this.config.primaryProvider = selectedProvider;
+    console.log(
+      `🔍 [MIDDLEWARE] Updated primary provider from ${originalPrimary} to ${selectedProvider}`
+    );
 
-    // Get pricing context from request
-    const pricingContext = this.createPricingContext(request);
-
-    // Fetch current pricing data (call get-pricing Edge Function)
-    let pricingData: PricingResponse | null = null;
-    try {
-      console.log('💰 Fetching current market pricing...');
-      pricingData = await this.fetchPricingData(pricingContext);
-      console.log('✅ Pricing data retrieved successfully');
-    } catch (error) {
-      console.warn('⚠️ Failed to fetch pricing data, continuing with AI analysis only:', error);
-    }
-
-    // Add analysis ID and timestamp
-    const enhancedRequest: AnalysisRequest = {
-      ...request,
-      context: {
-        ...request.context,
-        // Add pricing context to help AI make better estimates
-        marketData: pricingData
-          ? {
-              regionMultiplier: pricingData.contextFactors.regionMultiplier,
-              seasonalMultiplier: pricingData.contextFactors.seasonalMultiplier,
-              currentToolRates: pricingData.toolHire.slice(0, 3), // Top 3 tools
-              currentMaterialRates: pricingData.materials.slice(0, 3), // Top 3 materials
-            }
-          : undefined,
-      },
-    };
+    console.log('🔍 [MIDDLEWARE] Step 3: Starting AI analysis...');
 
     try {
-      let result = await this.analyzeImage(enhancedRequest);
+      console.log(`🤖 [MIDDLEWARE] Calling analyzeImage with ${selectedProvider}`);
+      let result = await this.analyzeImage(request);
+
+      console.log('✅ [MIDDLEWARE] AI analysis completed successfully');
 
       // Add analysis metadata
       result.analysisId = `analysis_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       result.timestamp = new Date().toISOString();
 
-      // Enhance result with pricing data if available
-      if (pricingData) {
-        result = await this.enhanceWithPricingData(result, pricingData);
-      }
-
+      console.log('🔍 [MIDDLEWARE] Step 4: Validating result completeness...');
       // Validate result completeness
       this.validateAnalysisResult(result);
+      console.log('✅ [MIDDLEWARE] Result validation passed');
+
+      console.log('🔍 [MIDDLEWARE] Step 5: Enhancing with pricing data...');
+      // Enhance with real market pricing data
+      try {
+        const enhancementOptions: EnhancementOptions = {
+          materials: true,
+          labour: true,
+          toolHire: true,
+          regional: true,
+          enableDebugLogging: true,
+        };
+
+        result = await this.pricingEnhancer.enhance(result, request, enhancementOptions);
+        console.log('✅ [MIDDLEWARE] Pricing enhancement completed successfully');
+      } catch (enhanceError) {
+        console.warn(
+          '⚠️ [MIDDLEWARE] Pricing enhancement failed (graceful degradation):',
+          enhanceError
+        );
+        // Continue with base analysis - pricing enhancement failure doesn't break the flow
+      }
 
       // Restore original config
       this.config.primaryProvider = originalPrimary;
 
       return result;
     } catch (error) {
-      console.error('Analysis failed:', error);
+      console.error('❌ [MIDDLEWARE] Analysis failed:', error);
 
       // Restore original config
       this.config.primaryProvider = originalPrimary;

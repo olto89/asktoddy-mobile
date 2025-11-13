@@ -1,5 +1,5 @@
 {
-  "lastSynced": "2025-11-05T12:11:56.540Z",
+  "lastSynced": "2025-11-12T15:46:42.086Z",
   "user": {
     "name": "Oliver Todd",
     "email": "mrolivertodd@gmail.com"
@@ -12,9 +12,31 @@
   ],
   "summary": {
     "total": 50,
-    "mobile": 32
+    "mobile": 27
   },
   "byStatus": {
+    "Backlog": [
+      {
+        "id": "ASK-56",
+        "title": "🚀 Phase 1: Quote Comparison System"
+      },
+      {
+        "id": "ASK-43",
+        "title": "[MOBILE-104] Add document download integration"
+      },
+      {
+        "id": "ASK-41",
+        "title": "[MOBILE-102] Extract camera logic to reusable hooks"
+      },
+      {
+        "id": "ASK-40",
+        "title": "[MOBILE-101] Create thin client ChatScreen"
+      },
+      {
+        "id": "ASK-38",
+        "title": "[API-005] Implement document generation Edge Function"
+      }
+    ],
     "Done": [
       {
         "id": "ASK-51",
@@ -73,48 +95,6 @@
         "title": "Set up Expo React Native project with TypeScript"
       }
     ],
-    "Backlog": [
-      {
-        "id": "ASK-43",
-        "title": "[MOBILE-104] Add document download integration"
-      },
-      {
-        "id": "ASK-41",
-        "title": "[MOBILE-102] Extract camera logic to reusable hooks"
-      },
-      {
-        "id": "ASK-40",
-        "title": "[MOBILE-101] Create thin client ChatScreen"
-      },
-      {
-        "id": "ASK-38",
-        "title": "[API-005] Implement document generation Edge Function"
-      },
-      {
-        "id": "ASK-11",
-        "title": "📍 Port SmartLocationService to mobile (with GPS)"
-      },
-      {
-        "id": "ASK-9",
-        "title": "🛠️ Port ToolExpertiseService to mobile (offline)"
-      },
-      {
-        "id": "ASK-8",
-        "title": "🔨 Build ConstructionDataService API endpoints"
-      },
-      {
-        "id": "ASK-22",
-        "title": "🌐 Deploy current web app to Vercel"
-      },
-      {
-        "id": "ASK-21",
-        "title": "🚀 Deploy MVP to TestFlight/Google Play Beta"
-      },
-      {
-        "id": "ASK-20",
-        "title": "✅ End-to-end testing of core flows"
-      }
-    ],
     "Todo": [
       {
         "id": "ASK-33",
@@ -153,6 +133,10 @@
   "byPriority": {
     "High": [
       {
+        "id": "ASK-56",
+        "title": "🚀 Phase 1: Quote Comparison System"
+      },
+      {
         "id": "ASK-51",
         "title": "Enhanced Conversation Intelligence System"
       },
@@ -183,22 +167,6 @@
       {
         "id": "ASK-38",
         "title": "[API-005] Implement document generation Edge Function"
-      },
-      {
-        "id": "ASK-11",
-        "title": "📍 Port SmartLocationService to mobile (with GPS)"
-      },
-      {
-        "id": "ASK-9",
-        "title": "🛠️ Port ToolExpertiseService to mobile (offline)"
-      },
-      {
-        "id": "ASK-8",
-        "title": "🔨 Build ConstructionDataService API endpoints"
-      },
-      {
-        "id": "ASK-20",
-        "title": "✅ End-to-end testing of core flows"
       }
     ],
     "Urgent": [
@@ -221,10 +189,6 @@
       {
         "id": "ASK-7",
         "title": "🤖 Build GeminiService API endpoints"
-      },
-      {
-        "id": "ASK-22",
-        "title": "🌐 Deploy current web app to Vercel"
       }
     ],
     "Medium": [
@@ -235,10 +199,6 @@
       {
         "id": "ASK-43",
         "title": "[MOBILE-104] Add document download integration"
-      },
-      {
-        "id": "ASK-21",
-        "title": "🚀 Deploy MVP to TestFlight/Google Play Beta"
       }
     ],
     "No Priority": [
@@ -289,6 +249,195 @@
     ]
   },
   "allTickets": [
+    {
+      "id": "ASK-62",
+      "linearId": "fafba552-a53a-4001-bfcc-f2ae2daa3b45",
+      "title": "🚀 Bootstrap: Deploy Updated Stable Endpoint",
+      "description": "Deploy the stable calculation endpoint with all bootstrap improvements (regional, seasonal, size scaling) and verify 75%+ accuracy improvement.\n\n**Acceptance Criteria:**\n\n* All multipliers integrated into stable endpoint\n* Deployment successful to staging and production\n* Test cases confirm all multipliers working\n* Documentation updated with new accuracy expectations\n\n**Dependencies:**\n\n* London Regional Multiplier (ASK-X)\n* Seasonal Pricing Adjustments (ASK-Y)\n* Project Size Scaling (ASK-Z)\n\n**Testing Plan:**\n\n* Test London postcodes show 1.35x multiplier\n* Test different seasons apply correct multipliers\n* Test different project sizes apply correct scaling\n* Verify combined multipliers work correctly\n\n**Impact:**\n\n* Deploys all bootstrap improvements together\n* Expected accuracy improvement from 60% to 75%+\n* Zero cost implementation",
+      "status": "Backlog",
+      "stateType": "backlog",
+      "priority": 2,
+      "priorityLabel": "High",
+      "estimate": 1,
+      "dueDate": null,
+      "labels": [],
+      "assignee": "Unassigned",
+      "team": "Asktoddy",
+      "teamKey": "ASK",
+      "url": "https://linear.app/asktoddy/issue/ASK-62/bootstrap-deploy-updated-stable-endpoint",
+      "createdAt": "2025-11-12T14:25:11.486Z",
+      "updatedAt": "2025-11-12T14:25:11.486Z",
+      "parent": null,
+      "children": []
+    },
+    {
+      "id": "ASK-61",
+      "linearId": "ae319443-7f59-4771-b9e9-0c9832cf433c",
+      "title": "🚀 Bootstrap: Add Project Size Scaling",
+      "description": "Implement project size multipliers for economies of scale. Large projects get bulk discounts, small projects have premium pricing due to setup costs.\n\n**Acceptance Criteria:**\n\n* Size multiplier function implemented\n* \n  > 50m²: 0.92x (8% discount for economies of scale)\n* 25-50m²: 0.96x (4% discount)\n* <10m²: 1.08x (8% premium for small jobs)\n* 10-25m²: 1.0x (standard pricing)\n\n**Implementation Notes:**\n\n* Add getProjectSizeMultiplier(estimatedArea) function\n* Integrate into existing pricing calculation\n* Handle cases where area is not provided (default to 1.0x)\n\n**Impact:**\n\n* Reflects real-world pricing economics\n* Improves accuracy by \\~3-5%\n* Zero cost implementation",
+      "status": "Backlog",
+      "stateType": "backlog",
+      "priority": 1,
+      "priorityLabel": "Urgent",
+      "estimate": 2,
+      "dueDate": null,
+      "labels": [],
+      "assignee": "Unassigned",
+      "team": "Asktoddy",
+      "teamKey": "ASK",
+      "url": "https://linear.app/asktoddy/issue/ASK-61/bootstrap-add-project-size-scaling",
+      "createdAt": "2025-11-12T14:25:11.338Z",
+      "updatedAt": "2025-11-12T14:25:11.338Z",
+      "parent": null,
+      "children": []
+    },
+    {
+      "id": "ASK-60",
+      "linearId": "ee7a6a9a-f2fa-4606-a136-3703a1ea78a9",
+      "title": "🚀 Bootstrap: Implement Seasonal Pricing Adjustments",
+      "description": "Add seasonal multipliers to stable calculation endpoint. Spring/Summer building boom (+10%), Winter slower period (-5%), Autumn normal (1.0x).\n\n**Acceptance Criteria:**\n\n* Seasonal multiplier function implemented\n* Integrated into MaterialCalculationService\n* March-August: 1.10x multiplier\n* November-February: 0.95x multiplier\n* September-October: 1.0x multiplier\n\n**Implementation Notes:**\n\n* Add getSeasonalMultiplier() function\n* Integrate into existing pricing calculation\n* Use JavaScript Date() to determine current season\n\n**Impact:**\n\n* Accounts for construction industry seasonal patterns\n* Improves accuracy by \\~5-8%\n* Zero cost implementation",
+      "status": "Backlog",
+      "stateType": "backlog",
+      "priority": 1,
+      "priorityLabel": "Urgent",
+      "estimate": 2,
+      "dueDate": null,
+      "labels": [],
+      "assignee": "Unassigned",
+      "team": "Asktoddy",
+      "teamKey": "ASK",
+      "url": "https://linear.app/asktoddy/issue/ASK-60/bootstrap-implement-seasonal-pricing-adjustments",
+      "createdAt": "2025-11-12T14:25:11.177Z",
+      "updatedAt": "2025-11-12T14:25:11.177Z",
+      "parent": null,
+      "children": []
+    },
+    {
+      "id": "ASK-59",
+      "linearId": "fbd3416c-19bc-4a40-a6e9-b30c88c49774",
+      "title": "🚀 Bootstrap: Update London Regional Multiplier",
+      "description": "Update London regional multiplier from 1.25x to 1.35x in LocationService.ts to match bootstrap pricing strategy. Simple one-line change that improves London pricing accuracy.\n\n**Acceptance Criteria:**\n\n* London multiplier changed from 1.25 to 1.35 in UK_REGIONS\n* Stable endpoint uses updated multiplier\n* Test with London postcode confirms 1.35x pricing\n\n**Files to modify:**\n\n* LocationService.ts (UK_REGIONS constant)\n\n**Impact:**\n\n* Improves London pricing accuracy from 60% to \\~65%\n* Zero cost implementation\n* One-line change",
+      "status": "Backlog",
+      "stateType": "backlog",
+      "priority": 1,
+      "priorityLabel": "Urgent",
+      "estimate": 1,
+      "dueDate": null,
+      "labels": [],
+      "assignee": "Unassigned",
+      "team": "Asktoddy",
+      "teamKey": "ASK",
+      "url": "https://linear.app/asktoddy/issue/ASK-59/bootstrap-update-london-regional-multiplier",
+      "createdAt": "2025-11-12T14:25:11.011Z",
+      "updatedAt": "2025-11-12T14:25:11.011Z",
+      "parent": null,
+      "children": []
+    },
+    {
+      "id": "ASK-55",
+      "linearId": "757897bb-b03a-4da5-ab0f-5b8f2de1ed03",
+      "title": "✅ Completed: Pricing Enhancement Pipeline",
+      "description": "# Pricing Enhancement Pipeline - COMPLETED\n\n## Summary\n\nImplemented additive enhancement pattern that never breaks base analysis while adding realistic pricing layers.\n\n## Key Achievements\n\n* **Additive Enhancement Pattern**: Safe pricing additions that never break base functionality\n* **National Average Tool Hire**: Rebranded from HSS with realistic rates\n* **Toddy Tool Hire Integration**: Local pricing with proper multi-day scaling\n* **Fixed Unrealistic Pricing**: Mini digger from £414/day to £165/day\n* **Corrected Weekly Rates**: From 4.5x to 1.95x daily rate (industry standard)\n\n## Technical Implementation\n\n* Enhanced `/analyze-construction-stable` with pricing layers\n* PricingEnhancementService for additive pricing\n* National Average tool hire rates (realistic market rates)\n* Toddy Tool Hire API integration with proper scaling\n* Weekly rate calculations follow industry standards (7-day booking = 1.95x daily rate)\n\n## Results\n\n* Tool hire pricing now realistic and competitive\n* Multi-day booking rates properly scaled\n* Enhanced pricing never breaks base material calculations\n* Consistent pricing across all requests\n\n## Documentation\n\n* Pricing enhancement documented in `docs/STABLE_PRICING_SYSTEM.md`\n* Post-MVP strategy in `docs/POST_MVP_ACCURACY_STRATEGY.md`\n\n🏗️ **Status**: ✅ COMPLETED - Enhancement pipeline is live and working",
+      "status": "Done",
+      "stateType": "completed",
+      "priority": 2,
+      "priorityLabel": "High",
+      "estimate": 5,
+      "dueDate": null,
+      "labels": [],
+      "assignee": "Unassigned",
+      "team": "Asktoddy",
+      "teamKey": "ASK",
+      "url": "https://linear.app/asktoddy/issue/ASK-55/completed-pricing-enhancement-pipeline",
+      "createdAt": "2025-11-12T13:19:37.714Z",
+      "updatedAt": "2025-11-12T13:20:37.533Z",
+      "parent": null,
+      "children": []
+    },
+    {
+      "id": "ASK-54",
+      "linearId": "0c6c5524-4fe7-4251-86c1-6a99d431ac1a",
+      "title": "✅ Completed: Stable Material Calculation System",
+      "description": "# Stable Material Calculation System - COMPLETED\n\n## Summary\n\nBuilt 100% reliable server-side calculation system replacing AI-based quantity estimation with deterministic calculations.\n\n## Key Achievements\n\n* **100% Consistency**: Identical results between requests\n* **Sub-10ms Response Time**: Lightning-fast calculations\n* **UK Building Standards**: Proper material quantities using industry standards\n* **Dimension Parsing**: Advanced DimensionExtractor handles various text formats\n* **MaterialCalculationService**: Server-side calculations for all material types\n\n## Technical Implementation\n\n* New endpoint: `/analyze-construction-stable`\n* DimensionExtractor class for parsing dimensions from text\n* MaterialCalculationService using UK building standards\n* Perfect consistency between identical requests\n* Comprehensive test coverage\n\n## Results\n\n* Material quantities now realistic (e.g., 4,080 bricks for 4x4m extension)\n* Fixed critical bug where all quantities were set to 1\n* Materials cost now realistic (£15,000-30,000 for extension vs £160-320 before)\n\n## Documentation\n\n* `docs/STABLE_PRICING_SYSTEM.md` - Complete technical documentation\n* Test file `test-stable-endpoint.js` for validation\n\n🏗️ **Status**: ✅ COMPLETED - System is live and stable",
+      "status": "Done",
+      "stateType": "completed",
+      "priority": 2,
+      "priorityLabel": "High",
+      "estimate": 8,
+      "dueDate": null,
+      "labels": [],
+      "assignee": "Unassigned",
+      "team": "Asktoddy",
+      "teamKey": "ASK",
+      "url": "https://linear.app/asktoddy/issue/ASK-54/completed-stable-material-calculation-system",
+      "createdAt": "2025-11-12T13:19:36.556Z",
+      "updatedAt": "2025-11-12T13:20:36.252Z",
+      "parent": null,
+      "children": []
+    },
+    {
+      "id": "ASK-58",
+      "linearId": "6c8da8b7-d56e-4b34-94ef-7d662dd4680e",
+      "title": "🚀 Phase 2: ML Price Prediction Model",
+      "description": "# ML Price Prediction Model - Advanced Pricing Intelligence\n\n## Summary\n\nBuild and train machine learning model using collected quote data to achieve 80%+ pricing accuracy within 6 months.\n\n## Model Requirements\n\n* **Input Features**: Project type, dimensions, materials, location, complexity\n* **Training Data**: Real user quotes + industry pricing data\n* **Target Accuracy**: 80% within ±15% of actual quotes\n* **Response Time**: <500ms for price predictions\n* **Continuous Learning**: Model retraining with new data\n\n## Implementation Phases\n\n### Phase 2A: Data Preparation (Month 1-2)\n\n* Clean and structure collected quote data\n* Feature engineering from project descriptions\n* Create train/validation/test datasets\n* Data quality assessment and cleaning\n\n### Phase 2B: Model Development (Month 3-4)\n\n* Baseline model development and evaluation\n* Hyperparameter tuning and optimization\n* Cross-validation and performance testing\n* Model interpretability analysis\n\n### Phase 2C: Production Deployment (Month 5-6)\n\n* Production model serving infrastructure\n* A/B testing framework\n* Model monitoring and alerting\n* Automated retraining pipeline\n\n## Success Metrics\n\n* **Accuracy**: 80% of predictions within ±15% of actual quotes\n* **Coverage**: Model handles 90%+ of project types\n* **Performance**: <500ms prediction response time\n* **Improvement**: 20% accuracy improvement over rule-based system\n\n## Data Requirements\n\n* Minimum 500 quote comparisons for initial training\n* Geographic and project type diversity\n* Quality-validated data (outlier removal)\n* Continuous data collection (50+ quotes/month)\n\n🎯 **Priority**: Medium - Long-term accuracy improvement\n📅 **Timeline**: 6 months post-MVP launch\n🔗 **Dependencies**: Quote comparison system, supplier API integration, sufficient training data",
+      "status": "Backlog",
+      "stateType": "backlog",
+      "priority": 3,
+      "priorityLabel": "Medium",
+      "estimate": 13,
+      "dueDate": null,
+      "labels": [],
+      "assignee": "Unassigned",
+      "team": "Asktoddy",
+      "teamKey": "ASK",
+      "url": "https://linear.app/asktoddy/issue/ASK-58/phase-2-ml-price-prediction-model",
+      "createdAt": "2025-11-12T13:19:41.260Z",
+      "updatedAt": "2025-11-12T13:19:41.260Z",
+      "parent": null,
+      "children": []
+    },
+    {
+      "id": "ASK-57",
+      "linearId": "5cae9062-717a-4f70-8f3b-3f6ec2959218",
+      "title": "🚀 Phase 1: Supplier API Integration",
+      "description": "# Supplier API Integration - Real-time Material Pricing\n\n## Summary\n\nIntegrate with major UK building supplier APIs for real-time material pricing to replace static pricing data.\n\n## Target Suppliers\n\n* **Travis Perkins**: Largest UK building supplier\n* **Jewson**: Major trade supplier\n* **Wickes**: Consumer and trade supplier\n* **Selco**: Trade-focused supplier\n\n## Technical Requirements\n\n* API authentication and rate limiting\n* Real-time price fetching with caching\n* Fallback pricing when APIs unavailable\n* Price comparison across suppliers\n* Location-based supplier selection\n\n## Implementation Plan\n\n1. **API Research**: Document available supplier APIs and pricing structures\n2. **Authentication Setup**: Register for API access with major suppliers\n3. **Price Fetching Service**: Build service to fetch real-time prices\n4. **Caching Layer**: Implement Redis caching for performance\n5. **Fallback System**: Graceful degradation when APIs are down\n6. **Price Comparison**: Show users best prices across suppliers\n\n## Benefits\n\n* Real-time accurate material pricing\n* Location-based supplier recommendations\n* Price comparison shopping\n* Automatic price updates without manual maintenance\n\n## Success Metrics\n\n* 90%+ price accuracy vs manual quotes\n* <2 second price fetch response time\n* 95%+ API uptime with fallbacks\n* User satisfaction with price accuracy\n\n🎯 **Priority**: High - Critical for pricing accuracy\n📅 **Timeline**: 3-4 weeks post-MVP launch\n🔗 **Dependencies**: Stable pricing system, supplier partnerships",
+      "status": "Backlog",
+      "stateType": "backlog",
+      "priority": 2,
+      "priorityLabel": "High",
+      "estimate": 8,
+      "dueDate": null,
+      "labels": [],
+      "assignee": "Unassigned",
+      "team": "Asktoddy",
+      "teamKey": "ASK",
+      "url": "https://linear.app/asktoddy/issue/ASK-57/phase-1-supplier-api-integration",
+      "createdAt": "2025-11-12T13:19:40.095Z",
+      "updatedAt": "2025-11-12T13:19:40.095Z",
+      "parent": null,
+      "children": []
+    },
+    {
+      "id": "ASK-56",
+      "linearId": "ad44f196-5d36-49ec-8dd4-d7268afb3b57",
+      "title": "🚀 Phase 1: Quote Comparison System",
+      "description": "# Quote Comparison System - Post-MVP Enhancement\n\n## Summary\n\nImplement user quote comparison system to collect real-world pricing data for machine learning training.\n\n## Goals\n\n* Collect real-world quote data from users\n* Build dataset for ML pricing model training\n* Improve pricing accuracy through real-world validation\n* Create incentive system for user participation\n\n## Technical Requirements\n\n* Quote submission interface in mobile app\n* Backend storage for quote comparisons\n* Data validation and cleaning pipeline\n* Privacy-compliant data collection\n* Reward system for contributing users\n\n## Implementation Plan\n\n1. **Quote Submission UI**: Simple form for users to input actual quotes received\n2. **Data Storage**: Secure backend storage with anonymization\n3. **Validation Pipeline**: Detect and filter outliers/spam submissions\n4. **Reward System**: Points/credits for users who contribute accurate data\n5. **Analytics Dashboard**: Track data quality and collection progress\n\n## Success Metrics\n\n* 100+ quote submissions per month\n* Data quality score >80%\n* User participation rate >15%\n* Pricing accuracy improvement measurable\n\n## Dependencies\n\n* Stable pricing system (✅ Complete)\n* User authentication system\n* Backend data storage infrastructure\n\n🎯 **Priority**: High - Critical for ML training data collection\n📅 **Timeline**: 2-3 weeks post-MVP launch",
+      "status": "Backlog",
+      "stateType": "backlog",
+      "priority": 2,
+      "priorityLabel": "High",
+      "estimate": 5,
+      "dueDate": null,
+      "labels": [],
+      "assignee": "Unassigned",
+      "team": "Asktoddy",
+      "teamKey": "ASK",
+      "url": "https://linear.app/asktoddy/issue/ASK-56/phase-1-quote-comparison-system",
+      "createdAt": "2025-11-12T13:19:38.891Z",
+      "updatedAt": "2025-11-12T13:19:38.891Z",
+      "parent": null,
+      "children": []
+    },
     {
       "id": "ASK-35",
       "linearId": "3055f1a4-5403-4f0f-a9c2-002fddc6a664",
@@ -1196,117 +1345,14 @@
       "updatedAt": "2025-10-13T12:17:54.963Z",
       "parent": null,
       "children": []
-    },
+    }
+  ],
+  "mobileTickets": [
     {
-      "id": "ASK-11",
-      "linearId": "9446f32f-adf4-42c1-ae13-0e37d80eab04",
-      "title": "📍 Port SmartLocationService to mobile (with GPS)",
-      "description": "## ARCHITECTURE UPDATE: Mobile-First for Privacy ✅\n\n## Objective\n\nPort location services directly to mobile app for GPS integration and privacy.\n\n## Why Mobile Direct?\n\n* ✅ Needs mobile GPS permissions anyway\n* ✅ Location processing can be local\n* ✅ Privacy-friendly (location stays on device)\n* ✅ Better offline capability\n\n## Current Location (Web App)\n\n/lib/location/smart-location.service.ts\n\n## Tasks\n\n- [ ] Port UK location detection logic to mobile\n- [ ] Integrate React Native geolocation\n- [ ] Add location permission handling\n- [ ] Port supplier recommendation logic\n- [ ] Test on both iOS and Android\n- [ ] Add offline location caching\n\n## Mobile Dependencies\n\n* expo-location for GPS access\n* AsyncStorage for location caching\n* iOS/Android permission handling\n\n## Value\n\nLocation-based recommendations with full privacy control",
-      "status": "Backlog",
-      "stateType": "backlog",
-      "priority": 2,
-      "priorityLabel": "High",
-      "estimate": 3,
-      "dueDate": null,
-      "labels": [],
-      "assignee": "Unassigned",
-      "team": "Asktoddy",
-      "teamKey": "ASK",
-      "url": "https://linear.app/asktoddy/issue/ASK-11/port-smartlocationservice-to-mobile-with-gps",
-      "createdAt": "2025-10-13T10:02:56.237Z",
-      "updatedAt": "2025-10-13T11:11:18.365Z",
-      "parent": null,
-      "children": []
-    },
-    {
-      "id": "ASK-9",
-      "linearId": "cdec7d1f-07bb-468d-9960-bfde6a621343",
-      "title": "🛠️ Port ToolExpertiseService to mobile (offline)",
-      "description": "## ARCHITECTURE UPDATE: Mobile-First for Offline Use ✅\n\n## Objective\n\nPort tool expertise knowledge directly to mobile app for instant offline access.\n\n## Why Mobile Direct?\n\n* ✅ Static knowledge base - perfect for offline use\n* ✅ No API calls needed - instant responses\n* ✅ 1,770 lines of pure domain knowledge\n* ✅ Better user experience (no network dependency)\n\n## Current Location (Web App)\n\n/lib/tools/tool-expertise.service.ts\n\n## Tasks\n\n- [ ] Copy ToolExpertiseService to shared-services package\n- [ ] Create searchable interface for mobile\n- [ ] Optimize for mobile performance\n- [ ] Add offline caching with AsyncStorage\n- [ ] Create tool recommendation engine\n- [ ] Build tool search and filtering\n\n## Mobile Integration\n\n* Import directly in mobile app\n* Store in AsyncStorage for fast access\n* Enable offline tool recommendations\n\n## Value\n\nGold mine of domain expertise - critical competitive advantage that works without internet",
-      "status": "Backlog",
-      "stateType": "backlog",
-      "priority": 2,
-      "priorityLabel": "High",
-      "estimate": 2,
-      "dueDate": null,
-      "labels": [],
-      "assignee": "Unassigned",
-      "team": "Asktoddy",
-      "teamKey": "ASK",
-      "url": "https://linear.app/asktoddy/issue/ASK-9/port-toolexpertiseservice-to-mobile-offline",
-      "createdAt": "2025-10-13T10:02:54.629Z",
-      "updatedAt": "2025-10-13T11:11:17.850Z",
-      "parent": null,
-      "children": []
-    },
-    {
-      "id": "ASK-8",
-      "linearId": "891922d6-b039-4190-938a-2b80de6f1e76",
-      "title": "🔨 Build ConstructionDataService API endpoints",
-      "description": "## ARCHITECTURE UPDATE: API-First Approach ✅\n\n## Objective\n\nCreate NestJS API endpoints for UK construction pricing data (moved from direct mobile integration for performance and updates).\n\n## Why API Layer?\n\n* ✅ Large datasets better served from API\n* ✅ Enable pricing updates without app releases\n* ✅ Add caching and CDN support\n* ✅ Real-time pricing synchronization\n\n## Current Location (Web App)\n\n/lib/construction-data/construction-data.service.ts\n\n## Tasks\n\n- [ ] Extract construction data to NestJS service\n- [ ] Create /api/pricing endpoints\n- [ ] Implement data caching strategy\n- [ ] Add real-time pricing updates\n- [ ] Create search and filtering endpoints\n\n## API Endpoints to Create\n\n* GET /api/pricing/materials - Get material costs\n* GET /api/pricing/labor - Get labor rates by region\n* GET /api/pricing/categories - Get pricing categories\n* GET /api/pricing/search - Search pricing data\n\n## Dependencies\n\n* Requires ASK-12 (NestJS setup) to be completed first\n\n## Value\n\nEssential UK market data - 100% reusable with better performance",
-      "status": "Backlog",
-      "stateType": "backlog",
-      "priority": 2,
-      "priorityLabel": "High",
-      "estimate": 2,
-      "dueDate": null,
-      "labels": [],
-      "assignee": "Unassigned",
-      "team": "Asktoddy",
-      "teamKey": "ASK",
-      "url": "https://linear.app/asktoddy/issue/ASK-8/build-constructiondataservice-api-endpoints",
-      "createdAt": "2025-10-13T10:02:53.587Z",
-      "updatedAt": "2025-10-13T11:11:17.469Z",
-      "parent": null,
-      "children": []
-    },
-    {
-      "id": "ASK-22",
-      "linearId": "ebf09e38-cb68-4556-ad14-52e8a7144ed0",
-      "title": "🌐 Deploy current web app to Vercel",
-      "description": "## Objective\n\nDeploy the existing Next.js app for immediate user testing.\n\n## Tasks\n\n- [ ] Set up Vercel project\n- [ ] Configure environment variables\n- [ ] Set up custom domain\n- [ ] Configure Sentry error tracking\n- [ ] Set up analytics\n- [ ] Test all features in production\n\n## Purpose\n\nKeep web app running while building mobile MVP",
-      "status": "Backlog",
-      "stateType": "backlog",
-      "priority": 1,
-      "priorityLabel": "Urgent",
-      "estimate": 2,
-      "dueDate": null,
-      "labels": [],
-      "assignee": "Unassigned",
-      "team": "Asktoddy",
-      "teamKey": "ASK",
-      "url": "https://linear.app/asktoddy/issue/ASK-22/deploy-current-web-app-to-vercel",
-      "createdAt": "2025-10-13T10:03:04.896Z",
-      "updatedAt": "2025-10-13T10:03:04.896Z",
-      "parent": null,
-      "children": []
-    },
-    {
-      "id": "ASK-21",
-      "linearId": "74c5e011-e023-4dba-b9c1-26708e72ea4d",
-      "title": "🚀 Deploy MVP to TestFlight/Google Play Beta",
-      "description": "## Objective\n\nDeploy the mobile MVP for testing with friends and family.\n\n## Tasks\n\n- [ ] Configure app signing\n- [ ] Set up CI/CD pipeline\n- [ ] Deploy to TestFlight (iOS)\n- [ ] Deploy to Google Play Beta (Android)\n- [ ] Set up crash reporting\n- [ ] Configure analytics\n\n## Success\n\nFriends and family can test the app",
-      "status": "Backlog",
-      "stateType": "backlog",
-      "priority": 3,
-      "priorityLabel": "Medium",
-      "estimate": 3,
-      "dueDate": null,
-      "labels": [],
-      "assignee": "Unassigned",
-      "team": "Asktoddy",
-      "teamKey": "ASK",
-      "url": "https://linear.app/asktoddy/issue/ASK-21/deploy-mvp-to-testflightgoogle-play-beta",
-      "createdAt": "2025-10-13T10:03:04.109Z",
-      "updatedAt": "2025-10-13T10:03:04.109Z",
-      "parent": null,
-      "children": []
-    },
-    {
-      "id": "ASK-20",
-      "linearId": "5a0af639-d90a-4c22-aed1-3ba6f63cbff7",
-      "title": "✅ End-to-end testing of core flows",
-      "description": "## Objective\n\nTest complete user journeys on mobile.\n\n## Test Flows\n\n- [ ] Photo upload → Analysis → Results\n- [ ] Chat interaction flow\n- [ ] Project creation and management\n- [ ] Tool hire inquiry flow\n- [ ] Offline/online synchronization\n\n## Platforms\n\nTest on iOS and Android",
+      "id": "ASK-56",
+      "linearId": "ad44f196-5d36-49ec-8dd4-d7268afb3b57",
+      "title": "🚀 Phase 1: Quote Comparison System",
+      "description": "# Quote Comparison System - Post-MVP Enhancement\n\n## Summary\n\nImplement user quote comparison system to collect real-world pricing data for machine learning training.\n\n## Goals\n\n* Collect real-world quote data from users\n* Build dataset for ML pricing model training\n* Improve pricing accuracy through real-world validation\n* Create incentive system for user participation\n\n## Technical Requirements\n\n* Quote submission interface in mobile app\n* Backend storage for quote comparisons\n* Data validation and cleaning pipeline\n* Privacy-compliant data collection\n* Reward system for contributing users\n\n## Implementation Plan\n\n1. **Quote Submission UI**: Simple form for users to input actual quotes received\n2. **Data Storage**: Secure backend storage with anonymization\n3. **Validation Pipeline**: Detect and filter outliers/spam submissions\n4. **Reward System**: Points/credits for users who contribute accurate data\n5. **Analytics Dashboard**: Track data quality and collection progress\n\n## Success Metrics\n\n* 100+ quote submissions per month\n* Data quality score >80%\n* User participation rate >15%\n* Pricing accuracy improvement measurable\n\n## Dependencies\n\n* Stable pricing system (✅ Complete)\n* User authentication system\n* Backend data storage infrastructure\n\n🎯 **Priority**: High - Critical for ML training data collection\n📅 **Timeline**: 2-3 weeks post-MVP launch",
       "status": "Backlog",
       "stateType": "backlog",
       "priority": 2,
@@ -1317,77 +1363,12 @@
       "assignee": "Unassigned",
       "team": "Asktoddy",
       "teamKey": "ASK",
-      "url": "https://linear.app/asktoddy/issue/ASK-20/end-to-end-testing-of-core-flows",
-      "createdAt": "2025-10-13T10:03:03.309Z",
-      "updatedAt": "2025-10-13T10:03:03.309Z",
+      "url": "https://linear.app/asktoddy/issue/ASK-56/phase-1-quote-comparison-system",
+      "createdAt": "2025-11-12T13:19:38.891Z",
+      "updatedAt": "2025-11-12T13:19:38.891Z",
       "parent": null,
       "children": []
     },
-    {
-      "id": "ASK-18",
-      "linearId": "15b00b38-b2b4-4f69-b730-b74368a7d6ce",
-      "title": "🏗️ Build project management screens",
-      "description": "## Objective\n\nCreate screens for managing construction projects.\n\n## Screens\n\n- [ ] Project list view\n- [ ] Project detail view\n- [ ] Create/edit project forms\n- [ ] Project timeline view\n- [ ] Budget tracking view\n- [ ] Document management\n\n## Data\n\nIntegrate with Supabase",
-      "status": "Backlog",
-      "stateType": "backlog",
-      "priority": 3,
-      "priorityLabel": "Medium",
-      "estimate": 8,
-      "dueDate": null,
-      "labels": [],
-      "assignee": "Unassigned",
-      "team": "Asktoddy",
-      "teamKey": "ASK",
-      "url": "https://linear.app/asktoddy/issue/ASK-18/build-project-management-screens",
-      "createdAt": "2025-10-13T10:03:01.929Z",
-      "updatedAt": "2025-10-13T10:03:01.929Z",
-      "parent": null,
-      "children": []
-    },
-    {
-      "id": "ASK-10",
-      "linearId": "bb88e4ba-1916-4796-a27a-1475a94c0267",
-      "title": "💰 Port ToddyToolHireService",
-      "description": "## Objective\n\nPort the tool hire pricing and inventory system.\n\n## Current Location\n\n/lib/pricing/toddy-tool-hire.service.ts\n\n## Tasks\n\n- [ ] Extract tool hire data\n- [ ] Port pricing logic\n- [ ] Port inventory management\n- [ ] Add local caching for offline use\n\n## Value\n\nComplete tool rental system - unique to AskToddy",
-      "status": "Backlog",
-      "stateType": "backlog",
-      "priority": 2,
-      "priorityLabel": "High",
-      "estimate": 2,
-      "dueDate": null,
-      "labels": [],
-      "assignee": "Unassigned",
-      "team": "Asktoddy",
-      "teamKey": "ASK",
-      "url": "https://linear.app/asktoddy/issue/ASK-10/port-toddytoolhireservice",
-      "createdAt": "2025-10-13T10:02:55.480Z",
-      "updatedAt": "2025-10-13T10:02:55.480Z",
-      "parent": null,
-      "children": []
-    },
-    {
-      "id": "ASK-2",
-      "linearId": "fc12f23b-a98f-4aa8-9f4c-7ea8d541fa68",
-      "title": "Set up your teams (2)",
-      "description": "This workspace is a container for your organization’s work. \n\n* [Learn more about Workspaces](https://linear.app/docs/workspaces)\n  How to configure settings and workflows \n\nTeams are how you organize people and work in Linear.\n\n* [Learn about Teams](https://linear.app/docs/teams)\n  How to structure teams and configure workflows\n\nTeams are made of members with defined roles (Admin, Member, Guest).\n\n* [Learn more about Members](https://linear.app/docs/invite-members)\n  Add your team and assign roles\n\n---\n\nReady to add your team? Invite via CSV or a unique link in [settings](http://linear.app/settings/members).",
-      "status": "Todo",
-      "stateType": "unstarted",
-      "priority": 0,
-      "priorityLabel": "No Priority",
-      "estimate": null,
-      "dueDate": null,
-      "labels": [],
-      "assignee": "Unassigned",
-      "team": "Asktoddy",
-      "teamKey": "ASK",
-      "url": "https://linear.app/asktoddy/issue/ASK-2/set-up-your-teams-2",
-      "createdAt": "2025-10-13T09:20:50.906Z",
-      "updatedAt": "2025-10-13T09:20:50.906Z",
-      "parent": null,
-      "children": []
-    }
-  ],
-  "mobileTickets": [
     {
       "id": "ASK-51",
       "linearId": "12e1e620-8bcc-4dc7-80bf-48e799365e7c",
@@ -1942,132 +1923,6 @@
       "url": "https://linear.app/asktoddy/issue/ASK-23/set-up-expo-react-native-project-with-typescript",
       "createdAt": "2025-10-14T12:38:16.302Z",
       "updatedAt": "2025-10-14T12:38:16.302Z",
-      "parent": null,
-      "children": []
-    },
-    {
-      "id": "ASK-11",
-      "linearId": "9446f32f-adf4-42c1-ae13-0e37d80eab04",
-      "title": "📍 Port SmartLocationService to mobile (with GPS)",
-      "description": "## ARCHITECTURE UPDATE: Mobile-First for Privacy ✅\n\n## Objective\n\nPort location services directly to mobile app for GPS integration and privacy.\n\n## Why Mobile Direct?\n\n* ✅ Needs mobile GPS permissions anyway\n* ✅ Location processing can be local\n* ✅ Privacy-friendly (location stays on device)\n* ✅ Better offline capability\n\n## Current Location (Web App)\n\n/lib/location/smart-location.service.ts\n\n## Tasks\n\n- [ ] Port UK location detection logic to mobile\n- [ ] Integrate React Native geolocation\n- [ ] Add location permission handling\n- [ ] Port supplier recommendation logic\n- [ ] Test on both iOS and Android\n- [ ] Add offline location caching\n\n## Mobile Dependencies\n\n* expo-location for GPS access\n* AsyncStorage for location caching\n* iOS/Android permission handling\n\n## Value\n\nLocation-based recommendations with full privacy control",
-      "status": "Backlog",
-      "stateType": "backlog",
-      "priority": 2,
-      "priorityLabel": "High",
-      "estimate": 3,
-      "dueDate": null,
-      "labels": [],
-      "assignee": "Unassigned",
-      "team": "Asktoddy",
-      "teamKey": "ASK",
-      "url": "https://linear.app/asktoddy/issue/ASK-11/port-smartlocationservice-to-mobile-with-gps",
-      "createdAt": "2025-10-13T10:02:56.237Z",
-      "updatedAt": "2025-10-13T11:11:18.365Z",
-      "parent": null,
-      "children": []
-    },
-    {
-      "id": "ASK-9",
-      "linearId": "cdec7d1f-07bb-468d-9960-bfde6a621343",
-      "title": "🛠️ Port ToolExpertiseService to mobile (offline)",
-      "description": "## ARCHITECTURE UPDATE: Mobile-First for Offline Use ✅\n\n## Objective\n\nPort tool expertise knowledge directly to mobile app for instant offline access.\n\n## Why Mobile Direct?\n\n* ✅ Static knowledge base - perfect for offline use\n* ✅ No API calls needed - instant responses\n* ✅ 1,770 lines of pure domain knowledge\n* ✅ Better user experience (no network dependency)\n\n## Current Location (Web App)\n\n/lib/tools/tool-expertise.service.ts\n\n## Tasks\n\n- [ ] Copy ToolExpertiseService to shared-services package\n- [ ] Create searchable interface for mobile\n- [ ] Optimize for mobile performance\n- [ ] Add offline caching with AsyncStorage\n- [ ] Create tool recommendation engine\n- [ ] Build tool search and filtering\n\n## Mobile Integration\n\n* Import directly in mobile app\n* Store in AsyncStorage for fast access\n* Enable offline tool recommendations\n\n## Value\n\nGold mine of domain expertise - critical competitive advantage that works without internet",
-      "status": "Backlog",
-      "stateType": "backlog",
-      "priority": 2,
-      "priorityLabel": "High",
-      "estimate": 2,
-      "dueDate": null,
-      "labels": [],
-      "assignee": "Unassigned",
-      "team": "Asktoddy",
-      "teamKey": "ASK",
-      "url": "https://linear.app/asktoddy/issue/ASK-9/port-toolexpertiseservice-to-mobile-offline",
-      "createdAt": "2025-10-13T10:02:54.629Z",
-      "updatedAt": "2025-10-13T11:11:17.850Z",
-      "parent": null,
-      "children": []
-    },
-    {
-      "id": "ASK-8",
-      "linearId": "891922d6-b039-4190-938a-2b80de6f1e76",
-      "title": "🔨 Build ConstructionDataService API endpoints",
-      "description": "## ARCHITECTURE UPDATE: API-First Approach ✅\n\n## Objective\n\nCreate NestJS API endpoints for UK construction pricing data (moved from direct mobile integration for performance and updates).\n\n## Why API Layer?\n\n* ✅ Large datasets better served from API\n* ✅ Enable pricing updates without app releases\n* ✅ Add caching and CDN support\n* ✅ Real-time pricing synchronization\n\n## Current Location (Web App)\n\n/lib/construction-data/construction-data.service.ts\n\n## Tasks\n\n- [ ] Extract construction data to NestJS service\n- [ ] Create /api/pricing endpoints\n- [ ] Implement data caching strategy\n- [ ] Add real-time pricing updates\n- [ ] Create search and filtering endpoints\n\n## API Endpoints to Create\n\n* GET /api/pricing/materials - Get material costs\n* GET /api/pricing/labor - Get labor rates by region\n* GET /api/pricing/categories - Get pricing categories\n* GET /api/pricing/search - Search pricing data\n\n## Dependencies\n\n* Requires ASK-12 (NestJS setup) to be completed first\n\n## Value\n\nEssential UK market data - 100% reusable with better performance",
-      "status": "Backlog",
-      "stateType": "backlog",
-      "priority": 2,
-      "priorityLabel": "High",
-      "estimate": 2,
-      "dueDate": null,
-      "labels": [],
-      "assignee": "Unassigned",
-      "team": "Asktoddy",
-      "teamKey": "ASK",
-      "url": "https://linear.app/asktoddy/issue/ASK-8/build-constructiondataservice-api-endpoints",
-      "createdAt": "2025-10-13T10:02:53.587Z",
-      "updatedAt": "2025-10-13T11:11:17.469Z",
-      "parent": null,
-      "children": []
-    },
-    {
-      "id": "ASK-22",
-      "linearId": "ebf09e38-cb68-4556-ad14-52e8a7144ed0",
-      "title": "🌐 Deploy current web app to Vercel",
-      "description": "## Objective\n\nDeploy the existing Next.js app for immediate user testing.\n\n## Tasks\n\n- [ ] Set up Vercel project\n- [ ] Configure environment variables\n- [ ] Set up custom domain\n- [ ] Configure Sentry error tracking\n- [ ] Set up analytics\n- [ ] Test all features in production\n\n## Purpose\n\nKeep web app running while building mobile MVP",
-      "status": "Backlog",
-      "stateType": "backlog",
-      "priority": 1,
-      "priorityLabel": "Urgent",
-      "estimate": 2,
-      "dueDate": null,
-      "labels": [],
-      "assignee": "Unassigned",
-      "team": "Asktoddy",
-      "teamKey": "ASK",
-      "url": "https://linear.app/asktoddy/issue/ASK-22/deploy-current-web-app-to-vercel",
-      "createdAt": "2025-10-13T10:03:04.896Z",
-      "updatedAt": "2025-10-13T10:03:04.896Z",
-      "parent": null,
-      "children": []
-    },
-    {
-      "id": "ASK-21",
-      "linearId": "74c5e011-e023-4dba-b9c1-26708e72ea4d",
-      "title": "🚀 Deploy MVP to TestFlight/Google Play Beta",
-      "description": "## Objective\n\nDeploy the mobile MVP for testing with friends and family.\n\n## Tasks\n\n- [ ] Configure app signing\n- [ ] Set up CI/CD pipeline\n- [ ] Deploy to TestFlight (iOS)\n- [ ] Deploy to Google Play Beta (Android)\n- [ ] Set up crash reporting\n- [ ] Configure analytics\n\n## Success\n\nFriends and family can test the app",
-      "status": "Backlog",
-      "stateType": "backlog",
-      "priority": 3,
-      "priorityLabel": "Medium",
-      "estimate": 3,
-      "dueDate": null,
-      "labels": [],
-      "assignee": "Unassigned",
-      "team": "Asktoddy",
-      "teamKey": "ASK",
-      "url": "https://linear.app/asktoddy/issue/ASK-21/deploy-mvp-to-testflightgoogle-play-beta",
-      "createdAt": "2025-10-13T10:03:04.109Z",
-      "updatedAt": "2025-10-13T10:03:04.109Z",
-      "parent": null,
-      "children": []
-    },
-    {
-      "id": "ASK-20",
-      "linearId": "5a0af639-d90a-4c22-aed1-3ba6f63cbff7",
-      "title": "✅ End-to-end testing of core flows",
-      "description": "## Objective\n\nTest complete user journeys on mobile.\n\n## Test Flows\n\n- [ ] Photo upload → Analysis → Results\n- [ ] Chat interaction flow\n- [ ] Project creation and management\n- [ ] Tool hire inquiry flow\n- [ ] Offline/online synchronization\n\n## Platforms\n\nTest on iOS and Android",
-      "status": "Backlog",
-      "stateType": "backlog",
-      "priority": 2,
-      "priorityLabel": "High",
-      "estimate": 5,
-      "dueDate": null,
-      "labels": [],
-      "assignee": "Unassigned",
-      "team": "Asktoddy",
-      "teamKey": "ASK",
-      "url": "https://linear.app/asktoddy/issue/ASK-20/end-to-end-testing-of-core-flows",
-      "createdAt": "2025-10-13T10:03:03.309Z",
-      "updatedAt": "2025-10-13T10:03:03.309Z",
       "parent": null,
       "children": []
     }

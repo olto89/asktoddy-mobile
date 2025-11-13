@@ -179,6 +179,12 @@ export default function ChatScreen() {
   const handleSend = async () => {
     if (!inputText.trim() && !selectedImage) return;
 
+    console.log('📱 [FRONTEND] handleSend called with:', {
+      inputText: inputText.trim(),
+      hasImage: !!selectedImage,
+      timestamp: new Date().toISOString(),
+    });
+
     // Native haptic feedback
     if (isIOS) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -192,8 +198,12 @@ export default function ChatScreen() {
       imageUri: selectedImage || undefined,
     };
 
+    console.log('📱 [FRONTEND] User message created:', userMessage);
+
     // Clear input immediately to prevent UI issues
+    const originalInputText = inputText.trim();
     setInputText('');
+    console.log('📱 [FRONTEND] Input text cleared, was:', originalInputText);
     clearImage();
 
     // Animate message addition
@@ -215,118 +225,103 @@ export default function ChatScreen() {
     setIsLoading(true);
 
     try {
-      // Development fallback - check if we're in development mode
-      const isDevelopment = process.env.EXPO_PUBLIC_APP_ENV === 'development';
+      const requestBody = {
+        message: userMessage.content || undefined,
+        imageUri: userMessage.imageUri,
+        sessionId: sessionId, // Include session for contextual memory
+        userId: user?.id, // Include user ID if available
+        context: {
+          location: pricingContext?.location || 'Unknown location',
+          city: pricingContext?.city || 'Unknown',
+          postcode: pricingContext?.postcode,
+          region: pricingContext?.region || 'UK',
+          regionCode: pricingContext?.regionCode,
+          pricingMultiplier: pricingContext?.pricingMultiplier || 1.0,
+          coordinates: pricingContext?.coordinates,
+          projectType: detectProjectType(userMessage.content),
+          preferredProvider: 'auto',
+        },
+        history: messages.slice(-6).map(m => ({
+          role: m.role,
+          content: m.content,
+          timestamp: m.timestamp,
+        })),
+      };
 
-      // Debug logging
-      console.log('🔍 Environment check:', {
-        EXPO_PUBLIC_APP_ENV: process.env.EXPO_PUBLIC_APP_ENV,
-        isDevelopment,
-        __DEV__,
+      console.log('📱 [FRONTEND] Calling Edge Function with body:', {
+        message: requestBody.message,
+        hasImage: !!requestBody.imageUri,
+        sessionId: requestBody.sessionId,
+        projectType: requestBody.context.projectType,
+        preferredProvider: requestBody.context.preferredProvider,
       });
 
+      // Call analyze-construction Edge Function with contextual memory
+      const { data, error } = await supabase.functions.invoke('analyze-construction', {
+        body: requestBody,
+      });
+
+      console.log('📱 [FRONTEND] Edge Function response:', {
+        hasData: !!data,
+        hasError: !!error,
+        success: data?.success,
+        aiProvider: data?.aiProvider,
+        dataProvider: data?.data?.aiProvider,
+      });
+
+      if (error) {
+        console.error('📱 [FRONTEND] Supabase Edge Function error:', error);
+        throw error;
+      }
+
       let analysis;
-
-      if (false) {
-        // Temporarily disabled - force real Edge Function
-        // MOCK DATA: Replace with real Edge Function in production
-        // See MOCK_DATA_TRACKING.md for details
-        console.log('🔧 Using development mock response with regional pricing');
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API delay
-
-        // Apply regional pricing multiplier to mock data
-        const multiplier = pricingContext?.pricingMultiplier || 1.0;
-        const baseMaterials = { min: 1500, max: 3500 };
-        const baseLabor = { min: 2000, max: 4500 };
-
-        analysis = {
-          projectType: detectProjectType(userMessage.content),
-          description: `I can help you with your ${detectProjectType(userMessage.content).toLowerCase()} project! Based on your location in ${pricingContext?.city || 'your area'}, ${pricingContext?.region || 'UK'}, here's what I found.`,
-          costBreakdown: {
-            materials: {
-              min: Math.round(baseMaterials.min * multiplier),
-              max: Math.round(baseMaterials.max * multiplier),
-            },
-            labor: {
-              min: Math.round(baseLabor.min * multiplier),
-              max: Math.round(baseLabor.max * multiplier),
-            },
-            total: {
-              min: Math.round((baseMaterials.min + baseLabor.min) * multiplier),
-              max: Math.round((baseMaterials.max + baseLabor.max) * multiplier),
-            },
-          },
-          timeline: {
-            diy: '2-3 weeks', // HARDCODED: Replace with real AI analysis
-            professional: '1-2 weeks', // HARDCODED: Replace with real AI analysis
-          },
-          recommendations: [
-            // HARDCODED: Replace with real AI recommendations
-            'Get multiple quotes from local contractors',
-            'Consider seasonal pricing variations',
-            'Check building regulations in your area',
-          ],
-          requiresProfessional: true, // HARDCODED: Replace with real AI analysis
-          professionalReasons: ['Safety requirements', 'Building regulations'], // HARDCODED
-          confidence: 85, // HARDCODED: Replace with real AI confidence score
-          aiProvider: 'development-mock', // HARDCODED: Development identifier
-        };
-      } else {
-        // Call analyze-construction Edge Function with contextual memory
-        const { data, error } = await supabase.functions.invoke('analyze-construction', {
-          body: {
-            message: userMessage.content || undefined,
-            imageUri: userMessage.imageUri,
-            sessionId: sessionId, // Include session for contextual memory
-            userId: user?.id, // Include user ID if available
-            context: {
-              location: pricingContext?.location || 'Unknown location',
-              city: pricingContext?.city || 'Unknown',
-              postcode: pricingContext?.postcode,
-              region: pricingContext?.region || 'UK',
-              regionCode: pricingContext?.regionCode,
-              pricingMultiplier: pricingContext?.pricingMultiplier || 1.0,
-              coordinates: pricingContext?.coordinates,
-              projectType: detectProjectType(userMessage.content),
-              preferredProvider: 'auto',
-            },
-            history: messages.slice(-6).map(m => ({
-              role: m.role,
-              content: m.content,
-              timestamp: m.timestamp,
-            })),
-          },
+      if (data?.success && data?.data) {
+        analysis = data.data;
+        console.log('📱 [FRONTEND] Analysis received:', {
+          provider: analysis.aiProvider,
+          projectType: analysis.projectType,
+          confidence: analysis.confidence,
+          hasWarnings: !!(analysis.warnings && analysis.warnings.length > 0),
+          warnings: analysis.warnings,
         });
-
-        if (error) throw error;
-
-        if (data?.success && data?.data) {
-          analysis = data.data;
-        } else {
-          throw new Error('Invalid response from server');
-        }
+      } else {
+        console.error('📱 [FRONTEND] Invalid server response:', data);
+        throw new Error('Invalid response from server');
       }
 
       // Format response message
       const responseContent = formatAnalysisResponse(analysis);
 
+      console.log('📱 [FRONTEND] Formatted response:', {
+        contentLength: responseContent.length,
+        provider: analysis.aiProvider,
+        isMock: responseContent.includes('mock') || responseContent.includes('Mock'),
+      });
+
+      const assistantMessage = {
+        id: `${Date.now()}_response`,
+        role: 'assistant',
+        content: responseContent,
+        timestamp: new Date().toISOString(),
+        showDocumentButtons: true,
+        analysis: analysis, // Store for document generation
+      };
+
+      console.log('📱 [FRONTEND] Assistant message created:', {
+        messageId: assistantMessage.id,
+        provider: analysis.aiProvider,
+        hasAnalysis: !!assistantMessage.analysis,
+      });
+
       // Replace loading message with actual response
-      setMessages(prev =>
-        prev.map(msg =>
-          msg.id === loadingMessage.id
-            ? {
-                id: `${Date.now()}_response`,
-                role: 'assistant',
-                content: responseContent,
-                timestamp: new Date().toISOString(),
-                showDocumentButtons: true,
-                analysis: analysis, // Store for document generation
-              }
-            : msg
-        )
-      );
+      setMessages(prev => prev.map(msg => (msg.id === loadingMessage.id ? assistantMessage : msg)));
     } catch (error) {
-      console.error('Chat error:', error);
+      console.error('📱 [FRONTEND] Chat error occurred:', error);
+      console.error('📱 [FRONTEND] Error details:', {
+        message: error?.message || 'Unknown error',
+        name: error?.name,
+        stack: error?.stack,
+      });
 
       // Replace loading message with error
       setMessages(prev =>
@@ -342,6 +337,8 @@ export default function ChatScreen() {
             : msg
         )
       );
+
+      console.log('📱 [FRONTEND] Error message added to chat');
     } finally {
       setIsLoading(false);
     }
@@ -446,37 +443,22 @@ export default function ChatScreen() {
           try {
             setIsLoading(true);
 
-            // Development fallback for document generation
-            const isDevelopment = __DEV__ || process.env.EXPO_PUBLIC_APP_ENV === 'development';
+            // Call generate-document Edge Function
+            const { data, error } = await supabase.functions.invoke('generate-document', {
+              body: {
+                type,
+                projectType: analysis.projectType,
+                analysis,
+                pricing: {}, // TODO: Include pricing data if needed
+              },
+            });
 
-            if (isDevelopment) {
-              // MOCK DATA: Replace with real document generation in production
-              // See MOCK_DATA_TRACKING.md for details
-              console.log(`🔧 Mock generating ${type} document`);
-              await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate processing
+            if (error) throw error;
 
-              Alert.alert(
-                'Success (Development)',
-                `Your ${type} would be generated in production. Download link would be sent to your email.`
-              );
-            } else {
-              // Call generate-document Edge Function
-              const { data, error } = await supabase.functions.invoke('generate-document', {
-                body: {
-                  type,
-                  projectType: analysis.projectType,
-                  analysis,
-                  pricing: {}, // TODO: Include pricing data if needed
-                },
-              });
-
-              if (error) throw error;
-
-              Alert.alert(
-                'Success',
-                `Your ${type} has been generated. Download link will be sent to your email.`
-              );
-            }
+            Alert.alert(
+              'Success',
+              `Your ${type} has been generated. Download link will be sent to your email.`
+            );
           } catch (error) {
             Alert.alert('Error', 'Failed to generate document. Please try again.');
           } finally {

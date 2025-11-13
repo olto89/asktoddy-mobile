@@ -7,6 +7,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createResponse, createErrorResponse, getEnvironment, debugLog } from '../_shared/env.ts';
 import { AIMiddleware } from './middleware.ts';
+import { GeminiProvider } from './providers/gemini.ts';
 import {
   AnalysisRequest,
   AnalysisResponse,
@@ -26,14 +27,16 @@ function transformAnalysisForMobile(analysis: ProjectAnalysis): any {
   let totalDays = 0;
   if (analysis.timeline?.phases) {
     for (const phase of analysis.timeline.phases) {
-      const days = parseInt(phase.duration.match(/\d+/)?.[0] || '1');
+      const duration = phase.duration || '1 day';
+      const days = parseInt(duration.match(/\d+/)?.[0] || '1');
       totalDays += days;
     }
   }
 
   // If no phases, estimate from professional timeline
   if (totalDays === 0 && analysis.timeline?.professional) {
-    totalDays = parseInt(analysis.timeline.professional.match(/\d+/)?.[0] || '5');
+    const professional = analysis.timeline.professional || '5 days';
+    totalDays = parseInt(professional.match(/\d+/)?.[0] || '5');
   }
 
   return {
@@ -52,13 +55,15 @@ function transformAnalysisForMobile(analysis: ProjectAnalysis): any {
   };
 }
 
-// Initialize AI Middleware with configuration
+// Initialize AI Middleware with optimized simple Gemini provider
 const middlewareConfig = {
-  primaryProvider: 'gemini',
-  fallbackProviders: ['mock'],
-  timeoutMs: 30000,
-  retryAttempts: 2,
+  primaryProvider: 'gemini-simple',
+  fallbackProviders: ['gemini', 'gemini-fallback'], // Complex Gemini, then alternative models
+  timeoutMs: 15000, // Shorter timeout for faster responses
+  retryAttempts: 1, // Fewer retries for speed
   enableFallback: true,
+  providerRetryDelay: 1000, // Quick retry delay
+  userFeedbackEnabled: true, // Show user which provider we're trying
 };
 
 let aiMiddleware: AIMiddleware | null = null;
@@ -75,9 +80,13 @@ Deno.serve(async req => {
         env.GEMINI_API_KEY,
         env.OPENAI_API_KEY,
         env.SUPABASE_URL,
-        env.SUPABASE_SERVICE_ROLE_KEY
+        env.SUPABASE_SERVICE_ROLE_KEY,
+        env.ANTHROPIC_API_KEY
       );
-      console.log('✅ AI Middleware initialized with contextual memory');
+
+      const availableProviders = aiMiddleware.getAvailableProviders();
+      console.log('✅ AI Middleware initialized with providers:', availableProviders);
+      console.log('🔧 Fallback providers configured:', middlewareConfig.fallbackProviders);
     }
 
     // Handle CORS preflight
@@ -87,9 +96,12 @@ Deno.serve(async req => {
 
     // Health check endpoint
     if (req.method === 'GET') {
+      const url = new URL(req.url);
+      const isDebug = url.searchParams.get('debug') === 'true';
+
       const providerHealth = await aiMiddleware.healthCheck();
 
-      return createResponse({
+      const response = {
         service: 'analyze-construction',
         status: 'healthy',
         version: '2.0.0',
@@ -104,12 +116,29 @@ Deno.serve(async req => {
           gemini: !!env.GEMINI_API_KEY,
           openai: !!env.OPENAI_API_KEY,
         },
-      });
+      };
+
+      if (isDebug) {
+        response.debug = {
+          geminiApiKey: env.GEMINI_API_KEY
+            ? `${env.GEMINI_API_KEY.substring(0, 10)}...`
+            : 'NOT_SET',
+          openaiApiKey: env.OPENAI_API_KEY
+            ? `${env.OPENAI_API_KEY.substring(0, 10)}...`
+            : 'NOT_SET',
+          supabaseUrl: env.SUPABASE_URL,
+          appEnv: env.APP_ENV,
+        };
+      }
+
+      console.log('🩺 Health check called', { debug: isDebug, providerHealth });
+      return createResponse(response);
     }
 
     // Main analysis endpoint
     if (req.method === 'POST') {
       const startTime = Date.now();
+      console.log('📝 POST request received at', new Date().toISOString());
 
       try {
         const requestData: AnalysisRequest | ContextualAnalysisRequest = await req.json();
@@ -120,8 +149,17 @@ Deno.serve(async req => {
           return createErrorResponse('Either message or imageUri is required', 400);
         }
 
-        // Process through AI Middleware (all 455 lines of business logic)
+        // Process through fixed AI Middleware (should work now with correct fallback providers)
+        console.log('🤖 Calling fixed AI Middleware with correct provider registry');
         const analysis = await aiMiddleware.analyzeImageWithValidation(requestData);
+
+        console.log('✅ AI Middleware completed:', {
+          provider: analysis.aiProvider,
+          projectType: analysis.projectType,
+          confidence: analysis.confidence,
+          processingTime: Date.now() - startTime,
+          hasWarnings: !!(analysis.warnings && analysis.warnings.length > 0),
+        });
 
         // Transform response for mobile app compatibility
         const transformedAnalysis = transformAnalysisForMobile(analysis);

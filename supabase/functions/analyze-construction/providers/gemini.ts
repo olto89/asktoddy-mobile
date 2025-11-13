@@ -7,11 +7,12 @@ import { AIProvider, AnalysisRequest, ProjectAnalysis, QuoteBreakdown } from '..
 import type { ContextualAnalysisRequest, ContextualProjectAnalysis } from '../context/types.ts';
 import { ContextManager } from '../context/ContextManager.ts';
 import { ConversationIntelligence } from '../intelligence/ConversationIntelligence.ts';
+import { MATERIAL_QUANTITY_GUIDE } from '../prompts/material-quantity-calculator.ts';
 
 export class GeminiProvider implements AIProvider {
   name = 'gemini';
   private apiKey: string;
-  private model = 'gemini-2.0-flash-exp'; // Updated to stable working model
+  private model = 'gemini-2.0-flash'; // Stable model with available quota
   private endpoint = 'https://generativelanguage.googleapis.com/v1beta/models';
   private contextManager?: ContextManager;
 
@@ -34,9 +35,13 @@ export class GeminiProvider implements AIProvider {
     }
   }
 
-  async healthCheck(): Promise<{ status: 'healthy' | 'degraded' | 'down'; latency?: number }> {
+  async healthCheck(): Promise<{
+    status: 'healthy' | 'degraded' | 'down';
+    latency?: number;
+    error?: string;
+  }> {
     if (!this.apiKey) {
-      return { status: 'down' };
+      return { status: 'down', error: 'No API key' };
     }
 
     const startTime = Date.now();
@@ -45,12 +50,19 @@ export class GeminiProvider implements AIProvider {
       const latency = Date.now() - startTime;
 
       return {
-        status: latency < 2000 ? 'healthy' : 'degraded',
+        status: latency < 3000 ? 'healthy' : 'degraded',
         latency,
       };
     } catch (error) {
-      console.error('Gemini health check failed:', error);
-      return { status: 'down' };
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.error('Gemini health check failed:', errorMsg);
+
+      // Check if it's a rate limit error
+      if (errorMsg.includes('429') || errorMsg.includes('exhausted')) {
+        return { status: 'degraded', error: 'Rate limited', latency: 0 };
+      }
+
+      return { status: 'down', error: errorMsg };
     }
   }
 
@@ -95,64 +107,100 @@ export class GeminiProvider implements AIProvider {
   private async generateContent(prompt: string): Promise<string> {
     const url = `${this.endpoint}/${this.model}:generateContent?key=${this.apiKey}`;
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: prompt }],
-          },
-        ],
-      }),
-    });
+    // Retry logic for rate limiting
+    let retries = 3;
+    let delay = 1000; // Start with 1 second
 
-    if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
+    while (retries > 0) {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [{ text: prompt }],
+            },
+          ],
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+          throw new Error('Invalid response from Gemini API');
+        }
+        return data.candidates[0].content.parts[0].text;
+      }
+
+      // Check if it's a rate limit error
+      if (response.status === 429) {
+        console.log(`⏳ Rate limited, retrying in ${delay}ms... (${retries} retries left)`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        delay *= 2; // Exponential backoff
+        retries--;
+        continue;
+      }
+
+      // Other errors - don't retry
+      const errorBody = await response.text();
+      console.error(`Gemini API error: ${response.status} ${response.statusText}`, errorBody);
+      throw new Error(`Gemini API error: ${response.status} ${response.statusText} - ${errorBody}`);
     }
 
-    const data = await response.json();
-
-    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-      throw new Error('Invalid response from Gemini API');
-    }
-
-    return data.candidates[0].content.parts[0].text;
+    throw new Error('Gemini API rate limited after 3 retries');
   }
 
   private async generateContentWithMedia(prompt: string, mediaData: any): Promise<string> {
     const url = `${this.endpoint}/${this.model}:generateContent?key=${this.apiKey}`;
-
-    // Enhanced prompt for multi-modal analysis
     const enhancedPrompt = this.enhancePromptForMediaType(prompt, mediaData.inlineData.mimeType);
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: enhancedPrompt }, mediaData],
-          },
-        ],
-      }),
-    });
+    // Retry logic for rate limiting
+    let retries = 3;
+    let delay = 1000;
 
-    if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
+    while (retries > 0) {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [{ text: enhancedPrompt }, mediaData],
+            },
+          ],
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+          throw new Error('Invalid response from Gemini API');
+        }
+        return data.candidates[0].content.parts[0].text;
+      }
+
+      // Check if it's a rate limit error
+      if (response.status === 429) {
+        console.log(
+          `⏳ Rate limited on media request, retrying in ${delay}ms... (${retries} retries left)`
+        );
+        await new Promise(resolve => setTimeout(resolve, delay));
+        delay *= 2;
+        retries--;
+        continue;
+      }
+
+      // Other errors - don't retry
+      const errorBody = await response.text();
+      console.error(`Gemini API error: ${response.status} ${response.statusText}`, errorBody);
+      throw new Error(`Gemini API error: ${response.status} ${response.statusText} - ${errorBody}`);
     }
 
-    const data = await response.json();
-
-    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-      throw new Error('Invalid response from Gemini API');
-    }
-
-    return data.candidates[0].content.parts[0].text;
+    throw new Error('Gemini API rate limited after 3 retries');
   }
 
   private enhancePromptForMediaType(prompt: string, mimeType: string): string {
@@ -475,7 +523,35 @@ Return a JSON object with this structure:
 }
 
 FOR QUOTE MODE (6-8 points):
-Return the full detailed JSON structure with costBreakdown, timeline, etc. (use existing format)
+${MATERIAL_QUANTITY_GUIDE}
+
+Return the full detailed JSON structure with accurate quantity-based cost calculations:
+{
+  "responseType": "quote",
+  "projectType": "Specific project type",
+  "description": "Detailed analysis",
+  "costBreakdown": {
+    "materials": {
+      "structural": {"min": X, "max": Y, "items": [{"name": "Material", "quantity": "X units", "unitPrice": "£Y", "totalCost": Z}]},
+      "finishes": {"min": X, "max": Y, "items": [...]},
+      "services": {"min": X, "max": Y, "items": [...]},
+      "delivery": {"min": X, "max": Y},
+      "waste": {"min": X, "max": Y},
+      "total": {"min": X, "max": Y}
+    },
+    "labor": {"min": X, "max": Y, "hourlyRate": Z, "estimatedHours": W},
+    "total": {"min": X, "max": Y}
+  },
+  "timeline": {"professional": "X weeks/months", "phases": [...]},
+  "confidence": 85,
+  "recommendations": ["Specific advice"],
+  "calculations": {
+    "methodology": "How quantities were calculated",
+    "assumptions": ["Key assumptions"]
+  }
+}
+
+CRITICAL: Calculate actual material quantities based on project dimensions, then multiply by unit prices. Never use template costs!
 
 USER INPUT: "${message || 'No specific message provided'}"
 

@@ -10,6 +10,7 @@ export interface PricingRequest {
   tools?: string[];
   timeline?: string;
   projectScale?: 'small' | 'medium' | 'large';
+  urgency?: 'standard' | 'urgent';
 }
 
 export interface PricingResponse {
