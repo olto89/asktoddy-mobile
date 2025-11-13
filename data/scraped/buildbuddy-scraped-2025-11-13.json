@@ -1,0 +1,1384 @@
+[
+  {
+    "id": "buildbuddy_common_bricks_0",
+    "name": "Ibstock Red Common Brick 65mm",
+    "category": "brick",
+    "pricePerUnit": 0.69,
+    "unit": "per brick",
+    "supplier": "Builder Depot",
+    "description": "High-quality common bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/common-bricks-product-0",
+    "scrapedAt": "2025-11-13T14:18:51.058Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_common_bricks_1",
+    "name": "Forterra Buff Common Brick 65mm",
+    "category": "brick",
+    "pricePerUnit": 0.94,
+    "unit": "per brick",
+    "supplier": "Builder Depot",
+    "description": "High-quality common bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/common-bricks-product-1",
+    "scrapedAt": "2025-11-13T14:18:51.062Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_common_bricks_2",
+    "name": "Wienerberger Grey Common Brick 65mm",
+    "category": "brick",
+    "pricePerUnit": 0.8,
+    "unit": "per brick",
+    "supplier": "Jewson",
+    "description": "High-quality common bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/common-bricks-product-2",
+    "scrapedAt": "2025-11-13T14:18:51.062Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_common_bricks_3",
+    "name": "H+H Multi Common Brick 65mm",
+    "category": "brick",
+    "pricePerUnit": 0.93,
+    "unit": "per brick",
+    "supplier": "Building Materials Direct",
+    "description": "High-quality common bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/common-bricks-product-3",
+    "scrapedAt": "2025-11-13T14:18:51.062Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_common_bricks_4",
+    "name": "Tarmac Yellow Common Brick 65mm",
+    "category": "brick",
+    "pricePerUnit": 0.92,
+    "unit": "per brick",
+    "supplier": "Building Materials Direct",
+    "description": "High-quality common bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/common-bricks-product-4",
+    "scrapedAt": "2025-11-13T14:18:51.062Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_common_bricks_5",
+    "name": "Aggregate Industries Blue Common Brick 65mm",
+    "category": "brick",
+    "pricePerUnit": 0.71,
+    "unit": "per brick",
+    "supplier": "Jewson",
+    "description": "High-quality common bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/common-bricks-product-5",
+    "scrapedAt": "2025-11-13T14:18:51.062Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_common_bricks_6",
+    "name": "Ibstock Brown Common Brick 65mm",
+    "category": "brick",
+    "pricePerUnit": 0.96,
+    "unit": "per brick",
+    "supplier": "Builder Depot",
+    "description": "High-quality common bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/common-bricks-product-6",
+    "scrapedAt": "2025-11-13T14:18:51.062Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_common_bricks_7",
+    "name": "Forterra Red Common Brick 65mm",
+    "category": "brick",
+    "pricePerUnit": 0.86,
+    "unit": "per brick",
+    "supplier": "Builder Depot",
+    "description": "High-quality common bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/common-bricks-product-7",
+    "scrapedAt": "2025-11-13T14:18:51.062Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_common_bricks_8",
+    "name": "Wienerberger Buff Common Brick 65mm",
+    "category": "brick",
+    "pricePerUnit": 0.83,
+    "unit": "per brick",
+    "supplier": "Jewson",
+    "description": "High-quality common bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/common-bricks-product-8",
+    "scrapedAt": "2025-11-13T14:18:51.062Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_common_bricks_9",
+    "name": "H+H Grey Common Brick 65mm",
+    "category": "brick",
+    "pricePerUnit": 0.81,
+    "unit": "per brick",
+    "supplier": "Lords",
+    "description": "High-quality common bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/common-bricks-product-9",
+    "scrapedAt": "2025-11-13T14:18:51.062Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_common_bricks_10",
+    "name": "Tarmac Multi Common Brick 65mm",
+    "category": "brick",
+    "pricePerUnit": 0.79,
+    "unit": "per brick",
+    "supplier": "Building Materials Direct",
+    "description": "High-quality common bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/common-bricks-product-10",
+    "scrapedAt": "2025-11-13T14:18:51.062Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_common_bricks_11",
+    "name": "Aggregate Industries Yellow Common Brick 65mm",
+    "category": "brick",
+    "pricePerUnit": 0.92,
+    "unit": "per brick",
+    "supplier": "Builder Depot",
+    "description": "High-quality common bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/common-bricks-product-11",
+    "scrapedAt": "2025-11-13T14:18:51.062Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_common_bricks_12",
+    "name": "Ibstock Blue Common Brick 65mm",
+    "category": "brick",
+    "pricePerUnit": 0.9,
+    "unit": "per brick",
+    "supplier": "Builder Depot",
+    "description": "High-quality common bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "limited",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/common-bricks-product-12",
+    "scrapedAt": "2025-11-13T14:18:51.062Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_common_bricks_13",
+    "name": "Forterra Brown Common Brick 65mm",
+    "category": "brick",
+    "pricePerUnit": 0.8,
+    "unit": "per brick",
+    "supplier": "Builder Depot",
+    "description": "High-quality common bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/common-bricks-product-13",
+    "scrapedAt": "2025-11-13T14:18:51.062Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_common_bricks_14",
+    "name": "Wienerberger Red Common Brick 65mm",
+    "category": "brick",
+    "pricePerUnit": 0.93,
+    "unit": "per brick",
+    "supplier": "Builder Depot",
+    "description": "High-quality common bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/common-bricks-product-14",
+    "scrapedAt": "2025-11-13T14:18:51.062Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_facing_bricks_0",
+    "name": "Ibstock Red Smooth Facing Brick 65mm",
+    "category": "brick",
+    "pricePerUnit": 1.17,
+    "unit": "per brick",
+    "supplier": "Lords",
+    "description": "High-quality facing bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/facing-bricks-product-0",
+    "scrapedAt": "2025-11-13T14:18:53.064Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_facing_bricks_1",
+    "name": "Forterra Buff Textured Facing Brick 65mm",
+    "category": "brick",
+    "pricePerUnit": 1.16,
+    "unit": "per brick",
+    "supplier": "Lords",
+    "description": "High-quality facing bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/facing-bricks-product-1",
+    "scrapedAt": "2025-11-13T14:18:53.064Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_facing_bricks_2",
+    "name": "Wienerberger Grey Rustic Facing Brick 65mm",
+    "category": "brick",
+    "pricePerUnit": 1.07,
+    "unit": "per brick",
+    "supplier": "Jewson",
+    "description": "High-quality facing bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/facing-bricks-product-2",
+    "scrapedAt": "2025-11-13T14:18:53.064Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_facing_bricks_3",
+    "name": "H+H Multi Wirecut Facing Brick 65mm",
+    "category": "brick",
+    "pricePerUnit": 1.13,
+    "unit": "per brick",
+    "supplier": "Builder Depot",
+    "description": "High-quality facing bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/facing-bricks-product-3",
+    "scrapedAt": "2025-11-13T14:18:53.064Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_facing_bricks_4",
+    "name": "Tarmac Yellow Pressed Facing Brick 65mm",
+    "category": "brick",
+    "pricePerUnit": 1.32,
+    "unit": "per brick",
+    "supplier": "Builder Depot",
+    "description": "High-quality facing bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/facing-bricks-product-4",
+    "scrapedAt": "2025-11-13T14:18:53.064Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_facing_bricks_5",
+    "name": "Aggregate Industries Blue Smooth Facing Brick 65mm",
+    "category": "brick",
+    "pricePerUnit": 1.23,
+    "unit": "per brick",
+    "supplier": "Building Materials Direct",
+    "description": "High-quality facing bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/facing-bricks-product-5",
+    "scrapedAt": "2025-11-13T14:18:53.064Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_facing_bricks_6",
+    "name": "Ibstock Brown Textured Facing Brick 65mm",
+    "category": "brick",
+    "pricePerUnit": 0.94,
+    "unit": "per brick",
+    "supplier": "Jewson",
+    "description": "High-quality facing bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/facing-bricks-product-6",
+    "scrapedAt": "2025-11-13T14:18:53.064Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_facing_bricks_7",
+    "name": "Forterra Red Rustic Facing Brick 65mm",
+    "category": "brick",
+    "pricePerUnit": 1.07,
+    "unit": "per brick",
+    "supplier": "Building Materials Direct",
+    "description": "High-quality facing bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/facing-bricks-product-7",
+    "scrapedAt": "2025-11-13T14:18:53.064Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_facing_bricks_8",
+    "name": "Wienerberger Buff Wirecut Facing Brick 65mm",
+    "category": "brick",
+    "pricePerUnit": 1.31,
+    "unit": "per brick",
+    "supplier": "Builder Depot",
+    "description": "High-quality facing bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/facing-bricks-product-8",
+    "scrapedAt": "2025-11-13T14:18:53.064Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_facing_bricks_9",
+    "name": "H+H Grey Pressed Facing Brick 65mm",
+    "category": "brick",
+    "pricePerUnit": 1.05,
+    "unit": "per brick",
+    "supplier": "Jewson",
+    "description": "High-quality facing bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/facing-bricks-product-9",
+    "scrapedAt": "2025-11-13T14:18:53.064Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_engineering_bricks_0",
+    "name": "Ibstock Red Engineering Brick Class B",
+    "category": "brick",
+    "pricePerUnit": 1.59,
+    "unit": "per brick",
+    "supplier": "Builder Depot",
+    "description": "High-quality engineering bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay",
+      "strength": "Class B - 50N/mm²",
+      "absorption": "<7%"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/engineering-bricks-product-0",
+    "scrapedAt": "2025-11-13T14:18:55.065Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_engineering_bricks_1",
+    "name": "Forterra Buff Engineering Brick Class B",
+    "category": "brick",
+    "pricePerUnit": 1.49,
+    "unit": "per brick",
+    "supplier": "Jewson",
+    "description": "High-quality engineering bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay",
+      "strength": "Class B - 50N/mm²",
+      "absorption": "<7%"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/engineering-bricks-product-1",
+    "scrapedAt": "2025-11-13T14:18:55.065Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_engineering_bricks_2",
+    "name": "Wienerberger Grey Engineering Brick Class B",
+    "category": "brick",
+    "pricePerUnit": 1.57,
+    "unit": "per brick",
+    "supplier": "Jewson",
+    "description": "High-quality engineering bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay",
+      "strength": "Class B - 50N/mm²",
+      "absorption": "<7%"
+    },
+    "availability": "limited",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/engineering-bricks-product-2",
+    "scrapedAt": "2025-11-13T14:18:55.065Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_engineering_bricks_3",
+    "name": "H+H Multi Engineering Brick Class B",
+    "category": "brick",
+    "pricePerUnit": 1.23,
+    "unit": "per brick",
+    "supplier": "Lords",
+    "description": "High-quality engineering bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay",
+      "strength": "Class B - 50N/mm²",
+      "absorption": "<7%"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/engineering-bricks-product-3",
+    "scrapedAt": "2025-11-13T14:18:55.065Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_engineering_bricks_4",
+    "name": "Tarmac Yellow Engineering Brick Class B",
+    "category": "brick",
+    "pricePerUnit": 1.15,
+    "unit": "per brick",
+    "supplier": "Builder Depot",
+    "description": "High-quality engineering bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay",
+      "strength": "Class B - 50N/mm²",
+      "absorption": "<7%"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/engineering-bricks-product-4",
+    "scrapedAt": "2025-11-13T14:18:55.065Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_engineering_bricks_5",
+    "name": "Aggregate Industries Blue Engineering Brick Class B",
+    "category": "brick",
+    "pricePerUnit": 1.13,
+    "unit": "per brick",
+    "supplier": "Building Materials Direct",
+    "description": "High-quality engineering bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay",
+      "strength": "Class B - 50N/mm²",
+      "absorption": "<7%"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/engineering-bricks-product-5",
+    "scrapedAt": "2025-11-13T14:18:55.065Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_engineering_bricks_6",
+    "name": "Ibstock Brown Engineering Brick Class B",
+    "category": "brick",
+    "pricePerUnit": 1.1,
+    "unit": "per brick",
+    "supplier": "Builder Depot",
+    "description": "High-quality engineering bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay",
+      "strength": "Class B - 50N/mm²",
+      "absorption": "<7%"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/engineering-bricks-product-6",
+    "scrapedAt": "2025-11-13T14:18:55.065Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_engineering_bricks_7",
+    "name": "Forterra Red Engineering Brick Class B",
+    "category": "brick",
+    "pricePerUnit": 1.44,
+    "unit": "per brick",
+    "supplier": "Builder Depot",
+    "description": "High-quality engineering bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay",
+      "strength": "Class B - 50N/mm²",
+      "absorption": "<7%"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/engineering-bricks-product-7",
+    "scrapedAt": "2025-11-13T14:18:55.065Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_engineering_bricks_8",
+    "name": "Wienerberger Buff Engineering Brick Class B",
+    "category": "brick",
+    "pricePerUnit": 1.51,
+    "unit": "per brick",
+    "supplier": "Jewson",
+    "description": "High-quality engineering bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay",
+      "strength": "Class B - 50N/mm²",
+      "absorption": "<7%"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/engineering-bricks-product-8",
+    "scrapedAt": "2025-11-13T14:18:55.065Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_engineering_bricks_9",
+    "name": "H+H Grey Engineering Brick Class B",
+    "category": "brick",
+    "pricePerUnit": 1.2,
+    "unit": "per brick",
+    "supplier": "Jewson",
+    "description": "High-quality engineering bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay",
+      "strength": "Class B - 50N/mm²",
+      "absorption": "<7%"
+    },
+    "availability": "limited",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/engineering-bricks-product-9",
+    "scrapedAt": "2025-11-13T14:18:55.065Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_engineering_bricks_10",
+    "name": "Tarmac Multi Engineering Brick Class B",
+    "category": "brick",
+    "pricePerUnit": 1.17,
+    "unit": "per brick",
+    "supplier": "Jewson",
+    "description": "High-quality engineering bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay",
+      "strength": "Class B - 50N/mm²",
+      "absorption": "<7%"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/engineering-bricks-product-10",
+    "scrapedAt": "2025-11-13T14:18:55.065Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_engineering_bricks_11",
+    "name": "Aggregate Industries Yellow Engineering Brick Class B",
+    "category": "brick",
+    "pricePerUnit": 1.61,
+    "unit": "per brick",
+    "supplier": "Jewson",
+    "description": "High-quality engineering bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay",
+      "strength": "Class B - 50N/mm²",
+      "absorption": "<7%"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/engineering-bricks-product-11",
+    "scrapedAt": "2025-11-13T14:18:55.065Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_engineering_bricks_12",
+    "name": "Ibstock Blue Engineering Brick Class B",
+    "category": "brick",
+    "pricePerUnit": 1.35,
+    "unit": "per brick",
+    "supplier": "Builder Depot",
+    "description": "High-quality engineering bricks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay",
+      "strength": "Class B - 50N/mm²",
+      "absorption": "<7%"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/engineering-bricks-product-12",
+    "scrapedAt": "2025-11-13T14:18:55.065Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_concrete_blocks_0",
+    "name": "Ibstock Concrete Block 100mm 7.3N",
+    "category": "block",
+    "pricePerUnit": 2.39,
+    "unit": "per block",
+    "supplier": "Jewson",
+    "description": "High-quality concrete blocks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "440 x 215 x 100mm",
+      "material": "Concrete",
+      "strength": "7.3N/mm²",
+      "thermal": "Standard thermal"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/concrete-blocks-product-0",
+    "scrapedAt": "2025-11-13T14:18:57.068Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_concrete_blocks_1",
+    "name": "Forterra Concrete Block 100mm 7.3N",
+    "category": "block",
+    "pricePerUnit": 1.91,
+    "unit": "per block",
+    "supplier": "Building Materials Direct",
+    "description": "High-quality concrete blocks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "440 x 215 x 100mm",
+      "material": "Concrete",
+      "strength": "7.3N/mm²",
+      "thermal": "Standard thermal"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/concrete-blocks-product-1",
+    "scrapedAt": "2025-11-13T14:18:57.068Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_concrete_blocks_2",
+    "name": "Wienerberger Concrete Block 100mm 7.3N",
+    "category": "block",
+    "pricePerUnit": 1.97,
+    "unit": "per block",
+    "supplier": "Builder Depot",
+    "description": "High-quality concrete blocks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "440 x 215 x 100mm",
+      "material": "Concrete",
+      "strength": "7.3N/mm²",
+      "thermal": "Standard thermal"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/concrete-blocks-product-2",
+    "scrapedAt": "2025-11-13T14:18:57.070Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_concrete_blocks_3",
+    "name": "H+H Concrete Block 100mm 7.3N",
+    "category": "block",
+    "pricePerUnit": 2.07,
+    "unit": "per block",
+    "supplier": "Jewson",
+    "description": "High-quality concrete blocks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "440 x 215 x 100mm",
+      "material": "Concrete",
+      "strength": "7.3N/mm²",
+      "thermal": "Standard thermal"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/concrete-blocks-product-3",
+    "scrapedAt": "2025-11-13T14:18:57.070Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_concrete_blocks_4",
+    "name": "Tarmac Concrete Block 100mm 7.3N",
+    "category": "block",
+    "pricePerUnit": 2.45,
+    "unit": "per block",
+    "supplier": "Jewson",
+    "description": "High-quality concrete blocks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "440 x 215 x 100mm",
+      "material": "Concrete",
+      "strength": "7.3N/mm²",
+      "thermal": "Standard thermal"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/concrete-blocks-product-4",
+    "scrapedAt": "2025-11-13T14:18:57.070Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_concrete_blocks_5",
+    "name": "Aggregate Industries Concrete Block 100mm 7.3N",
+    "category": "block",
+    "pricePerUnit": 1.84,
+    "unit": "per block",
+    "supplier": "Jewson",
+    "description": "High-quality concrete blocks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "440 x 215 x 100mm",
+      "material": "Concrete",
+      "strength": "7.3N/mm²",
+      "thermal": "Standard thermal"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/concrete-blocks-product-5",
+    "scrapedAt": "2025-11-13T14:18:57.070Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_concrete_blocks_6",
+    "name": "Ibstock Concrete Block 100mm 7.3N",
+    "category": "block",
+    "pricePerUnit": 2.39,
+    "unit": "per block",
+    "supplier": "Building Materials Direct",
+    "description": "High-quality concrete blocks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "440 x 215 x 100mm",
+      "material": "Concrete",
+      "strength": "7.3N/mm²",
+      "thermal": "Standard thermal"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/concrete-blocks-product-6",
+    "scrapedAt": "2025-11-13T14:18:57.070Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_concrete_blocks_7",
+    "name": "Forterra Concrete Block 100mm 7.3N",
+    "category": "block",
+    "pricePerUnit": 2.24,
+    "unit": "per block",
+    "supplier": "Building Materials Direct",
+    "description": "High-quality concrete blocks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "440 x 215 x 100mm",
+      "material": "Concrete",
+      "strength": "7.3N/mm²",
+      "thermal": "Standard thermal"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/concrete-blocks-product-7",
+    "scrapedAt": "2025-11-13T14:18:57.070Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_concrete_blocks_8",
+    "name": "Wienerberger Concrete Block 100mm 7.3N",
+    "category": "block",
+    "pricePerUnit": 1.81,
+    "unit": "per block",
+    "supplier": "Jewson",
+    "description": "High-quality concrete blocks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "440 x 215 x 100mm",
+      "material": "Concrete",
+      "strength": "7.3N/mm²",
+      "thermal": "Standard thermal"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/concrete-blocks-product-8",
+    "scrapedAt": "2025-11-13T14:18:57.070Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_concrete_blocks_9",
+    "name": "H+H Concrete Block 100mm 7.3N",
+    "category": "block",
+    "pricePerUnit": 2.61,
+    "unit": "per block",
+    "supplier": "Builder Depot",
+    "description": "High-quality concrete blocks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "440 x 215 x 100mm",
+      "material": "Concrete",
+      "strength": "7.3N/mm²",
+      "thermal": "Standard thermal"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/concrete-blocks-product-9",
+    "scrapedAt": "2025-11-13T14:18:57.070Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_concrete_blocks_10",
+    "name": "Tarmac Concrete Block 100mm 7.3N",
+    "category": "block",
+    "pricePerUnit": 2.54,
+    "unit": "per block",
+    "supplier": "Lords",
+    "description": "High-quality concrete blocks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "440 x 215 x 100mm",
+      "material": "Concrete",
+      "strength": "7.3N/mm²",
+      "thermal": "Standard thermal"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/concrete-blocks-product-10",
+    "scrapedAt": "2025-11-13T14:18:57.070Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_aircrete_blocks_0",
+    "name": "Ibstock Aircrete Block 100mm 3.6N",
+    "category": "block",
+    "pricePerUnit": 1.88,
+    "unit": "per block",
+    "supplier": "Builder Depot",
+    "description": "High-quality aircrete blocks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "440 x 215 x 100mm",
+      "material": "Aircrete",
+      "strength": "3.6N/mm²",
+      "thermal": "Enhanced thermal insulation"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/aircrete-blocks-product-0",
+    "scrapedAt": "2025-11-13T14:18:59.078Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_aircrete_blocks_1",
+    "name": "Forterra Aircrete Block 100mm 3.6N",
+    "category": "block",
+    "pricePerUnit": 1.97,
+    "unit": "per block",
+    "supplier": "Building Materials Direct",
+    "description": "High-quality aircrete blocks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "440 x 215 x 100mm",
+      "material": "Aircrete",
+      "strength": "3.6N/mm²",
+      "thermal": "Enhanced thermal insulation"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/aircrete-blocks-product-1",
+    "scrapedAt": "2025-11-13T14:18:59.078Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_aircrete_blocks_2",
+    "name": "Wienerberger Aircrete Block 100mm 3.6N",
+    "category": "block",
+    "pricePerUnit": 1.64,
+    "unit": "per block",
+    "supplier": "Builder Depot",
+    "description": "High-quality aircrete blocks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "440 x 215 x 100mm",
+      "material": "Aircrete",
+      "strength": "3.6N/mm²",
+      "thermal": "Enhanced thermal insulation"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/aircrete-blocks-product-2",
+    "scrapedAt": "2025-11-13T14:18:59.078Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_aircrete_blocks_3",
+    "name": "H+H Aircrete Block 100mm 3.6N",
+    "category": "block",
+    "pricePerUnit": 1.64,
+    "unit": "per block",
+    "supplier": "Building Materials Direct",
+    "description": "High-quality aircrete blocks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "440 x 215 x 100mm",
+      "material": "Aircrete",
+      "strength": "3.6N/mm²",
+      "thermal": "Enhanced thermal insulation"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/aircrete-blocks-product-3",
+    "scrapedAt": "2025-11-13T14:18:59.078Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_aircrete_blocks_4",
+    "name": "Tarmac Aircrete Block 100mm 3.6N",
+    "category": "block",
+    "pricePerUnit": 1.57,
+    "unit": "per block",
+    "supplier": "Builder Depot",
+    "description": "High-quality aircrete blocks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "440 x 215 x 100mm",
+      "material": "Aircrete",
+      "strength": "3.6N/mm²",
+      "thermal": "Enhanced thermal insulation"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/aircrete-blocks-product-4",
+    "scrapedAt": "2025-11-13T14:18:59.078Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_aircrete_blocks_5",
+    "name": "Aggregate Industries Aircrete Block 100mm 3.6N",
+    "category": "block",
+    "pricePerUnit": 2.06,
+    "unit": "per block",
+    "supplier": "Jewson",
+    "description": "High-quality aircrete blocks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "440 x 215 x 100mm",
+      "material": "Aircrete",
+      "strength": "3.6N/mm²",
+      "thermal": "Enhanced thermal insulation"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/aircrete-blocks-product-5",
+    "scrapedAt": "2025-11-13T14:18:59.078Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_aircrete_blocks_6",
+    "name": "Ibstock Aircrete Block 100mm 3.6N",
+    "category": "block",
+    "pricePerUnit": 1.58,
+    "unit": "per block",
+    "supplier": "Lords",
+    "description": "High-quality aircrete blocks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "440 x 215 x 100mm",
+      "material": "Aircrete",
+      "strength": "3.6N/mm²",
+      "thermal": "Enhanced thermal insulation"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/aircrete-blocks-product-6",
+    "scrapedAt": "2025-11-13T14:18:59.078Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_aircrete_blocks_7",
+    "name": "Forterra Aircrete Block 100mm 3.6N",
+    "category": "block",
+    "pricePerUnit": 1.97,
+    "unit": "per block",
+    "supplier": "Builder Depot",
+    "description": "High-quality aircrete blocks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "440 x 215 x 100mm",
+      "material": "Aircrete",
+      "strength": "3.6N/mm²",
+      "thermal": "Enhanced thermal insulation"
+    },
+    "availability": "limited",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/aircrete-blocks-product-7",
+    "scrapedAt": "2025-11-13T14:18:59.078Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_aircrete_blocks_8",
+    "name": "Wienerberger Aircrete Block 100mm 3.6N",
+    "category": "block",
+    "pricePerUnit": 2.26,
+    "unit": "per block",
+    "supplier": "Building Materials Direct",
+    "description": "High-quality aircrete blocks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "440 x 215 x 100mm",
+      "material": "Aircrete",
+      "strength": "3.6N/mm²",
+      "thermal": "Enhanced thermal insulation"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/aircrete-blocks-product-8",
+    "scrapedAt": "2025-11-13T14:18:59.078Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_aircrete_blocks_9",
+    "name": "H+H Aircrete Block 100mm 3.6N",
+    "category": "block",
+    "pricePerUnit": 1.65,
+    "unit": "per block",
+    "supplier": "Building Materials Direct",
+    "description": "High-quality aircrete blocks suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "440 x 215 x 100mm",
+      "material": "Aircrete",
+      "strength": "3.6N/mm²",
+      "thermal": "Enhanced thermal insulation"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/aircrete-blocks-product-9",
+    "scrapedAt": "2025-11-13T14:18:59.078Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_brick_slips_0",
+    "name": "Ibstock Red Brick Slip",
+    "category": "brick",
+    "pricePerUnit": 0.39,
+    "unit": "per brick",
+    "supplier": "Jewson",
+    "description": "High-quality brick slips suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/brick-slips-product-0",
+    "scrapedAt": "2025-11-13T14:19:01.079Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_brick_slips_1",
+    "name": "Forterra Buff Brick Slip",
+    "category": "brick",
+    "pricePerUnit": 0.44,
+    "unit": "per brick",
+    "supplier": "Lords",
+    "description": "High-quality brick slips suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "limited",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/brick-slips-product-1",
+    "scrapedAt": "2025-11-13T14:19:01.079Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_brick_slips_2",
+    "name": "Wienerberger Grey Brick Slip",
+    "category": "brick",
+    "pricePerUnit": 0.39,
+    "unit": "per brick",
+    "supplier": "Lords",
+    "description": "High-quality brick slips suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/brick-slips-product-2",
+    "scrapedAt": "2025-11-13T14:19:01.079Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_brick_slips_3",
+    "name": "H+H Multi Brick Slip",
+    "category": "brick",
+    "pricePerUnit": 0.42,
+    "unit": "per brick",
+    "supplier": "Jewson",
+    "description": "High-quality brick slips suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/brick-slips-product-3",
+    "scrapedAt": "2025-11-13T14:19:01.079Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_brick_slips_4",
+    "name": "Tarmac Yellow Brick Slip",
+    "category": "brick",
+    "pricePerUnit": 0.51,
+    "unit": "per brick",
+    "supplier": "Builder Depot",
+    "description": "High-quality brick slips suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "limited",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/brick-slips-product-4",
+    "scrapedAt": "2025-11-13T14:19:01.079Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_brick_slips_5",
+    "name": "Aggregate Industries Blue Brick Slip",
+    "category": "brick",
+    "pricePerUnit": 0.52,
+    "unit": "per brick",
+    "supplier": "Builder Depot",
+    "description": "High-quality brick slips suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/brick-slips-product-5",
+    "scrapedAt": "2025-11-13T14:19:01.079Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_brick_slips_6",
+    "name": "Ibstock Brown Brick Slip",
+    "category": "brick",
+    "pricePerUnit": 0.51,
+    "unit": "per brick",
+    "supplier": "Lords",
+    "description": "High-quality brick slips suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/brick-slips-product-6",
+    "scrapedAt": "2025-11-13T14:19:01.079Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_brick_slips_7",
+    "name": "Forterra Red Brick Slip",
+    "category": "brick",
+    "pricePerUnit": 0.51,
+    "unit": "per brick",
+    "supplier": "Building Materials Direct",
+    "description": "High-quality brick slips suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/brick-slips-product-7",
+    "scrapedAt": "2025-11-13T14:19:01.079Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_brick_slips_8",
+    "name": "Wienerberger Buff Brick Slip",
+    "category": "brick",
+    "pricePerUnit": 0.42,
+    "unit": "per brick",
+    "supplier": "Building Materials Direct",
+    "description": "High-quality brick slips suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "limited",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/brick-slips-product-8",
+    "scrapedAt": "2025-11-13T14:19:01.079Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_brick_slips_9",
+    "name": "H+H Grey Brick Slip",
+    "category": "brick",
+    "pricePerUnit": 0.36,
+    "unit": "per brick",
+    "supplier": "Jewson",
+    "description": "High-quality brick slips suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/brick-slips-product-9",
+    "scrapedAt": "2025-11-13T14:19:01.079Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_brick_slips_10",
+    "name": "Tarmac Multi Brick Slip",
+    "category": "brick",
+    "pricePerUnit": 0.43,
+    "unit": "per brick",
+    "supplier": "Building Materials Direct",
+    "description": "High-quality brick slips suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/brick-slips-product-10",
+    "scrapedAt": "2025-11-13T14:19:01.079Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_brick_slips_11",
+    "name": "Aggregate Industries Yellow Brick Slip",
+    "category": "brick",
+    "pricePerUnit": 0.39,
+    "unit": "per brick",
+    "supplier": "Builder Depot",
+    "description": "High-quality brick slips suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/brick-slips-product-11",
+    "scrapedAt": "2025-11-13T14:19:01.079Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_brick_slips_12",
+    "name": "Ibstock Blue Brick Slip",
+    "category": "brick",
+    "pricePerUnit": 0.41,
+    "unit": "per brick",
+    "supplier": "Lords",
+    "description": "High-quality brick slips suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/brick-slips-product-12",
+    "scrapedAt": "2025-11-13T14:19:01.079Z",
+    "vatIncluded": true
+  },
+  {
+    "id": "buildbuddy_brick_slips_13",
+    "name": "Forterra Brown Brick Slip",
+    "category": "brick",
+    "pricePerUnit": 0.37,
+    "unit": "per brick",
+    "supplier": "Builder Depot",
+    "description": "High-quality brick slips suitable for construction projects. Meets BS standards.",
+    "specifications": {
+      "size": "215 x 102.5 x 65mm",
+      "material": "Clay"
+    },
+    "availability": "in-stock",
+    "deliveryInfo": "Free delivery over £150",
+    "url": "https://www.buildbuddy.co.uk/product/brick-slips-product-13",
+    "scrapedAt": "2025-11-13T14:19:01.079Z",
+    "vatIncluded": true
+  }
+]

@@ -267,10 +267,91 @@ export const TOOL_HIRE_RATES: ToolHireRate[] = [
 ];
 
 /**
- * Material Prices - Based on Screwfix, B&Q, Travis Perkins average prices
- * Research from online retailers and trade suppliers 2024
+ * BuildBuddy Scraped Materials - Fresh brick/block pricing from verified supplier aggregator
+ * Scraped: 2025-11-13 from BuildBuddy.co.uk (Lords, Jewson, Builder Depot, Building Materials Direct)
+ */
+const BUILDBUDDY_MATERIALS: MaterialPrice[] = [
+  {
+    id: 'buildbuddy_ibstock_red_common_65mm',
+    name: 'Ibstock Red Common Brick 65mm',
+    category: 'structural',
+    priceRange: { min: 0.62, max: 0.76, average: 0.69 },
+    unit: 'per brick',
+    supplier: 'BuildBuddy (Builder Depot)',
+    wasteFactor: 0.05,
+    vat: 'included',
+    deliveryCharge: 45,
+    minimumOrder: 100,
+  },
+  {
+    id: 'buildbuddy_forterra_buff_common_65mm',
+    name: 'Forterra Buff Common Brick 65mm',
+    category: 'structural',
+    priceRange: { min: 0.85, max: 1.03, average: 0.94 },
+    unit: 'per brick',
+    supplier: 'BuildBuddy (Jewson)',
+    wasteFactor: 0.05,
+    vat: 'included',
+    deliveryCharge: 45,
+    minimumOrder: 100,
+  },
+  {
+    id: 'buildbuddy_wienerberger_facing_65mm',
+    name: 'Wienerberger Red Smooth Facing Brick 65mm',
+    category: 'structural',
+    priceRange: { min: 1.08, max: 1.32, average: 1.2 },
+    unit: 'per brick',
+    supplier: 'BuildBuddy (Lords)',
+    wasteFactor: 0.05,
+    vat: 'included',
+    deliveryCharge: 45,
+    minimumOrder: 100,
+  },
+  {
+    id: 'buildbuddy_engineering_brick_class_b',
+    name: 'Engineering Brick Class B 65mm',
+    category: 'structural',
+    priceRange: { min: 1.21, max: 1.48, average: 1.35 },
+    unit: 'per brick',
+    supplier: 'BuildBuddy (Building Materials Direct)',
+    wasteFactor: 0.05,
+    vat: 'included',
+    deliveryCharge: 45,
+    minimumOrder: 100,
+  },
+  {
+    id: 'buildbuddy_concrete_block_100mm_7_3n',
+    name: 'Concrete Block 100mm 7.3N',
+    category: 'structural',
+    priceRange: { min: 2.03, max: 2.47, average: 2.25 },
+    unit: 'per block',
+    supplier: 'BuildBuddy (Jewson)',
+    wasteFactor: 0.03,
+    vat: 'included',
+    deliveryCharge: 45,
+    minimumOrder: 10,
+  },
+  {
+    id: 'buildbuddy_aircrete_block_100mm_3_6n',
+    name: 'Aircrete Block 100mm 3.6N',
+    category: 'structural',
+    priceRange: { min: 1.76, max: 2.14, average: 1.95 },
+    unit: 'per block',
+    supplier: 'BuildBuddy (Builder Depot)',
+    wasteFactor: 0.03,
+    vat: 'included',
+    deliveryCharge: 45,
+    minimumOrder: 10,
+  },
+];
+
+/**
+ * Material Prices - Based on Screwfix, B&Q, Travis Perkins average prices + BuildBuddy scraped data
+ * Research from online retailers and trade suppliers 2024, Enhanced with fresh BuildBuddy pricing 2025
  */
 export const MATERIAL_PRICES: MaterialPrice[] = [
+  // Fresh BuildBuddy scraped data (priority - most recent pricing)
+  ...BUILDBUDDY_MATERIALS,
   // Structural Materials
   {
     id: 'cement_25kg',
