@@ -51,6 +51,13 @@ Deno.serve(async req => {
       });
 
       try {
+        console.log('Request size:', JSON.stringify(requestData).length, 'bytes');
+        console.log('Request keys:', Object.keys(requestData));
+        if (requestData.analysis) {
+          console.log('Analysis keys:', Object.keys(requestData.analysis));
+          console.log('Analysis size:', JSON.stringify(requestData.analysis).length, 'bytes');
+        }
+
         // Validate the request
         PDFGenerator.validateRequest(requestData);
 
@@ -91,8 +98,19 @@ Deno.serve(async req => {
           processingTimeMs: result.processingTimeMs,
         });
       } catch (validationError) {
-        console.error('Document generation validation error:', validationError);
-        return createErrorResponse(validationError.message, 400);
+        console.error('Document generation error details:', {
+          name: validationError.name,
+          message: validationError.message,
+          stack: validationError.stack,
+        });
+        return createErrorResponse(
+          `PDF Generation Failed: ${validationError.message}`, 
+          400,
+          { 
+            error: validationError.message,
+            errorType: validationError.name || 'ValidationError'
+          }
+        );
       }
     }
 

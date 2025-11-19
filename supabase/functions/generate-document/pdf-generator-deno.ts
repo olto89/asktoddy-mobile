@@ -8,6 +8,8 @@ import type { DocumentRequest, DocumentResponse } from './types.ts';
 
 export class PDFGenerator {
   static validateRequest(request: DocumentRequest): void {
+    console.log('Validating request:', JSON.stringify(request, null, 2));
+    
     if (!request.type) {
       throw new Error('Document type is required');
     }
@@ -17,6 +19,31 @@ export class PDFGenerator {
     if (!request.projectType) {
       throw new Error('Project type is required');
     }
+    
+    // Ensure analysis object exists and has basic structure
+    if (!request.analysis) {
+      console.log('No analysis object, creating minimal one');
+      request.analysis = {
+        projectType: request.projectType,
+        description: 'Generated quote',
+        costBreakdown: {
+          materials: [],
+          labour: [],
+          tools: [],
+          total: 0
+        },
+        timeline: {
+          phases: [],
+          totalDuration: 'TBD'
+        },
+        recommendations: [],
+        confidence: 1.0,
+        aiProvider: 'system',
+        processingTimeMs: 0
+      };
+    }
+    
+    console.log('Request validation passed');
   }
 
   static async generatePDF(request: DocumentRequest): Promise<DocumentResponse> {

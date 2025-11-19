@@ -479,48 +479,37 @@ export default function ChatScreen() {
         timelineKeys: analysis.timeline ? Object.keys(analysis.timeline) : [],
       });
 
-      // Transform analysis data for PDF generation
+      // Transform analysis data for PDF generation with safe data extraction
+      const safeExtractArray = (data: any, path: string) => {
+        try {
+          return Array.isArray(data) ? data : [];
+        } catch (e) {
+          console.warn(`Failed to extract array from ${path}:`, e);
+          return [];
+        }
+      };
+
       const transformedAnalysis = {
-        ...analysis,
+        projectType: analysis.projectType || 'Unknown Project',
+        description: analysis.description || 'Generated quote',
         costBreakdown: {
-          materials: analysis.costBreakdown?.materials?.items || [],
-          labour: analysis.costBreakdown?.labor || [],
-          tools: analysis.costBreakdown?.toolHire?.items || [],
-          total: analysis.costBreakdown?.total?.max || analysis.estimatedCost?.total || 0,
+          materials: safeExtractArray(analysis.costBreakdown?.materials?.items, 'materials'),
+          labour: safeExtractArray(analysis.costBreakdown?.labor, 'labour'),
+          tools: safeExtractArray(analysis.costBreakdown?.toolHire?.items, 'tools'),
+          total: Number(analysis.costBreakdown?.total?.max || analysis.estimatedCost?.total || 0),
           vatRate: 0.2,
         },
+        timeline: {
+          phases: safeExtractArray(analysis.timeline?.phases, 'timeline.phases'),
+          totalDuration: analysis.timeline?.totalDuration || 'TBD'
+        },
+        recommendations: safeExtractArray(analysis.recommendations, 'recommendations'),
+        confidence: Number(analysis.confidence || 0.85),
+        aiProvider: analysis.aiProvider || 'unknown',
+        processingTimeMs: Number(analysis.processingTimeMs || 0)
       };
 
       console.log('Transformed analysis for PDF:', transformedAnalysis);
-
-      // Test with minimal payload first
-      console.log('Testing with minimal payload...');
-      const testResponse = await supabase.functions.invoke('generate-document', {
-        body: {
-          type: 'quote',
-          projectType: 'Test Project',
-          analysis: {
-            projectType: 'Test Project',
-            description: 'Test',
-            costBreakdown: {
-              materials: [],
-              labour: [],
-              tools: [],
-              total: 0
-            },
-            timeline: {
-              phases: [],
-              totalDuration: '1 day'
-            },
-            recommendations: [],
-            confidence: 0.85,
-            aiProvider: 'test',
-            processingTimeMs: 100
-          }
-        },
-      });
-      
-      console.log('Test response:', JSON.stringify(testResponse, null, 2));
 
       // Call generate-document Edge Function
       const response = await supabase.functions.invoke('generate-document', {
