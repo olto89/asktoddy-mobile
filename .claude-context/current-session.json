@@ -68,10 +68,10 @@
     "testingStatus": "user-verified working",
     "documentationStatus": "updated"
   },
-  "lastUpdated": "2025-11-14T09:30:00.000Z",
+  "lastUpdated": "2025-11-19T07:48:29.381Z",
   "project": {
     "name": "asktoddy-mobile",
-    "version": "1.3.0",
+    "version": "1.2.0",
     "dependencies": {
       "expo": "54.0.17",
       "react-native": "0.81.5",
@@ -80,14 +80,16 @@
   },
   "git": {
     "branch": "main",
-    "lastCommit": "47f981b feat: Add seasonal contingency percentages to pricing",
+    "lastCommit": "a0e27c1 feat: Implement BuildBuddy brick/block scraper with verified pricing",
     "hasUncommittedChanges": true,
-    "changedFiles": 15
+    "changedFiles": 25
   },
   "environment": {
     "nodeVersion": "v24.3.0",
     "platform": "darwin"
   },
   "runningProcesses": [],
-  "recentFiles": ["src/screens/ChatScreen.tsx"]
+  "recentFiles": [
+    "src/screens/ChatScreen.tsx"
+  ]
 }

@@ -493,6 +493,35 @@ export default function ChatScreen() {
 
       console.log('Transformed analysis for PDF:', transformedAnalysis);
 
+      // Test with minimal payload first
+      console.log('Testing with minimal payload...');
+      const testResponse = await supabase.functions.invoke('generate-document', {
+        body: {
+          type: 'quote',
+          projectType: 'Test Project',
+          analysis: {
+            projectType: 'Test Project',
+            description: 'Test',
+            costBreakdown: {
+              materials: [],
+              labour: [],
+              tools: [],
+              total: 0
+            },
+            timeline: {
+              phases: [],
+              totalDuration: '1 day'
+            },
+            recommendations: [],
+            confidence: 0.85,
+            aiProvider: 'test',
+            processingTimeMs: 100
+          }
+        },
+      });
+      
+      console.log('Test response:', JSON.stringify(testResponse, null, 2));
+
       // Call generate-document Edge Function
       const response = await supabase.functions.invoke('generate-document', {
         body: {
@@ -507,11 +536,7 @@ export default function ChatScreen() {
         },
       });
 
-      console.log('PDF generation response:', {
-        data: response.data,
-        error: response.error,
-        status: response.status,
-      });
+      console.log('PDF generation response:', JSON.stringify(response, null, 2));
 
       if (response.error) {
         console.error('Edge function error details:', response.error);
