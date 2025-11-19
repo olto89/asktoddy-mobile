@@ -1,0 +1,18 @@
+HTTP/2 401 
+date: Fri, 14 Nov 2025 12:48:00 GMT
+content-type: application/json
+server: cloudflare
+cf-ray: 99e69ee1cb07d404-MAN
+cf-cache-status: DYNAMIC
+access-control-allow-origin: *
+strict-transport-security: max-age=31536000; includeSubDomains; preload
+vary: Accept-Encoding
+access-control-allow-headers: authorization, x-client-info, apikey
+sb-project-ref: iezmuqawughmwsxlqrim
+sb-request-id: 019a8268-892e-7ad9-859c-5fd841345ca5
+x-sb-edge-region: eu-central-1
+x-served-by: supabase-edge-runtime
+set-cookie: __cf_bm=T9hWwDFxTZXXBRvLc2modLdt24OmAJAS4YxQ67Oq_bk-1763124480-1.0.1.1-.YOuekCyk2PlrA8zF8RmAiRW0Zzn1plNcQ.z3tagwQPXlMUH2SRgC4Co3GSPCy569SQMZbMifSp96x06DshdZZaJfujvB7Jz7atrHamoR7k; path=/; expires=Fri, 14-Nov-25 13:18:00 GMT; domain=.supabase.co; HttpOnly; Secure; SameSite=None
+alt-svc: h3=":443"; ma=86400
+
+{"code":401,"message":"Invalid JWT"}

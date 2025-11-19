@@ -5,7 +5,7 @@
 
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createResponse, createErrorResponse, getEnvironment, debugLog } from '../_shared/env.ts';
-import { PDFGenerator } from './pdf-generator.ts';
+import { PDFGenerator } from './pdf-generator-deno.ts';
 import type { DocumentRequest } from './types.ts';
 
 console.log('📄 Generate Document Edge Function initialized');
@@ -76,7 +76,20 @@ Deno.serve(async req => {
           processingTimeMs: result.processingTimeMs,
         });
 
-        return new Response(result.pdfBuffer, { headers });
+        // Convert PDF buffer to base64 for React Native compatibility
+        const base64PDF = btoa(String.fromCharCode(...new Uint8Array(result.pdfBuffer)));
+
+        return createResponse({
+          success: true,
+          document: {
+            base64: base64PDF,
+            filename: result.document.filename,
+            documentId: result.document.documentId,
+            size: result.document.size,
+            pages: result.document.pages,
+          },
+          processingTimeMs: result.processingTimeMs,
+        });
       } catch (validationError) {
         console.error('Document generation validation error:', validationError);
         return createErrorResponse(validationError.message, 400);

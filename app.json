@@ -2,7 +2,7 @@
   "expo": {
     "name": "AskToddy",
     "slug": "asktoddy-mobile",
-    "version": "1.2.0",
+    "version": "1.2.4",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -10,17 +10,17 @@
     "scheme": "asktoddy",
     "description": "AI-powered construction quoting platform",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#FF7A3B"
     },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.asktoddy.staging",
-      "buildNumber": "14",
+      "buildNumber": "18",
       "splash": {
         "backgroundColor": "#FF7A3B",
-        "image": "./assets/splash-icon.png",
+        "image": "./assets/icon.png",
         "resizeMode": "contain"
       },
       "infoPlist": {

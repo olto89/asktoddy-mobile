@@ -24,6 +24,8 @@ import {
   UIManager,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
@@ -56,6 +58,12 @@ interface Message {
   error?: boolean;
   showDocumentButtons?: boolean;
   analysis?: any; // Store full analysis for document generation
+  isGenerating?: boolean; // For showing loading state
+  pdfFile?: {
+    uri: string;
+    filename: string;
+    type: string;
+  };
 }
 
 export default function ChatScreen() {
@@ -121,6 +129,7 @@ export default function ChatScreen() {
   ]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isGeneratingDocument, setIsGeneratingDocument] = useState(false);
 
   // Quote refinement state
   const [showRefinementUI, setShowRefinementUI] = useState(false);
@@ -443,38 +452,134 @@ export default function ChatScreen() {
    * Handle document generation (calls generate-document Edge Function)
    */
   const handleGenerateDocument = async (type: 'quote' | 'timeline' | 'tasklist', analysis: any) => {
-    Alert.alert('Generate Document', `Generate ${type} PDF for this project?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Generate',
-        onPress: async () => {
-          try {
-            setIsLoading(true);
+    try {
+      setIsGeneratingDocument(true);
 
-            // Call generate-document Edge Function
-            const { data, error } = await supabase.functions.invoke('generate-document', {
-              body: {
-                type,
-                projectType: analysis.projectType,
-                analysis,
-                pricing: {}, // TODO: Include pricing data if needed
-              },
-            });
+      // Add a temporary "generating" message to chat
+      const generatingMessage = {
+        id: `${Date.now()}_generating`,
+        role: 'assistant',
+        content: `🔄 Generating your ${type} PDF...`,
+        timestamp: new Date().toISOString(),
+        isGenerating: true,
+      };
+      setMessages(prev => [...prev, generatingMessage]);
 
-            if (error) throw error;
+      // Auto-scroll to new message
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
 
-            Alert.alert(
-              'Success',
-              `Your ${type} has been generated. Download link will be sent to your email.`
-            );
-          } catch (error) {
-            Alert.alert('Error', 'Failed to generate document. Please try again.');
-          } finally {
-            setIsLoading(false);
-          }
+      console.log('Starting PDF generation for:', type, analysis.projectType);
+      console.log('Original analysis structure:', {
+        hasProjectType: !!analysis.projectType,
+        hasCostBreakdown: !!analysis.costBreakdown,
+        costBreakdownKeys: analysis.costBreakdown ? Object.keys(analysis.costBreakdown) : [],
+        hasTimeline: !!analysis.timeline,
+        timelineKeys: analysis.timeline ? Object.keys(analysis.timeline) : [],
+      });
+
+      // Transform analysis data for PDF generation
+      const transformedAnalysis = {
+        ...analysis,
+        costBreakdown: {
+          materials: analysis.costBreakdown?.materials?.items || [],
+          labour: analysis.costBreakdown?.labor || [],
+          tools: analysis.costBreakdown?.toolHire?.items || [],
+          total: analysis.costBreakdown?.total?.max || analysis.estimatedCost?.total || 0,
+          vatRate: 0.2,
         },
-      },
-    ]);
+      };
+
+      console.log('Transformed analysis for PDF:', transformedAnalysis);
+
+      // Call generate-document Edge Function
+      const response = await supabase.functions.invoke('generate-document', {
+        body: {
+          type,
+          projectType: analysis.projectType,
+          analysis: transformedAnalysis,
+          pricing: analysis.pricing || {},
+          userDetails: {
+            name: user?.email?.split('@')[0] || 'Customer',
+            email: user?.email,
+          },
+        },
+      });
+
+      console.log('PDF generation response:', {
+        data: response.data,
+        error: response.error,
+        status: response.status,
+      });
+
+      if (response.error) {
+        console.error('Edge function error details:', response.error);
+        throw new Error(
+          response.error.message ||
+            `Edge function returned non-2xx status code: ${JSON.stringify(response.error)}`
+        );
+      }
+
+      // Remove generating message and add success message
+      setMessages(prev => prev.filter(m => !m.isGenerating));
+
+      // The response.data should contain the PDF data
+      if (response.data && response.data.success && response.data.document) {
+        const { document } = response.data;
+
+        // Use filename from server or generate one
+        const filename =
+          document.filename ||
+          `asktoddy-${type}-${analysis.projectType}-${new Date().toISOString().split('T')[0]}.pdf`;
+
+        // Save PDF to device
+        const fileUri = `${FileSystem.documentDirectory}${filename}`;
+
+        // Write base64 PDF data to file
+        await FileSystem.writeAsStringAsync(fileUri, document.base64, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+
+        // Add success message with download button
+        const pdfMessage = {
+          id: `${Date.now()}_pdf`,
+          role: 'assistant',
+          content: `✅ **${type.charAt(0).toUpperCase() + type.slice(1)} PDF Generated**\n\nYour ${type} is ready! Tap the button below to open or share the PDF.`,
+          timestamp: new Date().toISOString(),
+          pdfFile: {
+            uri: fileUri,
+            filename,
+            type,
+          },
+        };
+        setMessages(prev => [...prev, pdfMessage]);
+
+        // Auto-scroll to new message
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: true });
+        }, 100);
+      } else {
+        console.error('Unexpected response structure:', response.data);
+        throw new Error('Invalid response from server');
+      }
+    } catch (error) {
+      console.error('PDF generation error:', error);
+
+      // Remove generating message
+      setMessages(prev => prev.filter(m => !m.isGenerating));
+
+      // Add error message
+      const errorMessage = {
+        id: `${Date.now()}_error`,
+        role: 'assistant',
+        content: `❌ Sorry, I couldn't generate the ${type} PDF. ${error.message || 'Please try again.'}`,
+        timestamp: new Date().toISOString(),
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsGeneratingDocument(false);
+    }
   };
 
   /**
@@ -572,6 +677,61 @@ export default function ChatScreen() {
   };
 
   /**
+   * Handle opening PDF in device viewer
+   */
+  const handleOpenPDF = async (pdfFile: any) => {
+    try {
+      // Native haptic feedback
+      if (isIOS) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+
+      // Create file from base64
+      const fileUri = FileSystem.documentDirectory + pdfFile.filename;
+      await FileSystem.writeAsStringAsync(fileUri, pdfFile.base64, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      // Open with system viewer
+      await Sharing.shareAsync(fileUri, {
+        mimeType: 'application/pdf',
+        dialogTitle: 'Open PDF',
+        UTI: 'com.adobe.pdf',
+      });
+    } catch (error) {
+      console.error('Error opening PDF:', error);
+      Alert.alert('Error', 'Unable to open PDF. Please try again.');
+    }
+  };
+
+  /**
+   * Handle sharing PDF
+   */
+  const handleSharePDF = async (pdfFile: any) => {
+    try {
+      // Native haptic feedback
+      if (isIOS) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+
+      // Create file from base64
+      const fileUri = FileSystem.documentDirectory + pdfFile.filename;
+      await FileSystem.writeAsStringAsync(fileUri, pdfFile.base64, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      // Share the PDF
+      await Sharing.shareAsync(fileUri, {
+        mimeType: 'application/pdf',
+        dialogTitle: 'Share PDF',
+      });
+    } catch (error) {
+      console.error('Error sharing PDF:', error);
+      Alert.alert('Error', 'Unable to share PDF. Please try again.');
+    }
+  };
+
+  /**
    * Render individual message bubble with native styling
    */
   const renderMessage = ({ item }: { item: Message }) => {
@@ -630,6 +790,34 @@ export default function ChatScreen() {
             >
               {item.content}
             </Text>
+          )}
+
+          {/* Inline PDF display for ChatGPT-style experience */}
+          {item.pdfFile && (
+            <View style={styles.pdfContainer}>
+              <View style={styles.pdfHeader}>
+                <Ionicons name="document-text" size={20} color={designTokens.colors.primary[500]} />
+                <Text style={styles.pdfTitle}>{item.pdfFile.filename}</Text>
+              </View>
+              <View style={styles.pdfActions}>
+                <TouchableOpacity
+                  style={[styles.pdfButton, styles.pdfViewButton]}
+                  onPress={() => handleOpenPDF(item.pdfFile)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="eye" size={16} color="#fff" />
+                  <Text style={styles.pdfButtonText}>View PDF</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.pdfButton, styles.pdfShareButton]}
+                  onPress={() => handleSharePDF(item.pdfFile)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="share" size={16} color="#fff" />
+                  <Text style={styles.pdfButtonText}>Share</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           )}
 
           {/* Document generation buttons with native touch feedback */}
@@ -914,6 +1102,51 @@ const styles = StyleSheet.create({
   refineButton: {
     backgroundColor: '#fff5f2',
     borderColor: designTokens.colors.primary,
+  },
+  pdfContainer: {
+    backgroundColor: designTokens.colors.grey[50],
+    borderRadius: designTokens.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: designTokens.colors.grey[200],
+    marginTop: designTokens.spacing.md,
+    padding: designTokens.spacing.md,
+  },
+  pdfHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: designTokens.spacing.sm,
+  },
+  pdfTitle: {
+    marginLeft: designTokens.spacing.sm,
+    fontSize: designTokens.typography.fontSize.md,
+    fontWeight: designTokens.typography.fontWeight.medium,
+    color: designTokens.colors.text.primary,
+    flex: 1,
+  },
+  pdfActions: {
+    flexDirection: 'row',
+    gap: designTokens.spacing.sm,
+  },
+  pdfButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: designTokens.spacing.md,
+    paddingVertical: designTokens.spacing.sm,
+    borderRadius: designTokens.borderRadius.md,
+    flex: 1,
+    justifyContent: 'center',
+  },
+  pdfViewButton: {
+    backgroundColor: designTokens.colors.primary[500],
+  },
+  pdfShareButton: {
+    backgroundColor: designTokens.colors.grey[600],
+  },
+  pdfButtonText: {
+    marginLeft: designTokens.spacing.xs,
+    fontSize: designTokens.typography.fontSize.sm,
+    color: '#fff',
+    fontWeight: designTokens.typography.fontWeight.medium,
   },
   attachmentPreview: {
     flexDirection: 'row',
