@@ -39,3 +39,12 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Environment files with sensitive data
+.env
+.env.*
+!.env.example
+
+# Test files that might contain keys
+test-*.js
+*-test.js
