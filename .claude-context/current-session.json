@@ -1,95 +1,48 @@
 {
-  "sessionId": "pricing-accuracy-enhanced-2025-11-14",
-  "startTime": "2025-11-14T08:00:00Z",
-  "status": "MAJOR_ENHANCEMENT_COMPLETED",
-  "currentFocus": "Enhanced Pricing Accuracy (80%+) with Seasonal Intelligence & BuildBuddy Integration",
-  "achievements": [
-    {
-      "milestone": "AI Middleware Functional",
-      "completed": "2025-11-11T12:30:00Z",
-      "description": "Middleware architecture working with simplified Gemini provider",
-      "impact": "Real AI analysis through middleware, no more fallback responses"
+  "sessionId": "2025-11-24-gemini-api-fix",
+  "date": "2025-11-24",
+  "startTime": "14:00:00Z",
+  "context": {
+    "primaryTask": "Fix Gemini API not working after model deprecation",
+    "discoveries": {
+      "rootCause": "Expired Gemini API key in Supabase edge function secrets, NOT model deprecation",
+      "architecture": "App correctly uses server-side edge functions, client-side providers were legacy/unused",
+      "security": "API keys must only exist in backend edge functions, never in frontend builds"
     },
-    {
-      "milestone": "Seasonal Contingency System",
-      "completed": "2025-11-14T08:45:00Z",
-      "description": "Weather-based contingency percentages (8-20%) integrated into pricing engine",
-      "impact": "Accurate seasonal risk assessment improving quote reliability"
-    },
-    {
-      "milestone": "BuildBuddy Integration",
-      "completed": "2025-11-14T09:15:00Z",
-      "description": "66 verified brick/block materials scraped and integrated from BuildBuddy aggregator",
-      "impact": "Pricing accuracy enhanced from 75% to 80%+ with verified sources"
-    }
-  ],
-  "technicalContext": {
-    "workingComponents": [
-      "AI Middleware (middleware.ts)",
-      "Gemini Simple Provider",
-      "Provider Registry System",
-      "Failover Chain",
-      "Edge Function Integration",
-      "Mobile App Connection",
-      "Seasonal Contingency System",
-      "BuildBuddy Scraped Materials (66 items)",
-      "Enhanced Pricing Engine (770+ items)"
+    "workCompleted": [
+      "Fixed expired GEMINI_API_KEY in Supabase secrets",
+      "Updated fallback provider models to non-deprecated versions",
+      "Fixed InteractiveQuoteTable JSX structure (missing closing View tag)",
+      "Removed client-side API keys from EAS build config for security",
+      "Verified Gemini working via edge function middleware",
+      "Build 23 completed and submitted to TestFlight"
     ],
-    "primaryArchitecture": "Mobile App → Edge Function → AI Middleware → Providers → Enhanced Pricing",
-    "currentProvider": "gemini-simple (primary), gemini + gemini-fallback (fallbacks)",
-    "performanceBaseline": "3-5 seconds response time, 100% success rate, 80%+ pricing accuracy"
-  },
-  "knownIssues": [
-    {
-      "issue": "Analysis speed optimization needed",
-      "priority": "medium",
-      "target": "Reduce response time from 3-5s to <2s"
-    },
-    {
-      "issue": "Input text clearing behavior",
-      "priority": "low",
-      "description": "Text sometimes persists in input field after sending"
+    "keyLearnings": {
+      "apiKeyArchitecture": "Frontend uses supabase.functions.invoke() - API keys only in edge function secrets",
+      "buildNotRequired": "Backend API key fixes don't require frontend rebuilds",
+      "securityBestPractice": "Never expose API keys in EXPO_PUBLIC_ environment variables"
     }
-  ],
-  "nextPhase": {
-    "phase": "Enhancement on Stable Foundation",
-    "priorities": [
-      "Performance optimization",
-      "Pricing engine integration (additive)",
-      "Advanced features development",
-      "User experience improvements"
-    ],
-    "readyForEnhancement": true,
-    "architectureStable": true
   },
-  "codebaseState": {
-    "lastDeployment": "analyze-construction edge function",
-    "deploymentStatus": "successful",
-    "testingStatus": "user-verified working",
-    "documentationStatus": "updated"
-  },
-  "lastUpdated": "2025-11-19T07:48:29.381Z",
+  "lastUpdated": "2025-11-24T15:03:03.694Z",
   "project": {
     "name": "asktoddy-mobile",
     "version": "1.2.0",
     "dependencies": {
-      "expo": "54.0.17",
+      "expo": "~54.0.25",
       "react-native": "0.81.5",
       "@google/generative-ai": "^0.24.1"
     }
   },
   "git": {
     "branch": "main",
-    "lastCommit": "a0e27c1 feat: Implement BuildBuddy brick/block scraper with verified pricing",
+    "lastCommit": "d93d2fa SECURITY: Remove exposed API keys and add proper gitignore",
     "hasUncommittedChanges": true,
-    "changedFiles": 25
+    "changedFiles": 15
   },
   "environment": {
     "nodeVersion": "v24.3.0",
     "platform": "darwin"
   },
   "runningProcesses": [],
-  "recentFiles": [
-    "src/screens/ChatScreen.tsx"
-  ]
+  "recentFiles": ["src/screens/ChatScreen.tsx", "src/components/InteractiveQuoteTable.tsx"]
 }

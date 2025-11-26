@@ -9,7 +9,7 @@ export class GeminiFallbackProvider extends GeminiProvider {
   name = 'gemini-fallback';
 
   // Use a different model or configuration for fallback
-  private fallbackModels = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash'];
+  private fallbackModels = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-1.5-pro'];
 
   constructor(apiKey: string, contextManager?: ContextManager) {
     super(apiKey, contextManager);

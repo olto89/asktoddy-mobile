@@ -408,3 +408,96 @@
 - **TestFlight Clarity**: Clear distinction between test and production builds
 - **Development Flexibility**: Can install both versions simultaneously
 - **Release Management**: Independent App Store Connect entries
+
+## 2025-11-24: Gemini API Architecture & Security Fix
+
+### Issue
+
+- Gemini AI not working despite model updates
+- Initial assumption: deprecated model (gemini-1.5-flash)
+- Actual cause: Expired API key in backend secrets
+
+### Key Discovery: Correct Architecture Already in Place
+
+**Frontend (Correct)**:
+
+```typescript
+// ChatScreen.tsx uses edge functions (no client-side API keys)
+const { data, error } = await supabase.functions.invoke('analyze-construction', {
+  body: requestBody,
+});
+```
+
+**Backend (Was broken, now fixed)**:
+
+```bash
+# Supabase edge function secret (server-side only)
+npx supabase secrets set GEMINI_API_KEY=<working_key>
+```
+
+### Security Architecture Decision
+
+**NEVER use client-side API keys**:
+
+- ❌ `EXPO_PUBLIC_GEMINI_API_KEY` in eas.json (removed)
+- ❌ Client-side AI providers with API keys
+- ✅ Server-side edge functions with secrets
+- ✅ Frontend calls via `supabase.functions.invoke()`
+
+### Resolution
+
+1. Updated expired `GEMINI_API_KEY` in Supabase secrets
+2. Removed client-side API keys from build config
+3. Updated fallback provider models (gemini-2.0-flash, gemini-2.5-flash)
+4. Fixed InteractiveQuoteTable JSX structure
+5. **No frontend rebuild required** - backend fix sufficient
+
+### Lesson: Backend API Changes ≠ Frontend Rebuild
+
+Server-side secret updates take effect immediately for existing builds.
+
+## 2025-11-24: Single Provider Architecture
+
+### Context
+
+User reported Gemini working on first message but falling back to generic/mock on follow-up messages.
+
+### Root Cause
+
+Complex "smart" provider selection logic was switching providers mid-conversation:
+
+- First message: Selected `gemini` for simple image analysis
+- Second message: Detected "complex" conversation, tried to switch to `openai` (not registered)
+- Fallback failed due to disabled fallback chain
+
+### Decision: Simplify to Single Provider
+
+**Remove all complexity in favor of predictable behavior:**
+
+- One provider per environment (no switching)
+- Gemini for testing/development
+- OpenAI for production (when ready)
+- No fallback chains or smart selection
+
+### Implementation
+
+1. Created simplified middleware with single provider
+2. Removed provider selection logic
+3. Removed fallback chains
+4. Focus on pricing/materials intelligence instead
+
+### Benefits
+
+- ✅ Consistent responses throughout conversation
+- ✅ Predictable costs (single API)
+- ✅ Easier debugging (single point of failure)
+- ✅ No mid-conversation provider switches
+- ✅ Clear architecture for team understanding
+
+### Trade-offs Accepted
+
+- ❌ No automatic fallback if provider down (manual intervention required)
+- ❌ No provider-specific optimizations (accepted for consistency)
+- ❌ Single point of failure (mitigated by provider reliability)
+
+This aligns with "do one thing well" philosophy.

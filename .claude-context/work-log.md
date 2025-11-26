@@ -1386,3 +1386,55 @@ style={{
 ---
 
 _Last Updated: October 24, 2025, 6:45 PM_
+
+## 2025-11-24: Gemini API Fix & Security Improvements
+
+### Work Session Summary
+
+**Duration**: ~2 hours  
+**Primary Issue**: Gemini AI not working after model updates  
+**Root Cause**: Expired API key in backend, not model deprecation
+
+### Tasks Completed
+
+#### 1. Fixed Gemini API Backend (✅ Critical)
+
+- **Issue**: API key `AIzaSyDyt1UZKjgRDGfEjK3DboDhNw_ZgnrPmG0` expired
+- **Fix**: Updated Supabase secret with working key `AIzaSyCzzjHyKVEw2lANqgr_VsOMZJ2BKCCrjmo`
+- **Verification**: Edge function responding successfully with Gemini provider
+
+#### 2. Security Hardening (✅ Important)
+
+- **Removed** client-side API keys from `eas.json`
+- **Confirmed** app uses proper server-side architecture via edge functions
+- **Documented** security pattern for future reference
+
+#### 3. Model Updates (✅ Maintenance)
+
+- Updated `gemini-fallback.ts` from deprecated models
+- Changed to: `gemini-2.0-flash`, `gemini-2.5-flash`, `gemini-1.5-pro`
+
+#### 4. Build Fixes (✅ Technical Debt)
+
+- Fixed InteractiveQuoteTable JSX structure (missing `</View>`)
+- Resolved TypeScript compilation errors
+- Updated dependencies to match Expo SDK versions
+
+### Builds Created
+
+- **Build 23**: ✅ Completed & submitted to TestFlight (has all fixes)
+- **Build 24**: ⏳ In progress (redundant, Build 23 sufficient)
+
+### Key Learnings Applied
+
+1. **Check backend secrets before assuming code issues**
+2. **API architecture is already correct** - edge functions working properly
+3. **Security-first approach** - no client-side API keys needed
+4. **Backend changes don't require frontend rebuilds**
+
+### Next Session Priorities
+
+1. Test Build 23 interactive quote table functionality
+2. Verify PDF generation working end-to-end
+3. Monitor Gemini API quota usage and billing
+4. Consider implementing API key rotation strategy

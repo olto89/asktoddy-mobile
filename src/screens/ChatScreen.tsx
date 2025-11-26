@@ -36,6 +36,7 @@ import { useImagePicker } from '../hooks/useImagePicker';
 import { useLocation } from '../hooks/useLocation';
 import ToddyHeader from '../components/ToddyHeader';
 import QuoteRefinementUI from '../components/QuoteRefinementUI';
+import InteractiveQuoteTable from '../components/InteractiveQuoteTable';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Get device dimensions for responsive design
@@ -57,6 +58,7 @@ interface Message {
   isLoading?: boolean;
   error?: boolean;
   showDocumentButtons?: boolean;
+  showInteractiveQuote?: boolean; // Show editable quote table
   analysis?: any; // Store full analysis for document generation
   isGenerating?: boolean; // For showing loading state
   pdfFile?: {
@@ -312,7 +314,7 @@ export default function ChatScreen() {
         role: 'assistant',
         content: responseContent,
         timestamp: new Date().toISOString(),
-        showDocumentButtons: true,
+        showInteractiveQuote: true, // Show interactive table instead of immediate buttons
         analysis: analysis, // Store for document generation
       };
 
@@ -320,6 +322,8 @@ export default function ChatScreen() {
         messageId: assistantMessage.id,
         provider: analysis.aiProvider,
         hasAnalysis: !!assistantMessage.analysis,
+        showInteractiveQuote: assistantMessage.showInteractiveQuote,
+        showDocumentButtons: assistantMessage.showDocumentButtons,
       });
 
       // Replace loading message with actual response
@@ -489,24 +493,49 @@ export default function ChatScreen() {
         }
       };
 
+      // Calculate totals from cost breakdown if available
+      const materialsMin = analysis.costBreakdown?.materials?.min || 0;
+      const materialsMax = analysis.costBreakdown?.materials?.max || 0;
+      const laborMin = analysis.costBreakdown?.labor?.min || 0;
+      const laborMax = analysis.costBreakdown?.labor?.max || 0;
+      const totalMin = analysis.costBreakdown?.total?.min || 0;
+      const totalMax = analysis.costBreakdown?.total?.max || 0;
+
       const transformedAnalysis = {
         projectType: analysis.projectType || 'Unknown Project',
         description: analysis.description || 'Generated quote',
         costBreakdown: {
-          materials: safeExtractArray(analysis.costBreakdown?.materials?.items, 'materials'),
-          labour: safeExtractArray(analysis.costBreakdown?.labor, 'labour'),
+          materials: [
+            {
+              name: 'Materials & Supplies',
+              description: 'Construction materials and supplies',
+              quantity: 1,
+              unitPrice: materialsMax,
+              total: materialsMax,
+            },
+          ],
+          labour: [
+            {
+              name: 'Professional Labour',
+              description: 'Installation and construction work',
+              quantity: 1,
+              unitPrice: laborMax,
+              total: laborMax,
+            },
+          ],
           tools: safeExtractArray(analysis.costBreakdown?.toolHire?.items, 'tools'),
-          total: Number(analysis.costBreakdown?.total?.max || analysis.estimatedCost?.total || 0),
+          total: totalMax,
           vatRate: 0.2,
+          grandTotal: totalMax * 1.2, // Include VAT
         },
         timeline: {
           phases: safeExtractArray(analysis.timeline?.phases, 'timeline.phases'),
-          totalDuration: analysis.timeline?.totalDuration || 'TBD'
+          totalDuration: analysis.timeline?.professional || analysis.timeline?.diy || 'TBD',
         },
         recommendations: safeExtractArray(analysis.recommendations, 'recommendations'),
-        confidence: Number(analysis.confidence || 0.85),
+        confidence: Number(analysis.confidence || 85),
         aiProvider: analysis.aiProvider || 'unknown',
-        processingTimeMs: Number(analysis.processingTimeMs || 0)
+        processingTimeMs: Number(analysis.processingTimeMs || 0),
       };
 
       console.log('Transformed analysis for PDF:', transformedAnalysis);
@@ -525,7 +554,14 @@ export default function ChatScreen() {
         },
       });
 
-      console.log('PDF generation response:', JSON.stringify(response, null, 2));
+      console.log('PDF generation response status:', {
+        hasError: !!response.error,
+        hasData: !!response.data,
+        success: response.data?.success,
+        hasDocument: !!response.data?.document,
+        hasBase64: !!response.data?.document?.base64,
+        fullResponse: JSON.stringify(response.data, null, 2),
+      });
 
       if (response.error) {
         console.error('Edge function error details:', response.error);
@@ -535,11 +571,22 @@ export default function ChatScreen() {
         );
       }
 
-      // Remove generating message and add success message
+      // Check if we got an error response in data
+      if (response.data?.error) {
+        console.error('PDF generation error in response data:', response.data);
+        throw new Error(response.data.message || 'PDF generation failed');
+      }
+
+      // Remove generating message
       setMessages(prev => prev.filter(m => !m.isGenerating));
 
       // The response.data should contain the PDF data
-      if (response.data && response.data.success && response.data.document) {
+      if (
+        response.data &&
+        response.data.success &&
+        response.data.document &&
+        response.data.document.base64
+      ) {
         const { document } = response.data;
 
         // Use filename from server or generate one
@@ -550,9 +597,23 @@ export default function ChatScreen() {
         // Save PDF to device
         const fileUri = `${FileSystem.documentDirectory}${filename}`;
 
+        console.log('Saving PDF to device:', {
+          filename,
+          fileUri,
+          base64Length: document.base64?.length || 0,
+        });
+
         // Write base64 PDF data to file
         await FileSystem.writeAsStringAsync(fileUri, document.base64, {
           encoding: FileSystem.EncodingType.Base64,
+        });
+
+        // Verify file was saved
+        const fileInfo = await FileSystem.getInfoAsync(fileUri);
+        console.log('PDF saved successfully:', {
+          exists: fileInfo.exists,
+          size: (fileInfo as any).size || 'unknown',
+          uri: fileInfo.uri || fileUri,
         });
 
         // Add success message with download button
@@ -574,20 +635,57 @@ export default function ChatScreen() {
           flatListRef.current?.scrollToEnd({ animated: true });
         }, 100);
       } else {
-        console.error('Unexpected response structure:', response.data);
-        throw new Error('Invalid response from server');
+        console.error('Unexpected response structure:', {
+          hasData: !!response.data,
+          hasSuccess: !!response.data?.success,
+          hasDocument: !!response.data?.document,
+          hasBase64: !!response.data?.document?.base64,
+          responseKeys: response.data ? Object.keys(response.data) : [],
+          documentKeys: response.data?.document ? Object.keys(response.data.document) : [],
+        });
+
+        if (!response.data) {
+          throw new Error('No data received from server');
+        } else if (!response.data.success) {
+          throw new Error('PDF generation was not successful');
+        } else if (!response.data.document) {
+          throw new Error('No PDF document in response');
+        } else if (!response.data.document.base64) {
+          throw new Error('PDF document is missing base64 data');
+        } else {
+          throw new Error('Invalid response structure from server');
+        }
       }
-    } catch (error) {
-      console.error('PDF generation error:', error);
+    } catch (error: any) {
+      console.error('PDF generation error:', {
+        message: error?.message,
+        type,
+        projectType: analysis?.projectType,
+        stack: error?.stack,
+      });
 
       // Remove generating message
       setMessages(prev => prev.filter(m => !m.isGenerating));
 
-      // Add error message
+      // Add more specific error message
+      let errorContent = `❌ Sorry, I couldn't generate the ${type} PDF.`;
+
+      if (error?.message?.includes('base64')) {
+        errorContent +=
+          '\n\nThe PDF data was not properly formatted. This might be a server issue.';
+      } else if (error?.message?.includes('network')) {
+        errorContent +=
+          '\n\nThere was a network error. Please check your connection and try again.';
+      } else if (error?.message?.includes('timeout')) {
+        errorContent += '\n\nThe request timed out. Please try again.';
+      } else {
+        errorContent += `\n\nError: ${error?.message || 'Unknown error occurred'}`;
+      }
+
       const errorMessage = {
         id: `${Date.now()}_error`,
         role: 'assistant',
-        content: `❌ Sorry, I couldn't generate the ${type} PDF. ${error.message || 'Please try again.'}`,
+        content: errorContent,
         timestamp: new Date().toISOString(),
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -620,6 +718,25 @@ export default function ChatScreen() {
     }
     setSelectedAnalysis(analysis);
     setShowRefinementUI(true);
+  };
+
+  /**
+   * Handle interactive quote update
+   */
+  const handleInteractiveQuoteUpdate = (messageId: string, updatedAnalysis: any) => {
+    setMessages(prev =>
+      prev.map(msg => (msg.id === messageId ? { ...msg, analysis: updatedAnalysis } : msg))
+    );
+  };
+
+  /**
+   * Handle PDF generation from interactive quote
+   */
+  const handleGeneratePDFFromQuote = (
+    analysis: any,
+    type: 'quote' | 'timeline' | 'tasklist' = 'quote'
+  ) => {
+    handleGenerateDocument(type, analysis);
   };
 
   /**
@@ -666,7 +783,7 @@ export default function ChatScreen() {
           role: 'assistant',
           content: `✨ **Refined Quote Based on Your Feedback**\n\n${responseContent}`,
           timestamp: new Date().toISOString(),
-          showDocumentButtons: true,
+          showInteractiveQuote: true,
           analysis: analysis,
         };
 
@@ -700,18 +817,25 @@ export default function ChatScreen() {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
 
-      // Create file from base64
-      const fileUri = FileSystem.documentDirectory + pdfFile.filename;
-      await FileSystem.writeAsStringAsync(fileUri, pdfFile.base64, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
+      // The PDF file is already saved to disk, just use its URI
+      const fileUri = pdfFile.uri;
+
+      // Check if file exists
+      const fileInfo = await FileSystem.getInfoAsync(fileUri);
+      if (!fileInfo.exists) {
+        throw new Error('PDF file not found');
+      }
 
       // Open with system viewer
-      await Sharing.shareAsync(fileUri, {
-        mimeType: 'application/pdf',
-        dialogTitle: 'Open PDF',
-        UTI: 'com.adobe.pdf',
-      });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'application/pdf',
+          dialogTitle: 'Open PDF',
+          UTI: 'com.adobe.pdf',
+        });
+      } else {
+        Alert.alert('Sharing not available', 'Unable to share files on this device.');
+      }
     } catch (error) {
       console.error('Error opening PDF:', error);
       Alert.alert('Error', 'Unable to open PDF. Please try again.');
@@ -728,17 +852,24 @@ export default function ChatScreen() {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
 
-      // Create file from base64
-      const fileUri = FileSystem.documentDirectory + pdfFile.filename;
-      await FileSystem.writeAsStringAsync(fileUri, pdfFile.base64, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
+      // The PDF file is already saved to disk, just use its URI
+      const fileUri = pdfFile.uri;
+
+      // Check if file exists
+      const fileInfo = await FileSystem.getInfoAsync(fileUri);
+      if (!fileInfo.exists) {
+        throw new Error('PDF file not found');
+      }
 
       // Share the PDF
-      await Sharing.shareAsync(fileUri, {
-        mimeType: 'application/pdf',
-        dialogTitle: 'Share PDF',
-      });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'application/pdf',
+          dialogTitle: 'Share PDF',
+        });
+      } else {
+        Alert.alert('Sharing not available', 'Unable to share files on this device.');
+      }
     } catch (error) {
       console.error('Error sharing PDF:', error);
       Alert.alert('Error', 'Unable to share PDF. Please try again.');
@@ -834,8 +965,19 @@ export default function ChatScreen() {
             </View>
           )}
 
-          {/* Document generation buttons with native touch feedback */}
-          {item.showDocumentButtons && item.analysis && (
+          {/* Interactive Quote Table (new quotes) */}
+          {item.showInteractiveQuote && item.analysis && (
+            <InteractiveQuoteTable
+              analysis={item.analysis}
+              onUpdateQuote={updatedAnalysis =>
+                handleInteractiveQuoteUpdate(item.id, updatedAnalysis)
+              }
+              onGeneratePDF={updatedAnalysis => handleGeneratePDFFromQuote(updatedAnalysis)}
+            />
+          )}
+
+          {/* Document generation buttons (fallback for older quotes without interactive table) */}
+          {item.showDocumentButtons && !item.showInteractiveQuote && item.analysis && (
             <View style={styles.documentButtons}>
               <TouchableOpacity
                 style={[styles.documentButton, isIOS && styles.documentButtonIOS]}

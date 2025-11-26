@@ -163,31 +163,114 @@ export class MockProvider implements AIProvider {
     const laborMin = Math.round(baseMin * 0.6);
     const laborMax = Math.round(baseMax * 0.4);
 
+    // Generate realistic line items based on project type
+    const materialItems = this.generateMaterialItems(baseMin, baseMax, complexity);
+    const laborItems = this.generateLaborItems(laborMin, laborMax, complexity);
+
     return {
       materials: {
         min: materialsMin,
         max: materialsMax,
-        items: [
-          {
-            name: 'Basic Materials',
-            quantity: '1 set',
-            unitPrice: materialsMin,
-            totalPrice: materialsMin,
-            category: 'other' as const,
-          },
-        ],
+        items: materialItems,
       },
       labor: {
         min: laborMin,
         max: laborMax,
         hourlyRate: 35,
         estimatedHours: Math.round(laborMin / 35),
+        items: laborItems,
       },
       total: {
         min: materialsMin + laborMin,
         max: materialsMax + laborMax,
       },
     };
+  }
+
+  private generateMaterialItems(baseMin: number, baseMax: number, complexity: string) {
+    const materialsTotal = Math.round(baseMax * 0.6);
+
+    // Base materials that every project has
+    const baseItems = [
+      {
+        name: 'General Materials',
+        quantity: '1 lot',
+        unitPrice: Math.round(materialsTotal * 0.4),
+        totalPrice: Math.round(materialsTotal * 0.4),
+        category: 'materials' as const,
+      },
+      {
+        name: 'Hardware & Fixings',
+        quantity: '1 set',
+        unitPrice: Math.round(materialsTotal * 0.15),
+        totalPrice: Math.round(materialsTotal * 0.15),
+        category: 'materials' as const,
+      },
+    ];
+
+    // Add complexity-specific items
+    if (complexity === 'Easy' || complexity === 'Moderate') {
+      baseItems.push({
+        name: 'Basic Tools & Supplies',
+        quantity: '1 set',
+        unitPrice: Math.round(materialsTotal * 0.25),
+        totalPrice: Math.round(materialsTotal * 0.25),
+        category: 'materials' as const,
+      });
+    }
+
+    if (complexity === 'Difficult' || complexity === 'Professional Required') {
+      baseItems.push(
+        {
+          name: 'Specialist Materials',
+          quantity: '1 lot',
+          unitPrice: Math.round(materialsTotal * 0.3),
+          totalPrice: Math.round(materialsTotal * 0.3),
+          category: 'materials' as const,
+        },
+        {
+          name: 'Safety Equipment',
+          quantity: '1 set',
+          unitPrice: Math.round(materialsTotal * 0.1),
+          totalPrice: Math.round(materialsTotal * 0.1),
+          category: 'materials' as const,
+        }
+      );
+    }
+
+    return baseItems;
+  }
+
+  private generateLaborItems(laborMin: number, laborMax: number, complexity: string) {
+    const laborTotal = laborMax;
+
+    const baseItems = [
+      {
+        name: 'General Labour',
+        description: 'Main construction work',
+        hours: Math.round((laborTotal / 35) * 0.7),
+        hourlyRate: 35,
+        total: Math.round(laborTotal * 0.7),
+        category: 'labor' as const,
+      },
+    ];
+
+    if (
+      complexity === 'Moderate' ||
+      complexity === 'Difficult' ||
+      complexity === 'Professional Required'
+    ) {
+      baseItems.push({
+        name: 'Specialist Work',
+        description: 'Skilled trades and specialist tasks',
+        hours: Math.round((laborTotal / 45) * 0.3),
+        hourlyRate: 45,
+        total: Math.round(laborTotal * 0.3),
+        category: 'labor' as const,
+      });
+    }
+
+    return baseItems;
   }
 
   private generatePhases(complexity: string) {

@@ -13,7 +13,7 @@ import VerificationSuccessScreen from '../screens/VerificationSuccessScreen';
 
 // App screens
 import HomeScreen from '../screens/HomeScreen';
-import ChatScreen from '../screens/ChatScreen';
+import NewChatScreen from '../screens/NewChatScreen';
 import CameraScreen from '../screens/CameraScreen';
 import ResultsScreen from '../screens/ResultsScreen';
 import AccountScreen from '../screens/AccountScreen';
@@ -69,7 +69,7 @@ export default function AuthNavigator() {
       ) : (
         // App stack - user logged in - go directly to Chat with custom header
         <Stack.Group>
-          <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Chat" component={NewChatScreen} options={{ headerShown: false }} />
           <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'AskToddy' }} />
           <Stack.Screen name="Camera" component={CameraScreen} options={{ title: 'Take Photo' }} />
           <Stack.Screen

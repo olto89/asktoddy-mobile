@@ -1,254 +1,182 @@
 /**
- * AI Middleware for Supabase Edge Functions
- * Migrated from src/services/ai/AIMiddleware.ts and adapted for Deno
+ * Simplified AI Middleware for Supabase Edge Functions
+ * Single provider architecture - no complex fallback logic
  */
 
 import {
   AIProvider,
-  AIMiddlewareConfig,
   AnalysisRequest,
   ProjectAnalysis,
   PricingContext,
   PricingResponse,
 } from './types.ts';
 import { GeminiProvider } from './providers/gemini.ts';
-import { GeminiSimpleProvider } from './providers/gemini-simple.ts';
-import { GeminiFallbackProvider } from './providers/gemini-fallback.ts';
 import { OpenAIProvider } from './providers/openai.ts';
-import { AnthropicProvider } from './providers/anthropic.ts';
 import { ContextManager } from './context/ContextManager.ts';
 import { PricingEnhancer, EnhancementOptions } from './pricing/PricingEnhancer.ts';
 
-export class AIMiddleware {
-  private providers: Map<string, AIProvider> = new Map();
-  private config: AIMiddlewareConfig;
-  private pricingEnhancer: PricingEnhancer;
+export interface SimplifiedMiddlewareConfig {
+  provider: 'gemini' | 'openai'; // Single provider selection
+  timeoutMs: number;
+  enablePricingEnhancement: boolean;
+}
 
-  constructor(config: AIMiddlewareConfig) {
+export class AIMiddleware {
+  private provider: AIProvider | null = null;
+  private config: SimplifiedMiddlewareConfig;
+  private pricingEnhancer: PricingEnhancer;
+  private contextManager?: ContextManager;
+
+  constructor(config: SimplifiedMiddlewareConfig) {
     this.config = config;
-    this.pricingEnhancer = new PricingEnhancer(true); // Enable debug logging
+    this.pricingEnhancer = new PricingEnhancer(true);
   }
 
   /**
-   * Initialize providers with API keys from environment
+   * Initialize single provider based on configuration
    */
-  initializeProviders(
-    geminiApiKey: string,
+  initializeProvider(
+    geminiApiKey?: string,
     openaiApiKey?: string,
     supabaseUrl?: string,
-    supabaseServiceKey?: string,
-    anthropicApiKey?: string
+    supabaseServiceKey?: string
   ): void {
-    // Create ContextManager if Supabase credentials are available
-    let contextManager: ContextManager | undefined;
+    // Initialize context manager if credentials available
     if (supabaseUrl && supabaseServiceKey) {
-      contextManager = new ContextManager(supabaseUrl, supabaseServiceKey);
-      console.log('✅ ContextManager initialized for conversation memory');
+      this.contextManager = new ContextManager(supabaseUrl, supabaseServiceKey);
+      console.log('✅ Context manager initialized');
     }
 
-    // Register Gemini providers if API key is available
-    if (geminiApiKey && geminiApiKey !== 'your_api_key_here') {
-      // Register simple Gemini provider (like direct calls)
-      const geminiSimpleProvider = new GeminiSimpleProvider(geminiApiKey);
-      this.registerProvider(geminiSimpleProvider);
-      console.log('✅ Gemini Simple provider registered (direct-like calls)');
-
-      // Register complex Gemini provider with contextual memory
-      const geminiProvider = new GeminiProvider(geminiApiKey, contextManager);
-      this.registerProvider(geminiProvider);
-      console.log('✅ Gemini provider registered with contextual memory');
-
-      // Register Gemini fallback with alternative models
-      const geminiFallbackProvider = new GeminiFallbackProvider(geminiApiKey, contextManager);
-      this.registerProvider(geminiFallbackProvider);
-      console.log('✅ Gemini fallback provider registered with alternative models');
-    }
-
-    // Register Anthropic provider if API key is available
-    if (anthropicApiKey && anthropicApiKey !== 'your_api_key_here' && anthropicApiKey.length > 20) {
-      const anthropicProvider = new AnthropicProvider(anthropicApiKey, contextManager);
-      this.registerProvider(anthropicProvider);
-      console.log('✅ Anthropic (Claude) provider registered with contextual memory');
-    } else {
-      console.log('⚠️ Anthropic provider not configured - API key missing or invalid');
-    }
-
-    // Register OpenAI provider if API key is available
-    if (openaiApiKey && openaiApiKey !== 'your_api_key_here' && openaiApiKey.length > 20) {
-      // Default to cost-effective gpt-4o-mini model with contextual memory
-      const openaiProvider = new OpenAIProvider(openaiApiKey, 'gpt-4o-mini', contextManager);
-      this.registerProvider(openaiProvider);
-      console.log('✅ OpenAI provider registered with contextual memory');
-    } else {
-      console.log('⚠️ OpenAI provider not configured - API key missing');
-    }
-
-    console.log(
-      `✅ AI Middleware initialized with ${this.providers.size} providers (NO MOCK FALLBACK)`
-    );
-  }
-
-  /**
-   * Register an AI provider with the middleware
-   */
-  registerProvider(provider: AIProvider): void {
-    this.providers.set(provider.name, provider);
-    console.log(`✅ AI Provider registered: ${provider.name}`);
-  }
-
-  /**
-   * Get list of available providers
-   */
-  getAvailableProviders(): string[] {
-    return Array.from(this.providers.keys());
-  }
-
-  /**
-   * Main analysis method - handles intelligent provider selection and fallback
-   */
-  async analyzeImage(request: AnalysisRequest): Promise<ProjectAnalysis> {
-    const startTime = Date.now();
-
-    // Determine optimal provider based on request characteristics
-    const selectedProvider = this.selectOptimalProvider(request);
-    console.log(`🧠 Intelligent provider selection: ${selectedProvider} for this request`);
-
-    // Try selected provider first
-    const primaryProvider = this.providers.get(selectedProvider);
-    if (primaryProvider) {
-      try {
-        console.log(`🤖 Attempting analysis with selected provider: ${selectedProvider}`);
-        console.log(
-          `📋 Request details: message="${request.message?.substring(0, 50)}...", hasImage=${!!request.imageUri}`
-        );
-
-        const result = await this.executeWithTimeout(
-          primaryProvider.analyzeImage(request),
-          this.config.timeoutMs
-        );
-
-        result.processingTimeMs = Date.now() - startTime;
-        result.aiProvider = primaryProvider.name;
-
-        // Log performance metrics for provider comparison
-        this.logProviderPerformance(primaryProvider.name, result.processingTimeMs, true);
-
-        console.log(
-          `✅ Analysis completed with ${primaryProvider.name} in ${result.processingTimeMs}ms`
-        );
-        return result;
-      } catch (error) {
-        console.error(`❌ Selected provider ${selectedProvider} failed:`, error);
-        console.error(`❌ Error type: ${error?.constructor?.name}, message: ${error?.message}`);
-        this.logProviderPerformance(selectedProvider, Date.now() - startTime, false);
-
-        if (!this.config.enableFallback) {
-          throw new Error(`Selected AI provider failed: ${error}`);
+    // Initialize the single configured provider
+    switch (this.config.provider) {
+      case 'gemini':
+        if (!geminiApiKey || geminiApiKey === 'your_api_key_here') {
+          throw new Error('Gemini API key not configured');
         }
-      }
-    }
+        this.provider = new GeminiProvider(geminiApiKey, this.contextManager);
+        console.log('✅ Gemini provider initialized');
+        break;
 
-    // Try fallback providers with user feedback
-    if (this.config.enableFallback) {
-      let attemptCount = 0;
-      const totalProviders = this.config.fallbackProviders.length;
-
-      for (const fallbackName of this.config.fallbackProviders) {
-        const fallbackProvider = this.providers.get(fallbackName);
-        if (!fallbackProvider) continue;
-
-        attemptCount++;
-
-        try {
-          console.log(
-            `🔄 Attempting fallback ${attemptCount}/${totalProviders} with: ${fallbackName}`
-          );
-
-          // Add delay between attempts to prevent overwhelming APIs
-          if (this.config.providerRetryDelay && attemptCount > 1) {
-            await new Promise(resolve => setTimeout(resolve, this.config.providerRetryDelay));
-          }
-
-          const result = await this.executeWithTimeout(
-            fallbackProvider.analyzeImage(request),
-            this.config.timeoutMs
-          );
-
-          result.processingTimeMs = Date.now() - startTime;
-          result.aiProvider = fallbackProvider.name;
-          result.warnings = result.warnings || [];
-
-          // Add user-friendly message about provider switch
-          const providerNames = {
-            'gemini-fallback': 'Gemini (alternative model)',
-            anthropic: 'Claude AI',
-            openai: 'OpenAI',
-          };
-
-          const friendlyName = providerNames[fallbackName] || fallbackName;
-          result.warnings.push(
-            `✨ Successfully completed using ${friendlyName} after ${attemptCount} attempts`
-          );
-
-          console.log(
-            `✅ Fallback analysis completed with ${fallbackName} in ${result.processingTimeMs}ms`
-          );
-          return result;
-        } catch (error) {
-          console.warn(
-            `❌ Fallback provider ${fallbackName} failed (attempt ${attemptCount}/${totalProviders}):`,
-            error
-          );
-
-          // Continue to next provider - no mock fallback
-          continue;
+      case 'openai':
+        if (!openaiApiKey || openaiApiKey === 'your_api_key_here') {
+          throw new Error('OpenAI API key not configured');
         }
-      }
-    }
+        this.provider = new OpenAIProvider(openaiApiKey);
+        console.log('✅ OpenAI provider initialized');
+        break;
 
-    // All providers failed - log details for debugging
-    console.error('🚨 ALL AI PROVIDERS FAILED!');
-    console.error('Available providers:', Array.from(this.providers.keys()));
-    console.error('Fallback providers attempted:', this.config.fallbackProviders);
-    throw new Error(
-      `All AI providers failed to analyze the image. Tried: ${this.config.fallbackProviders.join(', ')}`
-    );
+      default:
+        throw new Error(`Unknown provider: ${this.config.provider}`);
+    }
   }
 
   /**
-   * Health check for all providers
+   * Simple health check
    */
   async healthCheck(): Promise<Record<string, any>> {
-    const results: Record<string, any> = {};
+    if (!this.provider) {
+      return { status: 'down', error: 'Provider not initialized' };
+    }
 
-    for (const [name, provider] of this.providers) {
+    try {
+      const health = await this.provider.healthCheck();
+      return {
+        provider: this.config.provider,
+        ...health,
+      };
+    } catch (error) {
+      return {
+        provider: this.config.provider,
+        status: 'down',
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Main analysis method - single provider, no fallback
+   */
+  async analyzeImage(request: AnalysisRequest): Promise<ProjectAnalysis> {
+    if (!this.provider) {
+      throw new Error('Provider not initialized');
+    }
+
+    const startTime = Date.now();
+
+    try {
+      console.log(`🤖 Analyzing with ${this.config.provider}...`);
+      console.log(
+        `📋 Request: message="${request.message?.substring(0, 50)}...", hasImage=${!!request.imageUri}`
+      );
+
+      const result = await this.executeWithTimeout(
+        this.provider.analyzeImage(request),
+        this.config.timeoutMs
+      );
+
+      result.processingTimeMs = Date.now() - startTime;
+      result.aiProvider = this.config.provider;
+
+      console.log(`✅ Analysis completed in ${result.processingTimeMs}ms`);
+      return result;
+    } catch (error) {
+      console.error(`❌ Provider ${this.config.provider} failed:`, error);
+      throw new Error(`AI analysis failed: ${error?.message || error}`);
+    }
+  }
+
+  /**
+   * Analysis with validation and optional pricing enhancement
+   */
+  async analyzeImageWithValidation(request: AnalysisRequest): Promise<ProjectAnalysis> {
+    console.log('🔍 Step 1: Validating request...');
+    this.validateImageRequest(request);
+
+    console.log('🔍 Step 2: Performing AI analysis...');
+    let result = await this.analyzeImage(request);
+
+    // Enhanced pricing if enabled
+    if (this.config.enablePricingEnhancement && !result.pricingEnhancement) {
+      console.log('💰 Step 3: Enhancing with real-time pricing...');
+
       try {
-        const health = await provider.healthCheck();
-        results[name] = health;
-      } catch (error) {
-        results[name] = {
-          status: 'down',
-          error: error instanceof Error ? error.message : 'Unknown error',
+        const pricingContext: PricingContext = {
+          projectType: result.projectType || 'general',
+          location: request.context?.location || 'UK',
+          includeVAT: true,
         };
+
+        const pricingResponse = await this.pricingEnhancer.enhanceAnalysis(result, {
+          includeToolHire: true,
+          includeLabor: true,
+          projectComplexity: result.difficultyLevel || 'moderate',
+        });
+
+        if (pricingResponse.success && pricingResponse.enhancedAnalysis) {
+          result = pricingResponse.enhancedAnalysis;
+          console.log('✅ Pricing enhancement successful');
+        }
+      } catch (error) {
+        console.warn('⚠️ Pricing enhancement failed, using base analysis:', error);
       }
     }
 
-    return results;
+    console.log('✅ Analysis complete with validation');
+    return result;
   }
 
   /**
-   * Execute a promise with timeout
+   * Execute with timeout protection
    */
   private async executeWithTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error(`Operation timed out after ${timeoutMs}ms`)), timeoutMs);
-    });
-
-    return Promise.race([promise, timeoutPromise]);
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`Operation timed out after ${timeoutMs}ms`)), timeoutMs)
+    );
+    return Promise.race([promise, timeout]);
   }
 
   /**
-   * Validate image before processing
+   * Validate image request
    */
   private validateImageRequest(request: AnalysisRequest): void {
     if (!request.imageUri && !request.message) {
@@ -256,466 +184,18 @@ export class AIMiddleware {
     }
 
     if (request.imageUri) {
-      // Check if it's a valid URI format
-      if (!request.imageUri.startsWith('data:') && !request.imageUri.startsWith('http')) {
+      const validPrefixes = ['data:', 'http:', 'https:', 'file:'];
+      const hasValidPrefix = validPrefixes.some(prefix => request.imageUri!.startsWith(prefix));
+      if (!hasValidPrefix) {
         throw new Error('Invalid image URI format');
       }
-    }
-  }
 
-  /**
-   * Determine the best provider based on request characteristics
-   */
-  private selectOptimalProvider(request: AnalysisRequest): string {
-    // If user has specified a preference, respect it
-    if (request.context?.preferredProvider) {
-      const preferred = request.context.preferredProvider;
-      if (this.providers.has(preferred)) {
-        console.log(`🎯 Using user-preferred provider: ${preferred}`);
-        return preferred;
-      }
-      console.log(`⚠️ Preferred provider ${preferred} not available, using default`);
-    }
-
-    // Smart selection based on request type
-    const hasImage = !!request.imageUri;
-    const hasLongHistory = request.history && request.history.length > 6;
-    const isComplexProject =
-      request.context?.projectType?.toLowerCase().includes('extension') ||
-      request.context?.projectType?.toLowerCase().includes('renovation');
-
-    // Provider selection logic
-    if (hasImage && !hasLongHistory) {
-      // Gemini excels at image analysis
-      if (this.providers.has('gemini')) {
-        console.log('🎯 Selected Gemini for image analysis');
-        return 'gemini';
-      }
-    }
-
-    if (hasLongHistory || isComplexProject) {
-      // OpenAI better for complex conversations
-      if (this.providers.has('openai')) {
-        console.log('🎯 Selected OpenAI for complex analysis');
-        return 'openai';
-      }
-    }
-
-    // Default to Gemini (cheaper and faster)
-    if (this.providers.has('gemini')) {
-      return 'gemini';
-    }
-
-    // Fallback to any available provider
-    return this.config.primaryProvider;
-  }
-
-  /**
-   * Simplified analysis with validation and failover (pricing integration removed)
-   */
-  async analyzeImageWithValidation(request: AnalysisRequest): Promise<ProjectAnalysis> {
-    console.log('🔍 [MIDDLEWARE] Step 1: Validating request...');
-    // Validate request
-    this.validateImageRequest(request);
-    console.log('✅ [MIDDLEWARE] Request validation passed');
-
-    console.log('🔍 [MIDDLEWARE] Step 2: Selecting optimal provider...');
-    // Select optimal provider for this request
-    const selectedProvider = this.selectOptimalProvider(request);
-    console.log(`✅ [MIDDLEWARE] Selected provider: ${selectedProvider}`);
-
-    // Update config to use selected provider
-    const originalPrimary = this.config.primaryProvider;
-    this.config.primaryProvider = selectedProvider;
-    console.log(
-      `🔍 [MIDDLEWARE] Updated primary provider from ${originalPrimary} to ${selectedProvider}`
-    );
-
-    console.log('🔍 [MIDDLEWARE] Step 3: Starting AI analysis...');
-
-    try {
-      console.log(`🤖 [MIDDLEWARE] Calling analyzeImage with ${selectedProvider}`);
-      let result = await this.analyzeImage(request);
-
-      console.log('✅ [MIDDLEWARE] AI analysis completed successfully');
-
-      // Add analysis metadata
-      result.analysisId = `analysis_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      result.timestamp = new Date().toISOString();
-
-      console.log('🔍 [MIDDLEWARE] Step 4: Validating result completeness...');
-      // Validate result completeness
-      this.validateAnalysisResult(result);
-      console.log('✅ [MIDDLEWARE] Result validation passed');
-
-      console.log('🔍 [MIDDLEWARE] Step 5: Enhancing with pricing data...');
-      // Enhance with real market pricing data
-      try {
-        const enhancementOptions: EnhancementOptions = {
-          materials: true,
-          labour: true,
-          toolHire: true,
-          regional: true,
-          enableDebugLogging: true,
-        };
-
-        result = await this.pricingEnhancer.enhance(result, request, enhancementOptions);
-        console.log('✅ [MIDDLEWARE] Pricing enhancement completed successfully');
-      } catch (enhanceError) {
-        console.warn(
-          '⚠️ [MIDDLEWARE] Pricing enhancement failed (graceful degradation):',
-          enhanceError
-        );
-        // Continue with base analysis - pricing enhancement failure doesn't break the flow
-      }
-
-      // Restore original config
-      this.config.primaryProvider = originalPrimary;
-
-      return result;
-    } catch (error) {
-      console.error('❌ [MIDDLEWARE] Analysis failed:', error);
-
-      // Restore original config
-      this.config.primaryProvider = originalPrimary;
-
-      // Return fallback analysis for better UX
-      return this.generateFallbackAnalysis(request, error);
-    }
-  }
-
-  /**
-   * Fetch pricing data from get-pricing Edge Function
-   */
-  private async fetchPricingData(context: PricingContext): Promise<PricingResponse | null> {
-    try {
-      // In Edge Function environment, we can call other functions directly
-      // For now, return mock data - this will be replaced with actual call to get-pricing function
-      return {
-        toolHire: [
-          { name: 'SDS Drill', dailyRate: 25.0, weeklyRate: 100.0, supplier: 'HSS Hire' },
-          { name: 'Angle Grinder', dailyRate: 15.0, weeklyRate: 60.0, supplier: 'Local Hire' },
-        ],
-        materials: [
-          {
-            name: 'Cement (25kg)',
-            priceRange: { min: 4.0, max: 5.0, average: 4.5 },
-            unit: 'bag',
-            supplier: 'Screwfix',
-          },
-        ],
-        aggregates: [
-          { name: 'Ready Mix Concrete', price: 120.0, unit: 'm³', delivery: 'Included' },
-        ],
-        labor: [
-          {
-            tradeType: 'general',
-            hourlyRate: { min: 30, max: 40, average: 35 },
-            skillLevel: 'Basic',
-          },
-        ],
-        contextFactors: {
-          regionMultiplier: context.location.region.toLowerCase().includes('london') ? 1.25 : 1.0,
-          seasonalMultiplier: 1.05,
-          demandIndex: 0.85,
-        },
-        recommendations: [
-          { type: 'cost', message: 'Consider bulk purchasing for materials to reduce costs' },
-        ],
-        lastUpdated: new Date().toISOString(),
-      };
-    } catch (error) {
-      console.warn('Failed to fetch pricing data:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Create pricing context from analysis request
-   */
-  private createPricingContext(request: AnalysisRequest): PricingContext {
-    const context = request.context;
-
-    return {
-      location: {
-        region: this.extractRegion(context?.location || 'UK'),
-        city: context?.location,
-      },
-      projectType: context?.projectType || 'General Construction',
-      projectScale: this.determineProjectScale(context?.budgetRange),
-      timeline: context?.budgetRange
-        ? {
-            duration: 14, // Default 2 weeks
-          }
-        : undefined,
-      userPreferences: {
-        priceRange: this.determinePriceRange(context?.budgetRange),
-        sustainability: false,
-        localSuppliers: true,
-      },
-    };
-  }
-
-  /**
-   * Extract UK region from location string
-   */
-  private extractRegion(location: string): string {
-    const regionMap: Record<string, string> = {
-      london: 'London',
-      birmingham: 'West Midlands',
-      manchester: 'North West',
-      liverpool: 'North West',
-      leeds: 'Yorkshire',
-      sheffield: 'Yorkshire',
-      bristol: 'South West',
-      cardiff: 'Wales',
-      edinburgh: 'Scotland',
-      glasgow: 'Scotland',
-      belfast: 'Northern Ireland',
-      newcastle: 'North East',
-    };
-
-    const locationLower = location.toLowerCase();
-    for (const [city, region] of Object.entries(regionMap)) {
-      if (locationLower.includes(city)) {
-        return region;
-      }
-    }
-
-    // Default fallback based on common terms
-    if (locationLower.includes('scotland')) return 'Scotland';
-    if (locationLower.includes('wales')) return 'Wales';
-    if (locationLower.includes('north')) return 'North West';
-    if (locationLower.includes('south')) return 'South East';
-
-    return 'South East'; // Default to South East
-  }
-
-  /**
-   * Determine project scale from budget range
-   */
-  private determineProjectScale(budgetRange?: {
-    min: number;
-    max: number;
-  }): 'small' | 'medium' | 'large' {
-    if (!budgetRange) return 'medium';
-
-    const avgBudget = (budgetRange.min + budgetRange.max) / 2;
-
-    if (avgBudget < 5000) return 'small';
-    if (avgBudget < 25000) return 'medium';
-    return 'large';
-  }
-
-  /**
-   * Determine price range preference from budget
-   */
-  private determinePriceRange(budgetRange?: {
-    min: number;
-    max: number;
-  }): 'budget' | 'mid' | 'premium' {
-    if (!budgetRange) return 'mid';
-
-    const avgBudget = (budgetRange.min + budgetRange.max) / 2;
-
-    if (avgBudget < 8000) return 'budget';
-    if (avgBudget < 20000) return 'mid';
-    return 'premium';
-  }
-
-  /**
-   * Enhance AI analysis result with real pricing data
-   */
-  private async enhanceWithPricingData(
-    analysis: ProjectAnalysis,
-    pricingData: PricingResponse
-  ): Promise<ProjectAnalysis> {
-    console.log('💰 Enhancing analysis with current market pricing...');
-
-    // Update material costs with real market data
-    if (analysis.costBreakdown.materials.items) {
-      analysis.costBreakdown.materials.items = analysis.costBreakdown.materials.items.map(item => {
-        const marketData = pricingData.materials.find(
-          m =>
-            m.name.toLowerCase().includes(item.name.toLowerCase()) ||
-            item.name.toLowerCase().includes(m.name.toLowerCase())
-        );
-
-        if (marketData) {
-          return {
-            ...item,
-            unitPrice: marketData.priceRange.average,
-            totalPrice: marketData.priceRange.average * (parseInt(item.quantity) || 1),
-            marketData: marketData,
-          };
+      if (request.imageUri.startsWith('data:')) {
+        const [header] = request.imageUri.split(',');
+        if (!header.includes('image/') && !header.includes('application/pdf')) {
+          throw new Error('Data URI must be an image or PDF');
         }
-        return item;
-      });
-    }
-
-    // Update tool rental prices with real market data
-    analysis.toolsRequired = analysis.toolsRequired.map(tool => {
-      const marketData = pricingData.toolHire.find(
-        t =>
-          t.name.toLowerCase().includes(tool.name.toLowerCase()) ||
-          tool.name.toLowerCase().includes(t.name.toLowerCase())
-      );
-
-      if (marketData) {
-        return {
-          ...tool,
-          dailyRentalPrice: marketData.dailyRate,
-          marketData: marketData,
-          alternatives: marketData.alternatives,
-        };
       }
-      return tool;
-    });
-
-    // Update labor rates with real market data
-    const marketLaborRate =
-      pricingData.labor.find(l => l.tradeType === 'general')?.hourlyRate.average || 35;
-    analysis.costBreakdown.labor.hourlyRate = marketLaborRate;
-
-    // Recalculate totals with market-adjusted pricing
-    const newMaterialsTotal =
-      analysis.costBreakdown.materials.items?.reduce((sum, item) => sum + item.totalPrice, 0) ||
-      analysis.costBreakdown.materials.min;
-
-    const newLaborTotal =
-      analysis.costBreakdown.labor.hourlyRate * analysis.costBreakdown.labor.estimatedHours;
-
-    analysis.costBreakdown.materials.min = Math.round(newMaterialsTotal * 0.9);
-    analysis.costBreakdown.materials.max = Math.round(newMaterialsTotal * 1.2);
-    analysis.costBreakdown.labor.min = Math.round(newLaborTotal * 0.9);
-    analysis.costBreakdown.labor.max = Math.round(newLaborTotal * 1.1);
-    analysis.costBreakdown.total.min =
-      analysis.costBreakdown.materials.min + analysis.costBreakdown.labor.min;
-    analysis.costBreakdown.total.max =
-      analysis.costBreakdown.materials.max + analysis.costBreakdown.labor.max;
-
-    // Add pricing-based recommendations
-    analysis.recommendations = [
-      ...analysis.recommendations,
-      ...pricingData.recommendations.map(rec => rec.message),
-    ];
-
-    // Add market context to warnings if prices are volatile
-    if (pricingData.contextFactors.regionMultiplier > 1.15) {
-      analysis.warnings = analysis.warnings || [];
-      analysis.warnings.push(
-        `Regional pricing is ${Math.round((pricingData.contextFactors.regionMultiplier - 1) * 100)}% above national average`
-      );
     }
-
-    console.log('✅ Analysis enhanced with current market pricing');
-    return analysis;
-  }
-
-  /**
-   * Validate that the analysis result has required fields
-   */
-  private validateAnalysisResult(result: ProjectAnalysis): void {
-    const requiredFields = ['projectType', 'difficultyLevel', 'costBreakdown'];
-    const missingFields = requiredFields.filter(field => !result[field as keyof ProjectAnalysis]);
-
-    if (missingFields.length > 0) {
-      throw new Error(`Analysis result missing required fields: ${missingFields.join(', ')}`);
-    }
-  }
-
-  /**
-   * Generate a fallback analysis when all AI providers fail
-   */
-  private generateFallbackAnalysis(request: AnalysisRequest, error: any): ProjectAnalysis {
-    console.log('🔄 Generating fallback analysis due to AI provider failure');
-
-    return {
-      projectType: 'General Construction Project',
-      description:
-        'Unable to perform detailed AI analysis. Please contact a professional for accurate assessment.',
-      difficultyLevel: 'Professional Required',
-
-      costBreakdown: {
-        materials: { min: 500, max: 2000, items: [] },
-        labor: { min: 800, max: 3000, hourlyRate: 40, estimatedHours: 20 },
-        total: { min: 1300, max: 5000 },
-      },
-
-      timeline: {
-        diy: '1-2 weeks',
-        professional: '3-5 days',
-        phases: [
-          {
-            name: 'Assessment',
-            duration: '1 day',
-            description: 'Professional assessment required',
-          },
-          { name: 'Planning', duration: '1-2 days', description: 'Project planning and permits' },
-          { name: 'Execution', duration: '2-3 days', description: 'Main construction work' },
-        ],
-      },
-
-      toolsRequired: [
-        {
-          name: 'Basic Hand Tools',
-          category: 'hand_tools',
-          dailyRentalPrice: 25,
-          estimatedDays: 3,
-          required: true,
-        },
-      ],
-
-      safetyConsiderations: [
-        'Professional assessment recommended',
-        'Ensure proper safety equipment',
-        'Check local building codes',
-      ],
-
-      permitsRequired: ['Building permit may be required'],
-      requiresProfessional: true,
-      professionalReasons: ['AI analysis unavailable - professional assessment needed'],
-
-      confidence: 20,
-      recommendations: [
-        'Contact local contractors for detailed quotes',
-        'Consider multiple professional opinions',
-        'Ensure all work meets local building codes',
-      ],
-
-      warnings: [
-        'AI analysis failed - estimates are generic',
-        'Professional consultation strongly recommended',
-        `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      ],
-
-      analysisId: `fallback_${Date.now()}`,
-      timestamp: new Date().toISOString(),
-      aiProvider: 'fallback',
-      processingTimeMs: 0,
-    };
-  }
-
-  /**
-   * Log provider performance metrics for analysis and optimization
-   */
-  private logProviderPerformance(
-    providerName: string,
-    processingTimeMs: number,
-    success: boolean
-  ): void {
-    const performance = {
-      provider: providerName,
-      processingTime: processingTimeMs,
-      success,
-      timestamp: new Date().toISOString(),
-    };
-
-    console.log(
-      `📊 Provider Performance: ${providerName} - ${processingTimeMs}ms - ${success ? '✅ Success' : '❌ Failed'}`
-    );
-
-    // In a production environment, you might want to store these metrics
-    // in a database for analysis and automatic provider optimization
   }
 }

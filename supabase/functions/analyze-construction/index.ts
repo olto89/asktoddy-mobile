@@ -1,13 +1,11 @@
 /**
- * Analyze Construction Edge Function
- * Handles AI-powered construction analysis and chat responses
- * MIGRATED: All 455 lines of AIMiddleware now in Edge Function
+ * Simplified Analyze Construction Edge Function
+ * Single provider architecture - focused on pricing and materials
  */
 
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createResponse, createErrorResponse, getEnvironment, debugLog } from '../_shared/env.ts';
-import { AIMiddleware } from './middleware.ts';
-import { GeminiProvider } from './providers/gemini.ts';
+import { AIMiddleware, SimplifiedMiddlewareConfig } from './middleware.ts';
 import {
   AnalysisRequest,
   AnalysisResponse,
@@ -15,12 +13,10 @@ import {
   ProjectAnalysis,
 } from './types.ts';
 
-console.log('🏗️ Analyze Construction Edge Function initialized with AI Middleware');
+console.log('🏗️ Analyze Construction Edge Function - Simplified Single Provider Mode');
 
 /**
  * Transform analysis response for mobile app compatibility
- * Mobile app expects: estimatedCost.total and timeline.totalDays
- * Edge function provides: costBreakdown.total and timeline (without totalDays)
  */
 function transformAnalysisForMobile(analysis: ProjectAnalysis): any {
   // Calculate total days from timeline phases
@@ -50,20 +46,23 @@ function transformAnalysisForMobile(analysis: ProjectAnalysis): any {
     // Add totalDays to timeline for mobile compatibility
     timeline: {
       ...analysis.timeline,
-      totalDays: totalDays || 5, // Default fallback
+      totalDays: totalDays || 5,
     },
   };
 }
 
-// Initialize AI Middleware with optimized simple Gemini provider
-const middlewareConfig = {
-  primaryProvider: 'gemini-simple',
-  fallbackProviders: ['gemini', 'gemini-fallback'], // Complex Gemini, then alternative models
-  timeoutMs: 15000, // Shorter timeout for faster responses
-  retryAttempts: 1, // Fewer retries for speed
-  enableFallback: true,
-  providerRetryDelay: 1000, // Quick retry delay
-  userFeedbackEnabled: true, // Show user which provider we're trying
+// Simplified configuration - single provider
+const getMiddlewareConfig = (): SimplifiedMiddlewareConfig => {
+  const env = getEnvironment();
+
+  // Use environment variable or default to gemini for testing
+  const provider = env.AI_PROVIDER === 'openai' ? 'openai' : 'gemini';
+
+  return {
+    provider,
+    timeoutMs: 20000, // 20 seconds timeout
+    enablePricingEnhancement: true, // Always enhance with pricing data
+  };
 };
 
 let aiMiddleware: AIMiddleware | null = null;
@@ -75,142 +74,91 @@ Deno.serve(async req => {
 
     // Initialize middleware on first request
     if (!aiMiddleware) {
-      aiMiddleware = new AIMiddleware(middlewareConfig);
-      aiMiddleware.initializeProviders(
+      const config = getMiddlewareConfig();
+      aiMiddleware = new AIMiddleware(config);
+
+      aiMiddleware.initializeProvider(
         env.GEMINI_API_KEY,
         env.OPENAI_API_KEY,
         env.SUPABASE_URL,
-        env.SUPABASE_SERVICE_ROLE_KEY,
-        env.ANTHROPIC_API_KEY
+        env.SUPABASE_SERVICE_ROLE_KEY
       );
 
-      const availableProviders = aiMiddleware.getAvailableProviders();
-      console.log('✅ AI Middleware initialized with providers:', availableProviders);
-      console.log('🔧 Fallback providers configured:', middlewareConfig.fallbackProviders);
+      console.log(`✅ AI Middleware initialized with ${config.provider} provider`);
     }
 
-    // Handle CORS preflight
+    // Handle CORS
     if (req.method === 'OPTIONS') {
-      return createResponse({ message: 'CORS preflight handled' }, 200);
+      return createResponse({ message: 'CORS preflight' });
     }
 
-    // Health check endpoint
-    if (req.method === 'GET') {
-      const url = new URL(req.url);
-      const isDebug = url.searchParams.get('debug') === 'true';
+    // Parse request
+    const body = await req.json();
+    debugLog('Request body', body);
 
-      const providerHealth = await aiMiddleware.healthCheck();
+    // Build analysis request with context
+    const analysisRequest: ContextualAnalysisRequest = {
+      imageUri: body.imageUri,
+      message: body.message,
+      sessionId: body.sessionId || `session_${Date.now()}`,
+      userId: body.userId || 'anonymous',
+      context: {
+        projectType: body.projectType,
+        location: body.location || 'UK',
+        budgetRange: body.budgetRange,
+        userPreferences: body.userPreferences || [],
+      },
+      history: body.history || [],
+    };
 
-      const response = {
-        service: 'analyze-construction',
-        status: 'healthy',
-        version: '2.0.0',
-        timestamp: new Date().toISOString(),
-        environment: env.APP_ENV,
-        middleware: {
-          initialized: !!aiMiddleware,
-          availableProviders: aiMiddleware.getAvailableProviders(),
-          providerHealth: providerHealth,
-        },
-        providers: {
-          gemini: !!env.GEMINI_API_KEY,
-          openai: !!env.OPENAI_API_KEY,
-        },
-      };
-
-      if (isDebug) {
-        response.debug = {
-          geminiApiKey: env.GEMINI_API_KEY
-            ? `${env.GEMINI_API_KEY.substring(0, 10)}...`
-            : 'NOT_SET',
-          openaiApiKey: env.OPENAI_API_KEY
-            ? `${env.OPENAI_API_KEY.substring(0, 10)}...`
-            : 'NOT_SET',
-          supabaseUrl: env.SUPABASE_URL,
-          appEnv: env.APP_ENV,
-        };
-      }
-
-      console.log('🩺 Health check called', { debug: isDebug, providerHealth });
-      return createResponse(response);
+    // Quick health check endpoint
+    if (body.healthCheck === true) {
+      console.log('🏥 Health check requested');
+      const health = await aiMiddleware.healthCheck();
+      return createResponse({
+        success: true,
+        health,
+        provider: getMiddlewareConfig().provider,
+      });
     }
 
-    // Main analysis endpoint
-    if (req.method === 'POST') {
-      const startTime = Date.now();
-      console.log('📝 POST request received at', new Date().toISOString());
+    // Perform analysis with validation
+    console.log('🔍 Starting analysis with validation...');
+    const analysis = await aiMiddleware.analyzeImageWithValidation(analysisRequest);
 
-      try {
-        const requestData: AnalysisRequest | ContextualAnalysisRequest = await req.json();
-        debugLog('Analysis request', requestData);
+    // Transform for mobile compatibility
+    const transformedAnalysis = transformAnalysisForMobile(analysis);
 
-        // Validate request
-        if (!requestData.message && !requestData.imageUri) {
-          return createErrorResponse('Either message or imageUri is required', 400);
-        }
+    // Build response
+    const response: AnalysisResponse = {
+      success: true,
+      data: transformedAnalysis,
+      aiProvider: analysis.aiProvider,
+      processingTimeMs: analysis.processingTimeMs,
+      confidence: analysis.confidence,
+    };
 
-        // Process through fixed AI Middleware (should work now with correct fallback providers)
-        console.log('🤖 Calling fixed AI Middleware with correct provider registry');
-        const analysis = await aiMiddleware.analyzeImageWithValidation(requestData);
+    debugLog('Analysis complete', {
+      projectType: analysis.projectType,
+      confidence: analysis.confidence,
+      provider: analysis.aiProvider,
+      timeMs: analysis.processingTimeMs,
+    });
 
-        console.log('✅ AI Middleware completed:', {
-          provider: analysis.aiProvider,
-          projectType: analysis.projectType,
-          confidence: analysis.confidence,
-          processingTime: Date.now() - startTime,
-          hasWarnings: !!(analysis.warnings && analysis.warnings.length > 0),
-        });
-
-        // Transform response for mobile app compatibility
-        const transformedAnalysis = transformAnalysisForMobile(analysis);
-
-        const response: AnalysisResponse = {
-          success: true,
-          data: transformedAnalysis,
-          processingTimeMs: Date.now() - startTime,
-          aiProvider: analysis.aiProvider,
-        };
-
-        debugLog('Analysis completed', {
-          provider: analysis.aiProvider,
-          processingTime: response.processingTimeMs,
-          confidence: analysis.confidence,
-        });
-
-        return createResponse(response);
-      } catch (error) {
-        console.error('Analysis processing error:', error);
-
-        const response: AnalysisResponse = {
-          success: false,
-          error: {
-            code: 'ANALYSIS_FAILED',
-            message: error instanceof Error ? error.message : 'Unknown analysis error',
-            details: error,
-          },
-          processingTimeMs: Date.now() - startTime,
-          aiProvider: 'error',
-        };
-
-        return createErrorResponse(response.error.message, 500, response);
-      }
-    }
-
-    return createErrorResponse('Method not allowed', 405);
+    return createResponse(response);
   } catch (error) {
-    console.error('Analyze Construction Error:', error);
-    return createErrorResponse('Internal server error', 500, { error: error.message });
+    console.error('Edge function error:', error);
+
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    const errorStack = error instanceof Error ? error.stack : '';
+
+    debugLog('Error details', {
+      message: errorMessage,
+      stack: errorStack,
+    });
+
+    return createErrorResponse(errorMessage, 500);
   }
 });
 
-/* To invoke locally:
-
-  1. Run `supabase start` (see: https://supabase.com/docs/reference/cli/supabase-start)
-  2. Make an HTTP request:
-
-  curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/analyze-construction' \
-    --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' \
-    --header 'Content-Type: application/json' \
-    --data '{"name":"Functions"}'
-
-*/
+console.log('🚀 Edge function ready');

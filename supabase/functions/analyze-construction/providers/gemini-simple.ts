@@ -112,13 +112,13 @@ export class GeminiSimpleProvider implements AIProvider {
       );
     }
 
-    // Minimal retry logic for speed
-    let retries = 2;
+    // NO RETRIES to preserve quota (was causing 3x API calls)
+    let retries = 1; // Single attempt only
     let delay = 500;
 
     while (retries > 0) {
       try {
-        console.log(`🔄 [GEMINI-SIMPLE] API call attempt (${3 - retries}/2)...`);
+        console.log(`🔄 [GEMINI-SIMPLE] API call (single attempt to preserve quota)...`);
 
         const response = await fetch(url, {
           method: 'POST',
