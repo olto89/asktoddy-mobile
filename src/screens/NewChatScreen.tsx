@@ -126,14 +126,23 @@ export default function NewChatScreen() {
     setMessages(prev => [...prev, userMsg]);
 
     try {
-      // Call analyze-construction edge function
-      const { data, error } = await supabase.functions.invoke('analyze-construction', {
-        body: {
-          message: userMessage,
-          sessionId: sessionId,
-          userId: user?.id || 'anonymous',
-          history: messages.slice(-6), // Include recent history
+      // Call analyze-construction edge function (using ChatScreen's working format)
+      const requestBody = {
+        message: userMessage,
+        imageUri: undefined, // No image support in this screen yet
+        sessionId: sessionId,
+        userId: user?.id,
+        context: {
+          location: 'UK', // Default for now
+          city: 'London',
+          region: 'UK',
         },
+      };
+
+      console.log('📱 [FRONTEND] Sending request:', requestBody);
+
+      const { data, error } = await supabase.functions.invoke('analyze-construction', {
+        body: requestBody,
       });
 
       if (error) {
@@ -143,11 +152,18 @@ export default function NewChatScreen() {
       if (data?.success && data?.data) {
         const analysis = data.data;
 
+        console.log('📱 [FRONTEND] Analysis received:', analysis);
+
+        // Format the response content (simplified version)
+        const responseContent =
+          analysis.description ||
+          `Here's your construction quote analysis:\n\n**Project Type:** ${analysis.projectType || 'Construction Project'}\n\n**Estimated Cost:** £${analysis.costBreakdown?.total?.min || 0} - £${analysis.costBreakdown?.total?.max || 0}\n\n**Confidence:** ${analysis.confidence || 85}%`;
+
         // Add assistant response
         const assistantMsg: Message = {
           id: `msg_${Date.now()}_assistant`,
           role: 'assistant',
-          content: analysis.description || 'Analysis completed.',
+          content: responseContent,
           timestamp: new Date(),
           analysis,
         };

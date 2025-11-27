@@ -23,7 +23,7 @@
       "securityBestPractice": "Never expose API keys in EXPO_PUBLIC_ environment variables"
     }
   },
-  "lastUpdated": "2025-11-27T15:09:50.721Z",
+  "lastUpdated": "2025-11-27T15:18:00.251Z",
   "project": {
     "name": "asktoddy-mobile",
     "version": "1.2.0",
@@ -35,9 +35,9 @@
   },
   "git": {
     "branch": "main",
-    "lastCommit": "8ebc8ec fix: Restore original ChatScreen and disable polling",
+    "lastCommit": "36a71dc feat: Restore original gradient header to NewChatScreen",
     "hasUncommittedChanges": true,
-    "changedFiles": 3
+    "changedFiles": 4
   },
   "environment": {
     "nodeVersion": "v24.3.0",
@@ -54,6 +54,8 @@
   "recentFiles": [
     "src/navigation/AuthNavigator.tsx",
     "src/screens/NewChatScreen.tsx",
+    "src/components/ChatMenuSidebar.tsx",
+    "src/components/ToddyHeader.tsx",
     "src/hooks/useQuoteUpdates.ts"
   ]
 }
