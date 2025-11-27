@@ -23,7 +23,7 @@
       "securityBestPractice": "Never expose API keys in EXPO_PUBLIC_ environment variables"
     }
   },
-  "lastUpdated": "2025-11-27T10:24:35.666Z",
+  "lastUpdated": "2025-11-27T14:24:46.934Z",
   "project": {
     "name": "asktoddy-mobile",
     "version": "1.2.0",
@@ -35,14 +35,25 @@
   },
   "git": {
     "branch": "main",
-    "lastCommit": "70528cb feat: Enhanced UI components and simplified AI architecture",
+    "lastCommit": "b2ca5d5 docs: Add comprehensive developer setup guide",
     "hasUncommittedChanges": true,
-    "changedFiles": 2
+    "changedFiles": 4
   },
   "environment": {
     "nodeVersion": "v24.3.0",
     "platform": "darwin"
   },
-  "runningProcesses": [],
-  "recentFiles": []
+  "runningProcesses": [
+    {
+      "command": "npm start",
+      "port": 8081,
+      "status": "running",
+      "service": "Expo Dev Server"
+    }
+  ],
+  "recentFiles": [
+    "src/navigation/AuthNavigator.tsx",
+    "src/screens/NewChatScreen.tsx",
+    "src/hooks/useQuoteUpdates.ts"
+  ]
 }

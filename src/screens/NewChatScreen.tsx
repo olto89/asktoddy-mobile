@@ -16,6 +16,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -27,6 +28,7 @@ import { useQuoteUpdates } from '../hooks/useQuoteUpdates';
 import QuotePreviewCard from '../components/QuotePreviewCard';
 import QuoteOverlay from '../components/QuoteOverlay';
 import ChatMenuSidebar from '../components/ChatMenuSidebar';
+import ToddyHeader from '../components/ToddyHeader';
 import {
   chatHistoryService,
   ChatMessage as ChatHistoryMessage,
@@ -316,41 +318,21 @@ export default function NewChatScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.menuButton}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            setShowChatMenu(true);
-          }}
-        >
-          <Ionicons name="menu" size={24} color="#fff" />
-        </TouchableOpacity>
+    <View style={styles.container}>
+      {/* Native status bar styling */}
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={Platform.OS === 'ios' ? 'transparent' : '#FF6B35'}
+        translucent={Platform.OS === 'ios'}
+      />
 
-        <Text style={styles.headerTitle}>AskToddy</Text>
-
-        <View style={styles.headerRight}>
-          <TouchableOpacity
-            style={styles.headerButton}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              handleNewChat();
-            }}
-          >
-            <Ionicons name="add" size={24} color="#fff" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.headerButton} onPress={refreshQuote}>
-            <Ionicons
-              name="refresh"
-              size={24}
-              color={isUpdating ? '#fff' : 'rgba(255,255,255,0.7)'}
-            />
-          </TouchableOpacity>
-        </View>
-      </View>
+      {/* Custom Header with gradient and logo */}
+      <ToddyHeader
+        onMenuPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          setShowChatMenu(true);
+        }}
+      />
 
       <KeyboardAvoidingView
         style={styles.content}
@@ -438,7 +420,7 @@ export default function NewChatScreen() {
         onSelectSession={handleSelectSession}
         onNewChat={handleNewChat}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
