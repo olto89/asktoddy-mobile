@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../services/supabase';
 
 interface QuoteState {
   projectType: string;
@@ -181,6 +181,9 @@ export const useQuoteUpdates = ({
    * Start/stop polling based on active state
    */
   useEffect(() => {
+    // TEMPORARILY DISABLED - Edge Function not deployed yet
+    // Uncomment when get-session-quote function is deployed
+    /*
     if (isActive && sessionId) {
       // Start polling
       fetchQuoteState();
@@ -192,6 +195,7 @@ export const useQuoteUpdates = ({
         intervalRef.current = null;
       }
     }
+    */
 
     return () => {
       if (intervalRef.current) {
