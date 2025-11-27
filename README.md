@@ -322,9 +322,20 @@ src/
 
 ### **Setup**
 
+**📖 For complete setup instructions, see [SETUP.md](./SETUP.md)**
+
+Quick start:
+
 ```bash
+# Clone repository
+git clone https://github.com/olto89/asktoddy-mobile.git
+cd asktoddy-mobile
+
 # Install dependencies
 npm install
+
+# Configure environment (see SETUP.md for credentials)
+cp .env.example .env
 
 # Start development server
 npm start
