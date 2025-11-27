@@ -332,6 +332,10 @@ export default function NewChatScreen() {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           setShowChatMenu(true);
         }}
+        onNewChatPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          handleNewChat();
+        }}
       />
 
       <KeyboardAvoidingView

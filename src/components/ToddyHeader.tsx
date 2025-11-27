@@ -12,10 +12,17 @@ import designTokens from '../styles/designTokens';
 
 interface ToddyHeaderProps {
   onMenuPress?: () => void;
+  onNewChatPress?: () => void;
   showMenuButton?: boolean;
+  showNewChatButton?: boolean;
 }
 
-export default function ToddyHeader({ onMenuPress, showMenuButton = true }: ToddyHeaderProps) {
+export default function ToddyHeader({
+  onMenuPress,
+  onNewChatPress,
+  showMenuButton = true,
+  showNewChatButton = true,
+}: ToddyHeaderProps) {
   return (
     <LinearGradient
       colors={['#FF6B35', '#FF8C42']} // Toddy Orange gradient
@@ -43,17 +50,30 @@ export default function ToddyHeader({ onMenuPress, showMenuButton = true }: Todd
               </View>
             </View>
 
-            {/* Menu Button */}
-            {showMenuButton && (
-              <TouchableOpacity
-                style={styles.menuButton}
-                onPress={onMenuPress}
-                accessibilityLabel="Open menu"
-                accessibilityRole="button"
-              >
-                <Ionicons name="menu" size={24} color="rgba(255, 255, 255, 0.9)" />
-              </TouchableOpacity>
-            )}
+            {/* Right side buttons */}
+            <View style={styles.rightSection}>
+              {showNewChatButton && (
+                <TouchableOpacity
+                  style={styles.headerButton}
+                  onPress={onNewChatPress}
+                  accessibilityLabel="New conversation"
+                  accessibilityRole="button"
+                >
+                  <Ionicons name="add" size={24} color="rgba(255, 255, 255, 0.9)" />
+                </TouchableOpacity>
+              )}
+
+              {showMenuButton && (
+                <TouchableOpacity
+                  style={styles.menuButton}
+                  onPress={onMenuPress}
+                  accessibilityLabel="Open menu"
+                  accessibilityRole="button"
+                >
+                  <Ionicons name="menu" size={24} color="rgba(255, 255, 255, 0.9)" />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         </View>
       </SafeAreaView>
@@ -128,11 +148,27 @@ const styles = StyleSheet.create({
     fontWeight: designTokens.typography.fontWeight.medium,
     marginTop: 1,
   },
+  rightSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: designTokens.spacing.xs,
+  },
+  headerButton: {
+    padding: designTokens.spacing.sm,
+    borderRadius: designTokens.borderRadius.lg,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 40,
+    minHeight: 40,
+  },
   menuButton: {
     padding: designTokens.spacing.sm,
     borderRadius: designTokens.borderRadius.lg,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
+    minWidth: 40,
+    minHeight: 40,
   },
 });

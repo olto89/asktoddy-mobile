@@ -38,7 +38,7 @@ export default function ChatMenuSidebar({
   onNewChat,
 }: ChatMenuSidebarProps) {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
-  const [slideAnim] = useState(new Animated.Value(-screenWidth * 0.8));
+  const [slideAnim] = useState(new Animated.Value(screenWidth * 0.8));
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -52,7 +52,7 @@ export default function ChatMenuSidebar({
       }).start();
     } else {
       Animated.timing(slideAnim, {
-        toValue: -screenWidth * 0.8,
+        toValue: screenWidth * 0.8,
         duration: 300,
         useNativeDriver: true,
       }).start();
@@ -284,6 +284,7 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     flexDirection: 'row',
+    justifyContent: 'flex-end',
   },
   backdrop: {
     flex: 1,
