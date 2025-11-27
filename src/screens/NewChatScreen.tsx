@@ -125,6 +125,15 @@ export default function NewChatScreen() {
 
     setMessages(prev => [...prev, userMsg]);
 
+    // Add loading message like ChatScreen does
+    const loadingMessage: Message = {
+      id: `msg_${Date.now()}_loading`,
+      role: 'assistant',
+      content: 'Analyzing your request...',
+      timestamp: new Date(),
+    };
+    setMessages(prev => [...prev, loadingMessage]);
+
     try {
       // Call analyze-construction edge function (using ChatScreen's working format)
       const requestBody = {
@@ -169,7 +178,9 @@ export default function NewChatScreen() {
         };
 
         setMessages(prev => {
-          const newMessages = [...prev, assistantMsg];
+          // Remove loading message and add assistant response
+          const withoutLoading = prev.filter(msg => !msg.id.includes('_loading'));
+          const newMessages = [...withoutLoading, assistantMsg];
           // Save messages to chat history
           saveMessagesToHistory(newMessages);
           return newMessages;
@@ -198,7 +209,9 @@ export default function NewChatScreen() {
       };
 
       setMessages(prev => {
-        const newMessages = [...prev, errorMsg];
+        // Remove loading message and add error response
+        const withoutLoading = prev.filter(msg => !msg.id.includes('_loading'));
+        const newMessages = [...withoutLoading, errorMsg];
         // Save messages to chat history
         saveMessagesToHistory(newMessages);
         return newMessages;
