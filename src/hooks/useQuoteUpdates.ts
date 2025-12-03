@@ -9,6 +9,7 @@ import { supabase } from '../services/supabase';
 interface QuoteState {
   projectType: string;
   confidence: number;
+  aiConfidence: number; // Original AI confidence (doesn't change with edits)
   totalCost: {
     min: number;
     max: number;
@@ -21,6 +22,38 @@ interface QuoteState {
   }>;
   fullAnalysis?: any;
   lastUpdated: number;
+  isManuallyEdited?: boolean; // Track if user has made manual changes
+  isPdfEligible?: boolean; // Separate PDF eligibility from AI confidence
+  // Enhanced professional cost breakdown
+  professionalCosts?: {
+    grandTotal: number;
+    subtotalExVAT: number;
+    vat: { rate: number; amount: number };
+    contingency: { percentage: number; amount: number; description: string };
+    materials: { total: number; wastageAmount: number };
+    labour: { total: number };
+    overheads: { total: number; percentage: number };
+    preliminaries: { total: number; percentage: number };
+    profit: { percentage: number; amount: number };
+  };
+  confidenceBreakdown?: {
+    overall: number;
+    factors: {
+      materialAvailability: { score: number; description: string; impact: string };
+      labourAvailability: { score: number; description: string; impact: string };
+      priceStability: { score: number; description: string; impact: string };
+      seasonalFactors: { score: number; description: string; impact: string };
+      dataFreshness: { score: number; description: string; impact: string };
+    };
+    recommendations: Array<{ priority: string; action: string; impact: string }>;
+  };
+  enhancedPricing?: {
+    materialCount: number;
+    dataSource: string;
+    confidenceScore: number;
+    enhancementApplied: boolean;
+  };
+  professionalAdvice?: string[];
 }
 
 interface UseQuoteUpdatesOptions {
@@ -62,8 +95,9 @@ export const useQuoteUpdates = ({
       });
 
       if (fetchError) {
-        console.error('Failed to fetch quote state:', fetchError);
-        setError('Failed to fetch latest quote');
+        // Silently ignore - polling is temporarily disabled
+        // console.error('Failed to fetch quote state:', fetchError);
+        // setError('Failed to fetch latest quote');
         return;
       }
 
@@ -164,17 +198,54 @@ export const useQuoteUpdates = ({
       max: analysis.costBreakdown?.total?.max || 0,
     };
 
+    const aiConfidence = analysis.confidence || 0;
+
     const newQuoteState: QuoteState = {
       projectType: analysis.projectType || 'Construction Project',
-      confidence: analysis.confidence || 0,
+      confidence: aiConfidence,
+      aiConfidence: aiConfidence,
       totalCost,
       keyItems,
       fullAnalysis: analysis,
       lastUpdated: Date.now(),
+      isManuallyEdited: false,
+      isPdfEligible: aiConfidence >= 85,
+      // Extract enhanced professional cost data if available
+      professionalCosts: analysis.professionalCosts
+        ? {
+            grandTotal: analysis.professionalCosts.grandTotal,
+            subtotalExVAT: analysis.professionalCosts.subtotalExVAT,
+            vat: analysis.professionalCosts.vat,
+            contingency: analysis.professionalCosts.contingency,
+            materials: analysis.professionalCosts.materials,
+            labour: analysis.professionalCosts.labour,
+            overheads: analysis.professionalCosts.overheads,
+            preliminaries: analysis.professionalCosts.preliminaries,
+            profit: analysis.professionalCosts.profit,
+          }
+        : undefined,
+      confidenceBreakdown: analysis.confidenceBreakdown,
+      enhancedPricing: analysis.enhancedPricing,
+      professionalAdvice: analysis.professionalAdvice,
     };
 
     setQuoteState(newQuoteState);
     lastUpdateRef.current = newQuoteState.lastUpdated;
+  };
+
+  /**
+   * Mark quote as manually edited (maintains PDF eligibility for premium users)
+   */
+  const markAsManuallyEdited = (): void => {
+    if (quoteState) {
+      setQuoteState({
+        ...quoteState,
+        isManuallyEdited: true,
+        // For premium users, manual editing should maintain PDF eligibility
+        isPdfEligible: true,
+        lastUpdated: Date.now(),
+      });
+    }
   };
 
   /**
@@ -211,11 +282,22 @@ export const useQuoteUpdates = ({
     await fetchQuoteState();
   };
 
+  /**
+   * Clear quote state for new session
+   */
+  const clearQuote = (): void => {
+    setQuoteState(null);
+    setError(null);
+    lastUpdateRef.current = 0;
+  };
+
   return {
     quoteState,
     isUpdating,
     error,
     updateFromAnalysis,
     refreshQuote,
+    clearQuote,
+    markAsManuallyEdited,
   };
 };

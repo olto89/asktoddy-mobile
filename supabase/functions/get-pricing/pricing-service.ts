@@ -129,6 +129,210 @@ export class UKPricingService {
   }
 
   /**
+   * Select curated bathroom materials - FIXED to prevent excessive material lists
+   */
+  private selectBathroomMaterials(): MaterialPrice[] {
+    console.log(`🛁 Selecting bathroom materials from ${MATERIAL_PRICES.length} total materials`);
+
+    // Fixed list of essential bathroom materials to prevent sprawl
+    const essentialBathroomMaterials = [
+      {
+        id: 'bathroom_suite_complete',
+        name: 'Complete Bathroom Suite',
+        category: 'plumbing',
+        priceRange: { min: 450, max: 850, average: 650 },
+        unit: 'set',
+        supplier: 'Bathroom specialists',
+        description: 'Complete white bathroom suite including toilet, basin, and bath',
+      },
+      {
+        id: 'bathroom_tiles_ceramic',
+        name: 'Bathroom Wall Tiles',
+        category: 'finishing',
+        priceRange: { min: 18, max: 35, average: 26.5 },
+        unit: 'm²',
+        supplier: 'Tile suppliers',
+        description: 'Quality ceramic wall tiles for bathroom',
+      },
+      {
+        id: 'bathroom_floor_tiles',
+        name: 'Bathroom Floor Tiles',
+        category: 'finishing',
+        priceRange: { min: 22, max: 45, average: 33.5 },
+        unit: 'm²',
+        supplier: 'Tile suppliers',
+        description: 'Non-slip floor tiles suitable for bathrooms',
+      },
+      {
+        id: 'bathroom_mixer_tap',
+        name: 'Basin Mixer Tap',
+        category: 'plumbing',
+        priceRange: { min: 65, max: 180, average: 122.5 },
+        unit: 'unit',
+        supplier: 'Plumbing suppliers',
+        description: 'Chrome basin mixer tap with pop-up waste',
+      },
+      {
+        id: 'shower_mixer',
+        name: 'Thermostatic Shower Mixer',
+        category: 'plumbing',
+        priceRange: { min: 95, max: 280, average: 187.5 },
+        unit: 'unit',
+        supplier: 'Plumbing suppliers',
+        description: 'Thermostatic shower mixer valve',
+      },
+      {
+        id: 'bathroom_paint',
+        name: 'Bathroom Paint (Moisture Resistant)',
+        category: 'finishing',
+        priceRange: { min: 25, max: 45, average: 35 },
+        unit: '5L',
+        supplier: 'Paint suppliers',
+        description: 'Moisture resistant bathroom paint',
+      },
+    ] as MaterialPrice[];
+
+    console.log(`✅ Selected ${essentialBathroomMaterials.length} curated bathroom materials`);
+    return essentialBathroomMaterials;
+  }
+
+  /**
+   * Select curated kitchen materials - FIXED to prevent excessive material lists
+   */
+  private selectKitchenMaterials(): MaterialPrice[] {
+    console.log(`🍳 Selecting kitchen materials from ${MATERIAL_PRICES.length} total materials`);
+
+    // Fixed list of essential kitchen materials to prevent sprawl
+    const essentialKitchenMaterials = [
+      {
+        id: 'kitchen_units_base',
+        name: 'Kitchen Base Units',
+        category: 'finishing',
+        priceRange: { min: 180, max: 380, average: 280 },
+        unit: 'per unit',
+        supplier: 'Kitchen suppliers',
+        description: 'Standard kitchen base units with doors and drawers',
+      },
+      {
+        id: 'kitchen_worktop',
+        name: 'Kitchen Worktop',
+        category: 'finishing',
+        priceRange: { min: 85, max: 220, average: 152.5 },
+        unit: 'per linear meter',
+        supplier: 'Worktop suppliers',
+        description: 'Laminate or solid surface worktop',
+      },
+      {
+        id: 'kitchen_sink',
+        name: 'Kitchen Sink & Tap',
+        category: 'plumbing',
+        priceRange: { min: 120, max: 350, average: 235 },
+        unit: 'set',
+        supplier: 'Plumbing suppliers',
+        description: 'Stainless steel sink with mixer tap',
+      },
+      {
+        id: 'kitchen_tiles',
+        name: 'Kitchen Wall Tiles',
+        category: 'finishing',
+        priceRange: { min: 15, max: 42, average: 28.5 },
+        unit: 'm²',
+        supplier: 'Tile suppliers',
+        description: 'Ceramic wall tiles for splashback',
+      },
+      {
+        id: 'kitchen_electrical',
+        name: 'Kitchen Electrical Points',
+        category: 'electrical',
+        priceRange: { min: 45, max: 85, average: 65 },
+        unit: 'per point',
+        supplier: 'Electrical suppliers',
+        description: 'Double electrical sockets and switches',
+      },
+      {
+        id: 'kitchen_paint',
+        name: 'Kitchen Paint',
+        category: 'finishing',
+        priceRange: { min: 22, max: 38, average: 30 },
+        unit: '5L',
+        supplier: 'Paint suppliers',
+        description: 'Washable kitchen and bathroom paint',
+      },
+    ] as MaterialPrice[];
+
+    console.log(`✅ Selected ${essentialKitchenMaterials.length} curated kitchen materials`);
+    return essentialKitchenMaterials;
+  }
+
+  /**
+   * Select general construction materials - FIXED to prevent excessive material lists
+   */
+  private selectGeneralMaterials(): MaterialPrice[] {
+    console.log(`🏗️ Selecting general materials from ${MATERIAL_PRICES.length} total materials`);
+
+    // Fixed list of common construction materials to prevent sprawl
+    const essentialGeneralMaterials = [
+      {
+        id: 'cement_25kg',
+        name: 'Cement (25kg bag)',
+        category: 'structural',
+        priceRange: { min: 4.2, max: 5.8, average: 4.95 },
+        unit: 'per bag',
+        supplier: 'Builders merchants',
+        description: 'General purpose cement',
+      },
+      {
+        id: 'sand_tonne',
+        name: 'Building Sand',
+        category: 'structural',
+        priceRange: { min: 28, max: 45, average: 36.5 },
+        unit: 'per tonne',
+        supplier: 'Aggregate suppliers',
+        description: 'General purpose building sand',
+      },
+      {
+        id: 'emulsion_paint',
+        name: 'Emulsion Paint',
+        category: 'finishing',
+        priceRange: { min: 18, max: 32, average: 25 },
+        unit: '5L',
+        supplier: 'Paint suppliers',
+        description: 'Standard matt emulsion paint',
+      },
+      {
+        id: 'plasterboard_standard',
+        name: 'Plasterboard 12.5mm',
+        category: 'finishing',
+        priceRange: { min: 8.5, max: 12.5, average: 10.5 },
+        unit: 'per sheet',
+        supplier: 'Plasterboard suppliers',
+        description: 'Standard plasterboard sheet 2.4x1.2m',
+      },
+      {
+        id: 'copper_pipe_15mm',
+        name: 'Copper Pipe 15mm',
+        category: 'plumbing',
+        priceRange: { min: 4.2, max: 6.8, average: 5.5 },
+        unit: 'per meter',
+        supplier: 'Plumbing suppliers',
+        description: '15mm copper pipe',
+      },
+      {
+        id: 'twin_earth_cable',
+        name: 'Twin & Earth Cable',
+        category: 'electrical',
+        priceRange: { min: 1.8, max: 3.2, average: 2.5 },
+        unit: 'per meter',
+        supplier: 'Electrical suppliers',
+        description: '2.5mm twin and earth cable',
+      },
+    ] as MaterialPrice[];
+
+    console.log(`✅ Selected ${essentialGeneralMaterials.length} curated general materials`);
+    return essentialGeneralMaterials;
+  }
+
+  /**
    * Calculate demand index based on project type and region
    */
   private calculateDemandIndex(projectType: string, region: any): number {
@@ -151,17 +355,29 @@ export class UKPricingService {
   }
 
   /**
-   * Get tool hire pricing with regional and seasonal adjustments
+   * Get tool hire pricing with regional and seasonal adjustments - FIXED to prevent excessive tool lists
    */
   private getToolHirePricing(
     request: PricingRequest,
     regionMultiplier: number,
     seasonalFactor: number
   ): ToolHireRate[] {
-    let relevantTools = [...TOOL_HIRE_RATES];
+    let relevantTools: ToolHireRate[] = [];
 
-    // Filter tools based on project type if specified
-    if (request.tools && request.tools.length > 0) {
+    // Smart tool selection based on project type
+    const projectTypeLower = request.projectType.toLowerCase();
+
+    if (projectTypeLower.includes('bathroom') || projectTypeLower.includes('ensuite')) {
+      // Bathroom projects need minimal tools
+      relevantTools = this.selectBathroomTools();
+    } else if (projectTypeLower.includes('kitchen')) {
+      // Kitchen projects need moderate tools
+      relevantTools = this.selectKitchenTools();
+    } else if (projectTypeLower.includes('decking') || projectTypeLower.includes('garden')) {
+      // Outdoor projects need specific tools
+      relevantTools = this.selectOutdoorTools();
+    } else if (request.tools && request.tools.length > 0) {
+      // Specific tools requested
       relevantTools = TOOL_HIRE_RATES.filter(tool =>
         request.tools!.some(
           requestedTool =>
@@ -169,7 +385,12 @@ export class UKPricingService {
             requestedTool.toLowerCase().includes(tool.name.toLowerCase())
         )
       );
+    } else {
+      // General construction - basic tool set
+      relevantTools = this.selectGeneralTools();
     }
+
+    console.log(`🔧 Selected ${relevantTools.length} relevant tools for ${request.projectType}`);
 
     // Apply regional and seasonal pricing
     return relevantTools.map(tool => ({
@@ -183,6 +404,191 @@ export class UKPricingService {
   }
 
   /**
+   * Select tools for bathroom projects
+   */
+  private selectBathroomTools(): ToolHireRate[] {
+    return [
+      {
+        name: 'SDS Drill',
+        tradeType: 'General',
+        category: 'Power Tools',
+        dailyRate: 25,
+        weeklyRate: 125,
+        availability: 'high',
+        supplier: 'Local tool hire',
+      },
+      {
+        name: 'Angle Grinder',
+        tradeType: 'General',
+        category: 'Power Tools',
+        dailyRate: 20,
+        weeklyRate: 100,
+        availability: 'high',
+        supplier: 'Local tool hire',
+      },
+      {
+        name: 'Tile Cutter',
+        tradeType: 'Tiling',
+        category: 'Specialist Tools',
+        dailyRate: 30,
+        weeklyRate: 150,
+        availability: 'medium',
+        supplier: 'Local tool hire',
+      },
+      {
+        name: 'Basic Hand Tools',
+        tradeType: 'General',
+        category: 'Hand Tools',
+        dailyRate: 15,
+        weeklyRate: 75,
+        availability: 'high',
+        supplier: 'Local tool hire',
+      },
+    ] as ToolHireRate[];
+  }
+
+  /**
+   * Select tools for kitchen projects
+   */
+  private selectKitchenTools(): ToolHireRate[] {
+    return [
+      {
+        name: 'SDS Drill',
+        tradeType: 'General',
+        category: 'Power Tools',
+        dailyRate: 25,
+        weeklyRate: 125,
+        availability: 'high',
+        supplier: 'Local tool hire',
+      },
+      {
+        name: 'Circular Saw',
+        tradeType: 'Carpentry',
+        category: 'Power Tools',
+        dailyRate: 28,
+        weeklyRate: 140,
+        availability: 'high',
+        supplier: 'Local tool hire',
+      },
+      {
+        name: 'Jigsaw',
+        tradeType: 'Carpentry',
+        category: 'Power Tools',
+        dailyRate: 20,
+        weeklyRate: 100,
+        availability: 'high',
+        supplier: 'Local tool hire',
+      },
+      {
+        name: 'Router',
+        tradeType: 'Carpentry',
+        category: 'Specialist Tools',
+        dailyRate: 35,
+        weeklyRate: 175,
+        availability: 'medium',
+        supplier: 'Local tool hire',
+      },
+      {
+        name: 'Basic Hand Tools',
+        tradeType: 'General',
+        category: 'Hand Tools',
+        dailyRate: 15,
+        weeklyRate: 75,
+        availability: 'high',
+        supplier: 'Local tool hire',
+      },
+    ] as ToolHireRate[];
+  }
+
+  /**
+   * Select tools for outdoor/decking projects
+   */
+  private selectOutdoorTools(): ToolHireRate[] {
+    return [
+      {
+        name: 'Circular Saw',
+        tradeType: 'Carpentry',
+        category: 'Power Tools',
+        dailyRate: 28,
+        weeklyRate: 140,
+        availability: 'high',
+        supplier: 'Local tool hire',
+      },
+      {
+        name: 'Post Hole Digger',
+        tradeType: 'Landscaping',
+        category: 'Groundworks',
+        dailyRate: 45,
+        weeklyRate: 225,
+        availability: 'medium',
+        supplier: 'Local tool hire',
+      },
+      {
+        name: 'Compactor Plate',
+        tradeType: 'Groundworks',
+        category: 'Compaction',
+        dailyRate: 40,
+        weeklyRate: 200,
+        availability: 'medium',
+        supplier: 'Local tool hire',
+      },
+      {
+        name: 'Spirit Level',
+        tradeType: 'General',
+        category: 'Hand Tools',
+        dailyRate: 8,
+        weeklyRate: 40,
+        availability: 'high',
+        supplier: 'Local tool hire',
+      },
+      {
+        name: 'Basic Hand Tools',
+        tradeType: 'General',
+        category: 'Hand Tools',
+        dailyRate: 15,
+        weeklyRate: 75,
+        availability: 'high',
+        supplier: 'Local tool hire',
+      },
+    ] as ToolHireRate[];
+  }
+
+  /**
+   * Select general construction tools
+   */
+  private selectGeneralTools(): ToolHireRate[] {
+    return [
+      {
+        name: 'SDS Drill',
+        tradeType: 'General',
+        category: 'Power Tools',
+        dailyRate: 25,
+        weeklyRate: 125,
+        availability: 'high',
+        supplier: 'Local tool hire',
+      },
+      {
+        name: 'Angle Grinder',
+        tradeType: 'General',
+        category: 'Power Tools',
+        dailyRate: 20,
+        weeklyRate: 100,
+        availability: 'high',
+        supplier: 'Local tool hire',
+      },
+      {
+        name: 'Basic Hand Tools',
+        tradeType: 'General',
+        category: 'Hand Tools',
+        dailyRate: 15,
+        weeklyRate: 75,
+        availability: 'high',
+        supplier: 'Local tool hire',
+      },
+    ] as ToolHireRate[];
+  }
+
+  /**
    * Get material pricing with regional and seasonal adjustments
    */
   private getMaterialPricing(
@@ -190,22 +596,24 @@ export class UKPricingService {
     regionMultiplier: number,
     seasonalFactor: number
   ): MaterialPrice[] {
-    let relevantMaterials = [...MATERIAL_PRICES];
+    let relevantMaterials: MaterialPrice[] = [];
 
-    // Filter materials based on project type
+    // Smart material selection based on project type
     const projectTypeLower = request.projectType.toLowerCase();
-    if (projectTypeLower.includes('electrical')) {
-      relevantMaterials = MATERIAL_PRICES.filter(
-        m => m.category === 'electrical' || m.category === 'structural'
-      );
-    } else if (projectTypeLower.includes('plumbing') || projectTypeLower.includes('bathroom')) {
-      relevantMaterials = MATERIAL_PRICES.filter(
-        m => m.category === 'plumbing' || m.category === 'structural' || m.category === 'finishing'
-      );
+
+    if (projectTypeLower.includes('bathroom') || projectTypeLower.includes('ensuite')) {
+      // For bathrooms, select key items only
+      relevantMaterials = this.selectBathroomMaterials();
     } else if (projectTypeLower.includes('kitchen')) {
-      relevantMaterials = MATERIAL_PRICES.filter(
-        m => m.category === 'finishing' || m.category === 'electrical' || m.category === 'plumbing'
-      );
+      // For kitchens, select typical renovation items
+      relevantMaterials = this.selectKitchenMaterials();
+    } else if (projectTypeLower.includes('electrical')) {
+      relevantMaterials = MATERIAL_PRICES.filter(m => m.category === 'electrical').slice(0, 5); // Limit to 5 most common electrical items
+    } else if (projectTypeLower.includes('plumbing')) {
+      relevantMaterials = MATERIAL_PRICES.filter(m => m.category === 'plumbing').slice(0, 5); // Limit to 5 most common plumbing items
+    } else {
+      // General construction - select mix of common items
+      relevantMaterials = this.selectGeneralMaterials();
     }
 
     // Apply pricing factors

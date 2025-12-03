@@ -1,10 +1,11 @@
 /**
  * LocationService - GPS and UK region detection for accurate pricing
- * Provides real-time location data and regional pricing multipliers
+ * Enhanced with improved permission handling via PermissionService
  */
 
 import * as Location from 'expo-location';
 import { Platform } from 'react-native';
+import { PermissionService } from '../PermissionService';
 
 export interface Coordinates {
   latitude: number;
@@ -245,8 +246,11 @@ export class LocationService {
   private static instance: LocationService;
   private lastKnownLocation: LocationData | null = null;
   private locationPermission: boolean = false;
+  private permissionService: PermissionService;
 
-  private constructor() {}
+  private constructor() {
+    this.permissionService = PermissionService.getInstance();
+  }
 
   public static getInstance(): LocationService {
     if (!LocationService.instance) {
@@ -256,12 +260,12 @@ export class LocationService {
   }
 
   /**
-   * Request location permissions
+   * Request location permissions with enhanced UX
    */
   async requestPermissions(): Promise<boolean> {
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      this.locationPermission = status === 'granted';
+      const permissionStatus = await this.permissionService.requestLocationPermission();
+      this.locationPermission = permissionStatus.granted;
 
       if (!this.locationPermission) {
         console.log('⚠️ Location permission denied');
@@ -275,11 +279,11 @@ export class LocationService {
   }
 
   /**
-   * Get current location
+   * Get current location with enhanced permission handling
    */
   async getCurrentLocation(): Promise<LocationData | null> {
     try {
-      // Check permissions first
+      // Check permissions first with improved UX
       if (!this.locationPermission) {
         const granted = await this.requestPermissions();
         if (!granted) {

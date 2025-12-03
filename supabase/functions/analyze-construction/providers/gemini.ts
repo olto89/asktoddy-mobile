@@ -8,6 +8,8 @@ import type { ContextualAnalysisRequest, ContextualProjectAnalysis } from '../co
 import { ContextManager } from '../context/ContextManager.ts';
 import { ConversationIntelligence } from '../intelligence/ConversationIntelligence.ts';
 import { MATERIAL_QUANTITY_GUIDE } from '../prompts/material-quantity-calculator.ts';
+import { ConfidenceCalculator } from '../utils/ConfidenceCalculator.ts';
+import { QuoteRefinementDetector } from '../utils/QuoteRefinementDetector.ts';
 
 export class GeminiProvider implements AIProvider {
   name = 'gemini';
@@ -88,7 +90,45 @@ export class GeminiProvider implements AIProvider {
       }
 
       // Parse and validate the response
-      const analysis = this.parseGeminiResponse(response);
+      let analysis = this.parseGeminiResponse(response);
+
+      // Get conversation context for confidence calculation
+      let conversationContext = null;
+      if (this.contextManager && 'sessionId' in request) {
+        conversationContext = await this.contextManager.getContext(
+          (request as ContextualAnalysisRequest).sessionId,
+          (request as ContextualAnalysisRequest).userId
+        );
+      }
+
+      // Calculate dynamic confidence based on actual information provided
+      const dynamicConfidence = ConfidenceCalculator.calculateConfidence(
+        analysis,
+        request,
+        conversationContext
+      );
+
+      // Override the AI's confidence with our calculated value
+      analysis.confidence = dynamicConfidence;
+
+      // Add improvement suggestions if confidence is low
+      if (dynamicConfidence < 80) {
+        const suggestions = ConfidenceCalculator.getImprovementSuggestions(
+          analysis,
+          request,
+          conversationContext
+        );
+
+        // Add suggestions to recommendations if not already present
+        if (!analysis.recommendations) {
+          analysis.recommendations = [];
+        }
+        suggestions.forEach(suggestion => {
+          if (!analysis.recommendations.includes(suggestion)) {
+            analysis.recommendations.push(suggestion);
+          }
+        });
+      }
 
       // Update conversation context if ContextManager is available
       if (this.contextManager && 'sessionId' in request) {
@@ -338,6 +378,7 @@ IMPORTANT: Provide detailed analysis of the provided ${this.getMediaTypeName(mim
     let currentCompleteness = 0;
     let conversationInsights: any = null;
     let flowRecommendations: any[] = [];
+    let refinementPrompt = '';
 
     if (this.contextManager && 'sessionId' in request) {
       const contextualRequest = request as ContextualAnalysisRequest;
@@ -347,6 +388,28 @@ IMPORTANT: Provide detailed analysis of the provided ${this.getMediaTypeName(mim
       );
 
       if (conversationContext) {
+        // Check if this is a refinement message
+        if (message && QuoteRefinementDetector.isRefinementMessage(message, conversationContext)) {
+          // Get the last analysis from conversation history
+          const lastAssistantMessage = conversationContext.messageHistory
+            ?.filter(m => m.role === 'assistant')
+            ?.pop();
+
+          if (lastAssistantMessage?.metadata?.analysis) {
+            const previousAnalysis = lastAssistantMessage.metadata.analysis;
+            const refinementDetails = QuoteRefinementDetector.extractRefinementDetails(
+              message,
+              previousAnalysis
+            );
+            refinementPrompt =
+              QuoteRefinementDetector.createRefinementPrompt(
+                message,
+                previousAnalysis,
+                refinementDetails
+              ) + '\n\n';
+          }
+        }
+
         // Use enhanced conversation intelligence
         conversationSummary = ConversationIntelligence.generateEnhancedSummary(conversationContext);
         conversationInsights = ConversationIntelligence.analyzeConversation(conversationContext);
@@ -429,7 +492,7 @@ IMPORTANT: Generate a completely NEW quote that incorporates this feedback, don'
 
     return `You are a highly experienced construction contractor and estimator with 20+ years in the industry. You provide professional consultation by first assessing if you have enough information to give accurate quotes.
 
-${contextSection}${refinementSection}ENHANCED INTELLIGENCE INSTRUCTIONS:
+${refinementPrompt}${contextSection}${refinementSection}ENHANCED INTELLIGENCE INSTRUCTIONS:
 ${previouslyAskedQuestions.length > 0 ? '- NEVER ask questions that have been previously asked\n- Build upon information already gathered\n- Reference previous answers when relevant\n' : ''}
 ${
   conversationInsights

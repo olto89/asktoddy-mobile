@@ -8,6 +8,8 @@ import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import designTokens from '../styles/designTokens';
+import ConfidenceGuide from './ConfidenceGuide';
+import { PermissionService } from '../services/PermissionService';
 
 interface QuoteItem {
   id: string;
@@ -26,6 +28,36 @@ interface QuotePreviewProps {
   keyItems: QuoteItem[];
   isUpdating?: boolean;
   onExpand: () => void;
+  showPremiumFeatures?: boolean;
+  onGeneratePDF?: () => void;
+  showConfidenceGuide?: boolean;
+  hasImages?: boolean;
+  hasLocation?: boolean;
+  hasDetailedDescription?: boolean;
+  onAddImages?: () => void;
+  onImproveDescription?: () => void;
+  onCheckLocation?: () => void;
+  isPdfEligible?: boolean;
+  isManuallyEdited?: boolean;
+  // Enhanced professional cost data
+  professionalCosts?: {
+    grandTotal: number;
+    subtotalExVAT: number;
+    vat: { rate: number; amount: number };
+    contingency: { percentage: number; amount: number; description: string };
+    materials: { total: number; wastageAmount: number };
+    labour: { total: number };
+    overheads: { total: number; percentage: number };
+    preliminaries: { total: number; percentage: number };
+    profit: { percentage: number; amount: number };
+  };
+  enhancedPricing?: {
+    materialCount: number;
+    dataSource: string;
+    confidenceScore: number;
+    enhancementApplied: boolean;
+  };
+  professionalAdvice?: string[];
 }
 
 export default function QuotePreviewCard({
@@ -35,7 +67,23 @@ export default function QuotePreviewCard({
   keyItems,
   isUpdating = false,
   onExpand,
+  showPremiumFeatures = false,
+  onGeneratePDF,
+  showConfidenceGuide = false,
+  hasImages = false,
+  hasLocation = false,
+  hasDetailedDescription = false,
+  onAddImages,
+  onImproveDescription,
+  onCheckLocation,
+  isPdfEligible = false,
+  isManuallyEdited = false,
+  professionalCosts,
+  enhancedPricing,
+  professionalAdvice,
 }: QuotePreviewProps) {
+  // Permission service for enhanced UX
+  const permissionService = PermissionService.getInstance();
   const getConfidenceColor = () => {
     if (confidence >= 85) return designTokens.colors.success;
     if (confidence >= 70) return designTokens.colors.warning;
@@ -48,12 +96,41 @@ export default function QuotePreviewCard({
     return 'Need more info';
   };
 
-  const shouldShowPDFPrompt = confidence >= 85;
+  // PDF eligibility logic:
+  // - Premium users: Always eligible if manually edited OR high AI confidence
+  // - Free users: Only eligible with high AI confidence (encourages good data)
+  const shouldShowPDFPrompt = isPdfEligible || confidence >= 85;
   const averageCost = (totalCost.min + totalCost.max) / 2;
 
   const handleExpand = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     onExpand();
+  };
+
+  // Use state for collapsible confidence guide - auto-expand for very low confidence
+  const [showGuideExpanded, setShowGuideExpanded] = React.useState(confidence < 60);
+
+  // Enhanced permission-aware action handlers
+  const handleAddImages = async () => {
+    const cameraStatus = await permissionService.checkPermissionStatus('camera');
+    if (!cameraStatus.granted) {
+      const shouldRequest = await permissionService.showPermissionEducation('camera');
+      if (shouldRequest) {
+        await permissionService.requestCameraPermission();
+      }
+    }
+    onAddImages?.();
+  };
+
+  const handleCheckLocation = async () => {
+    const locationStatus = await permissionService.checkPermissionStatus('location');
+    if (!locationStatus.granted) {
+      const shouldRequest = await permissionService.showPermissionEducation('location');
+      if (shouldRequest) {
+        await permissionService.requestLocationPermission();
+      }
+    }
+    onCheckLocation?.();
   };
 
   return (
@@ -98,14 +175,172 @@ export default function QuotePreviewCard({
         )}
       </View>
 
-      {/* PDF Generation Prompt */}
-      {shouldShowPDFPrompt && (
-        <View style={styles.pdfPrompt}>
-          <View style={styles.pdfPromptContent}>
-            <Ionicons name="checkmark-circle" size={18} color={designTokens.colors.success} />
-            <Text style={styles.pdfPromptText}>Ready for PDF generation!</Text>
+      {/* Enhanced Professional Cost Breakdown */}
+      {professionalCosts && (
+        <View style={styles.professionalSection}>
+          <View style={styles.professionalHeader}>
+            <Ionicons name="business" size={16} color={designTokens.colors.primary[500]} />
+            <Text style={styles.professionalTitle}>Professional Breakdown</Text>
+            {enhancedPricing && (
+              <View style={styles.enhancedBadge}>
+                <Text style={styles.enhancedBadgeText}>
+                  {enhancedPricing.materialCount}+ materials
+                </Text>
+              </View>
+            )}
           </View>
-          <Text style={styles.pdfPromptSubtext}>Tap to add logo & generate professional quote</Text>
+
+          <View style={styles.costBreakdown}>
+            <View style={styles.costRow}>
+              <Text style={styles.costRowLabel}>Materials (inc. wastage)</Text>
+              <Text style={styles.costRowValue}>
+                £{professionalCosts.materials.total.toLocaleString()}
+              </Text>
+            </View>
+            <View style={styles.costRow}>
+              <Text style={styles.costRowLabel}>Labour</Text>
+              <Text style={styles.costRowValue}>
+                £{professionalCosts.labour.total.toLocaleString()}
+              </Text>
+            </View>
+            <View style={styles.costRow}>
+              <Text style={styles.costRowLabel}>
+                Preliminaries ({professionalCosts.preliminaries.percentage}%)
+              </Text>
+              <Text style={styles.costRowValue}>
+                £{professionalCosts.preliminaries.total.toLocaleString()}
+              </Text>
+            </View>
+            <View style={styles.costRow}>
+              <Text style={styles.costRowLabel}>
+                Overheads ({professionalCosts.overheads.percentage}%)
+              </Text>
+              <Text style={styles.costRowValue}>
+                £{professionalCosts.overheads.total.toLocaleString()}
+              </Text>
+            </View>
+            <View style={styles.costRow}>
+              <Text style={styles.costRowLabel}>
+                Profit ({professionalCosts.profit.percentage}%)
+              </Text>
+              <Text style={styles.costRowValue}>
+                £{professionalCosts.profit.amount.toLocaleString()}
+              </Text>
+            </View>
+            <View style={styles.costRow}>
+              <Text style={styles.costRowLabel}>
+                Contingency ({professionalCosts.contingency.percentage}%)
+              </Text>
+              <Text style={styles.costRowValue}>
+                £{professionalCosts.contingency.amount.toLocaleString()}
+              </Text>
+            </View>
+            <View style={[styles.costRow, styles.subtotalRow]}>
+              <Text style={styles.subtotalLabel}>Subtotal (ex VAT)</Text>
+              <Text style={styles.subtotalValue}>
+                £{professionalCosts.subtotalExVAT.toLocaleString()}
+              </Text>
+            </View>
+            <View style={styles.costRow}>
+              <Text style={styles.costRowLabel}>
+                VAT ({(professionalCosts.vat.rate * 100).toFixed(0)}%)
+              </Text>
+              <Text style={styles.costRowValue}>
+                £{professionalCosts.vat.amount.toLocaleString()}
+              </Text>
+            </View>
+            <View style={[styles.costRow, styles.totalRow]}>
+              <Text style={styles.totalLabel}>Grand Total</Text>
+              <Text style={styles.totalValue}>
+                £{professionalCosts.grandTotal.toLocaleString()}
+              </Text>
+            </View>
+          </View>
+
+          {professionalAdvice && professionalAdvice.length > 0 && (
+            <View style={styles.adviceSection}>
+              <Text style={styles.adviceTitle}>Professional Advice:</Text>
+              {professionalAdvice.slice(0, 2).map((advice, index) => (
+                <Text key={index} style={styles.adviceText}>
+                  • {advice}
+                </Text>
+              ))}
+            </View>
+          )}
+        </View>
+      )}
+
+      {/* PDF Generation Prompt */}
+      {shouldShowPDFPrompt && showPremiumFeatures && (
+        <TouchableOpacity style={styles.pdfPrompt} onPress={onGeneratePDF}>
+          <View style={styles.pdfPromptContent}>
+            <Ionicons name="document-text" size={18} color={designTokens.colors.success} />
+            <Text style={styles.pdfPromptText}>
+              {isManuallyEdited ? 'Generate Custom PDF' : 'Generate Professional PDF'}
+            </Text>
+            <View style={styles.premiumBadge}>
+              <Text style={styles.premiumBadgeText}>PRO</Text>
+            </View>
+          </View>
+          <Text style={styles.pdfPromptSubtext}>
+            {isManuallyEdited
+              ? 'Your custom quote is ready for PDF export'
+              : 'Add company logo & create professional quote'}
+          </Text>
+          <View style={styles.pdfButtonRow}>
+            <Ionicons name="diamond" size={16} color={designTokens.colors.primary[500]} />
+            <Text style={styles.pdfButtonText}>Generate PDF Quote</Text>
+            <Ionicons name="arrow-forward" size={16} color={designTokens.colors.primary[500]} />
+          </View>
+        </TouchableOpacity>
+      )}
+
+      {/* Confidence Improvement Tip - Only show for low confidence */}
+      {showConfidenceGuide && (
+        <View style={styles.confidenceTip}>
+          <TouchableOpacity
+            style={styles.confidenceTipHeader}
+            onPress={() => setShowGuideExpanded(!showGuideExpanded)}
+          >
+            <Ionicons name="bulb-outline" size={16} color={designTokens.colors.warning} />
+            <Text style={styles.confidenceTipTitle}>
+              Improve accuracy for PDF ({Math.round(confidence)}%)
+            </Text>
+            <Ionicons
+              name={showGuideExpanded ? 'chevron-up' : 'chevron-down'}
+              size={16}
+              color={designTokens.colors.text.secondary}
+            />
+          </TouchableOpacity>
+
+          {showGuideExpanded && (
+            <View style={styles.confidenceTipContent}>
+              <View style={styles.tipActions}>
+                {!hasImages && (
+                  <TouchableOpacity style={styles.tipAction} onPress={handleAddImages}>
+                    <Ionicons name="camera" size={14} color={designTokens.colors.primary[500]} />
+                    <Text style={styles.tipActionText}>Add photos</Text>
+                  </TouchableOpacity>
+                )}
+                {!hasDetailedDescription && (
+                  <TouchableOpacity style={styles.tipAction} onPress={onImproveDescription}>
+                    <Ionicons
+                      name="document-text"
+                      size={14}
+                      color={designTokens.colors.primary[500]}
+                    />
+                    <Text style={styles.tipActionText}>Add details</Text>
+                  </TouchableOpacity>
+                )}
+                {!hasLocation && (
+                  <TouchableOpacity style={styles.tipAction} onPress={handleCheckLocation}>
+                    <Ionicons name="location" size={14} color={designTokens.colors.primary[500]} />
+                    <Text style={styles.tipActionText}>Check location</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          )}
         </View>
       )}
 
@@ -250,9 +485,9 @@ const styles = StyleSheet.create({
     marginTop: designTokens.spacing.xs,
   },
   pdfPrompt: {
-    backgroundColor: designTokens.colors.success + '10',
-    borderColor: designTokens.colors.success,
-    borderWidth: 1,
+    backgroundColor: designTokens.colors.primary[50],
+    borderColor: designTokens.colors.primary[200],
+    borderWidth: 2,
     borderRadius: designTokens.borderRadius.lg,
     padding: designTokens.spacing.md,
     marginBottom: designTokens.spacing.md,
@@ -263,10 +498,38 @@ const styles = StyleSheet.create({
     marginBottom: designTokens.spacing.xs,
     gap: designTokens.spacing.sm,
   },
+  premiumBadge: {
+    backgroundColor: designTokens.colors.primary[500],
+    paddingHorizontal: designTokens.spacing.xs,
+    paddingVertical: 2,
+    borderRadius: designTokens.borderRadius.sm,
+    marginLeft: 'auto',
+  },
+  premiumBadgeText: {
+    color: '#fff',
+    fontSize: designTokens.typography.fontSize.xs,
+    fontWeight: designTokens.typography.fontWeight.bold as any,
+  },
+  pdfButtonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: designTokens.spacing.xs,
+    marginTop: designTokens.spacing.sm,
+    paddingVertical: designTokens.spacing.sm,
+    backgroundColor: designTokens.colors.primary[500],
+    borderRadius: designTokens.borderRadius.md,
+  },
+  pdfButtonText: {
+    color: '#fff',
+    fontSize: designTokens.typography.fontSize.sm,
+    fontWeight: designTokens.typography.fontWeight.semibold as any,
+  },
   pdfPromptText: {
+    flex: 1,
     fontSize: designTokens.typography.fontSize.base,
     fontWeight: designTokens.typography.fontWeight.semibold as any,
-    color: designTokens.colors.success,
+    color: designTokens.colors.primary[700],
   },
   pdfPromptSubtext: {
     fontSize: designTokens.typography.fontSize.sm,
@@ -316,5 +579,156 @@ const styles = StyleSheet.create({
     fontSize: designTokens.typography.fontSize.xs,
     color: designTokens.colors.primary[500],
     fontWeight: designTokens.typography.fontWeight.medium as any,
+  },
+
+  // Confidence Tip Styles
+  confidenceTip: {
+    backgroundColor: designTokens.colors.warning + '10',
+    borderRadius: designTokens.borderRadius.md,
+    marginBottom: designTokens.spacing.md,
+    overflow: 'hidden',
+  },
+  confidenceTipHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: designTokens.spacing.sm,
+    gap: designTokens.spacing.xs,
+  },
+  confidenceTipTitle: {
+    flex: 1,
+    fontSize: designTokens.typography.fontSize.sm,
+    color: designTokens.colors.text.primary,
+    fontWeight: designTokens.typography.fontWeight.medium as any,
+  },
+  confidenceTipContent: {
+    paddingHorizontal: designTokens.spacing.sm,
+    paddingBottom: designTokens.spacing.sm,
+  },
+  tipActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: designTokens.spacing.xs,
+  },
+  tipAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: designTokens.colors.primary[50],
+    borderRadius: designTokens.borderRadius.full,
+    paddingHorizontal: designTokens.spacing.sm,
+    paddingVertical: designTokens.spacing.xs,
+    gap: designTokens.spacing.xs,
+  },
+  tipActionText: {
+    fontSize: designTokens.typography.fontSize.xs,
+    color: designTokens.colors.primary[500],
+    fontWeight: designTokens.typography.fontWeight.medium as any,
+  },
+
+  // Professional Cost Breakdown Styles
+  professionalSection: {
+    backgroundColor: designTokens.colors.grey[50],
+    borderRadius: designTokens.borderRadius.lg,
+    padding: designTokens.spacing.md,
+    marginBottom: designTokens.spacing.md,
+    borderWidth: 1,
+    borderColor: designTokens.colors.primary[200],
+  },
+  professionalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: designTokens.spacing.md,
+    gap: designTokens.spacing.sm,
+  },
+  professionalTitle: {
+    flex: 1,
+    fontSize: designTokens.typography.fontSize.base,
+    fontWeight: designTokens.typography.fontWeight.semibold as any,
+    color: designTokens.colors.text.primary,
+  },
+  enhancedBadge: {
+    backgroundColor: designTokens.colors.success + '20',
+    borderRadius: designTokens.borderRadius.full,
+    paddingHorizontal: designTokens.spacing.sm,
+    paddingVertical: 2,
+  },
+  enhancedBadgeText: {
+    fontSize: designTokens.typography.fontSize.xs,
+    color: designTokens.colors.success,
+    fontWeight: designTokens.typography.fontWeight.medium as any,
+  },
+  costBreakdown: {
+    gap: designTokens.spacing.xs,
+  },
+  costRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: designTokens.spacing.xs,
+  },
+  costRowLabel: {
+    fontSize: designTokens.typography.fontSize.sm,
+    color: designTokens.colors.text.secondary,
+    flex: 1,
+  },
+  costRowValue: {
+    fontSize: designTokens.typography.fontSize.sm,
+    fontWeight: designTokens.typography.fontWeight.medium as any,
+    color: designTokens.colors.text.primary,
+  },
+  subtotalRow: {
+    borderTopWidth: 1,
+    borderTopColor: designTokens.colors.grey[200],
+    marginTop: designTokens.spacing.xs,
+    paddingTop: designTokens.spacing.sm,
+  },
+  subtotalLabel: {
+    fontSize: designTokens.typography.fontSize.sm,
+    fontWeight: designTokens.typography.fontWeight.semibold as any,
+    color: designTokens.colors.text.primary,
+    flex: 1,
+  },
+  subtotalValue: {
+    fontSize: designTokens.typography.fontSize.sm,
+    fontWeight: designTokens.typography.fontWeight.semibold as any,
+    color: designTokens.colors.text.primary,
+  },
+  totalRow: {
+    borderTopWidth: 2,
+    borderTopColor: designTokens.colors.primary[300],
+    marginTop: designTokens.spacing.sm,
+    paddingTop: designTokens.spacing.sm,
+    backgroundColor: designTokens.colors.primary[50],
+    marginHorizontal: -designTokens.spacing.sm,
+    paddingHorizontal: designTokens.spacing.sm,
+    borderRadius: designTokens.borderRadius.md,
+  },
+  totalLabel: {
+    fontSize: designTokens.typography.fontSize.base,
+    fontWeight: designTokens.typography.fontWeight.bold as any,
+    color: designTokens.colors.primary[700],
+    flex: 1,
+  },
+  totalValue: {
+    fontSize: designTokens.typography.fontSize.base,
+    fontWeight: designTokens.typography.fontWeight.bold as any,
+    color: designTokens.colors.primary[700],
+  },
+  adviceSection: {
+    marginTop: designTokens.spacing.md,
+    paddingTop: designTokens.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: designTokens.colors.grey[200],
+  },
+  adviceTitle: {
+    fontSize: designTokens.typography.fontSize.sm,
+    fontWeight: designTokens.typography.fontWeight.semibold as any,
+    color: designTokens.colors.text.primary,
+    marginBottom: designTokens.spacing.sm,
+  },
+  adviceText: {
+    fontSize: designTokens.typography.fontSize.sm,
+    color: designTokens.colors.text.secondary,
+    marginBottom: designTokens.spacing.xs,
+    lineHeight: 18,
   },
 });

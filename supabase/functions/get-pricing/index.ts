@@ -7,12 +7,15 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createResponse, createErrorResponse, getEnvironment, debugLog } from '../_shared/env.ts';
 import { UKPricingService } from './pricing-service.ts';
+import { ONSEnhancedPricingService } from './ons-enhanced-pricing-service.ts';
+import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { PricingRequest } from './types.ts';
 
 console.log('💰 Get Pricing Edge Function initialized with UK market data');
 
-// Initialize pricing service
+// Initialize pricing services
 const pricingService = new UKPricingService();
+let onsEnhancedService: ONSEnhancedPricingService;
 
 Deno.serve(async req => {
   try {
@@ -73,8 +76,28 @@ Deno.serve(async req => {
           return createErrorResponse('ProjectScale must be small, medium, or large', 400);
         }
 
-        // Process through comprehensive pricing service
-        const pricingResponse = await pricingService.getPricingData(requestData);
+        // Initialize ONS-enhanced service with Supabase client
+        if (!onsEnhancedService) {
+          const supabaseClient = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+          onsEnhancedService = new ONSEnhancedPricingService(supabaseClient);
+        }
+
+        // Determine which service to use based on request preference
+        const useONSEnhanced = requestData.enhanceWithONS !== false; // Default to true
+
+        let pricingResponse;
+        if (useONSEnhanced) {
+          try {
+            console.log('🏛️ Using ONS-enhanced pricing service');
+            pricingResponse = await onsEnhancedService.getPricingData(requestData);
+          } catch (onsError) {
+            console.warn('ONS-enhanced service failed, falling back to base service', onsError);
+            pricingResponse = await pricingService.getPricingData(requestData);
+          }
+        } else {
+          console.log('📊 Using base pricing service');
+          pricingResponse = await pricingService.getPricingData(requestData);
+        }
 
         // Add processing metadata
         const response = {

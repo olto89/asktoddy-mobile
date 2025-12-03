@@ -45,7 +45,7 @@ if (environment === 'production' && config.projectRef === 'YOUR_PRODUCTION_PROJE
 
 try {
   // List of Edge Functions to deploy
-  const functions = ['analyze-construction', 'generate-document', 'get-pricing'];
+  const functions = ['analyze-construction', 'generate-document', 'get-pricing', 'scheduled-tasks'];
 
   console.log(`📦 Deploying to project: ${config.projectRef}`);
   console.log(`📋 Functions to deploy: ${functions.join(', ')}`);

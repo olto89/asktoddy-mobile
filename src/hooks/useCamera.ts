@@ -1,6 +1,6 @@
 /**
  * useCamera Hook - Reusable camera functionality for AskToddy
- * Thin client implementation - delegates to Edge Functions
+ * Enhanced with improved permission handling via PermissionService
  */
 
 import { useState, useRef, useEffect } from 'react';
@@ -8,6 +8,7 @@ import { Alert } from 'react-native';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../services/supabase';
+import { PermissionService } from '../services/PermissionService';
 
 export interface CameraOptions {
   quality?: number;
@@ -60,20 +61,20 @@ export const useCamera = (options: UseCameraOptions = {}): CameraState => {
   // Refs
   const cameraRef = useRef<CameraView>(null);
 
-  // Request image picker permissions on mount
-  useEffect(() => {
-    (async () => {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        console.log('Media library permission not granted');
-      }
-    })();
-  }, []);
+  // Get permission service instance
+  const permissionService = PermissionService.getInstance();
 
   /**
-   * Take picture with camera
+   * Take picture with camera - enhanced with permission service
    */
   const takePicture = async (): Promise<string | null> => {
+    // Check camera permission first with improved UX
+    const cameraPermissionStatus = await permissionService.requestCameraPermission();
+    if (!cameraPermissionStatus.granted) {
+      console.log('Camera permission denied');
+      return null;
+    }
+
     if (!cameraRef.current) {
       onError?.(new Error('Camera not available'));
       return null;
@@ -116,9 +117,16 @@ export const useCamera = (options: UseCameraOptions = {}): CameraState => {
   };
 
   /**
-   * Pick image from photo library
+   * Pick image from photo library - enhanced with permission service
    */
   const pickImageFromLibrary = async (): Promise<string | null> => {
+    // Check photo library permission first with improved UX
+    const photoPermissionStatus = await permissionService.requestPhotoLibraryPermission();
+    if (!photoPermissionStatus.granted) {
+      console.log('Photo library permission denied');
+      return null;
+    }
+
     setIsLoading(true);
     try {
       const result = await ImagePicker.launchImageLibraryAsync({

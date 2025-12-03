@@ -11,6 +11,7 @@ export interface PricingRequest {
   timeline?: string;
   projectScale?: 'small' | 'medium' | 'large';
   urgency?: 'standard' | 'urgent';
+  enhanceWithONS?: boolean; // Default true - whether to use ONS-enhanced pricing
 }
 
 export interface PricingResponse {
@@ -23,10 +24,22 @@ export interface PricingResponse {
     seasonalMultiplier: number;
     demandIndex: number;
     vatRate: number;
+    contingencyPercentage?: number;
+    weatherRisk?: string;
+    // ONS-enhanced fields
+    onsInflationRate?: number;
+    onsIndexValue?: number;
+    onsLastUpdate?: string;
+    marketTrend?: 'increasing' | 'decreasing' | 'stable';
   };
   recommendations: PricingRecommendation[];
   lastUpdated: string;
-  dataSource: 'average_market_data' | 'api_partnership' | 'manual_update';
+  dataSource:
+    | 'average_market_data'
+    | 'api_partnership'
+    | 'manual_update'
+    | 'ons_enhanced'
+    | 'ons_estimated';
 }
 
 export interface ToolHireRate {
@@ -66,6 +79,10 @@ export interface MaterialPrice {
   deliveryCharge?: number;
   minimumOrder?: number;
   leadTimeDays?: number;
+  // ONS-enhanced fields
+  onsEnhanced?: boolean;
+  onsInflationAdjustment?: number;
+  lastONSUpdate?: string;
 }
 
 export interface AggregateRate {
@@ -78,6 +95,9 @@ export interface AggregateRate {
   minimumOrder: number;
   supplier: string;
   region: string;
+  // ONS-enhanced fields
+  onsEnhanced?: boolean;
+  onsInflationAdjustment?: number;
 }
 
 export interface LabourRate {
@@ -97,6 +117,9 @@ export interface LabourRate {
   region: string;
   inDemand: boolean;
   certificationRequired?: string[];
+  // ONS-enhanced fields
+  onsEnhanced?: boolean;
+  onsInflationAdjustment?: number;
 }
 
 export interface PricingRecommendation {
@@ -142,4 +165,113 @@ export interface ContingencyFactors {
     weatherRisk: string;
     laborAvailability: string;
   };
+}
+
+/**
+ * Professional Cost Categories - RICS Standard Structure
+ * Used for detailed quote breakdowns following industry standards
+ */
+export interface ProfessionalCostCategories {
+  // Direct costs
+  materials: {
+    subtotal: number;
+    wastagePercentage: number;
+    wastageAmount: number;
+    total: number;
+  };
+  labour: {
+    subtotal: number;
+    total: number;
+  };
+  plantAndEquipment: {
+    subtotal: number;
+    total: number;
+  };
+
+  // Indirect costs
+  preliminaries: {
+    siteSetup: number;
+    siteManagement: number;
+    healthAndSafety: number;
+    insurance: number;
+    utilities: number;
+    total: number;
+    percentage: number; // % of direct costs (typically 8-15%)
+  };
+
+  overheads: {
+    officeOverheads: number;
+    percentage: number; // % of direct costs (typically 5-10%)
+    total: number;
+  };
+
+  profit: {
+    percentage: number; // % markup (typically 10-20%)
+    amount: number;
+  };
+
+  contingency: {
+    percentage: number; // % buffer (typically 5-15%)
+    amount: number;
+    weatherRisk: string;
+    description: string;
+  };
+
+  vat: {
+    rate: number; // UK standard 20%
+    amount: number;
+  };
+
+  // Totals
+  subtotalExVAT: number;
+  grandTotal: number;
+}
+
+/**
+ * Quote Confidence Scoring System
+ * Measures reliability and accuracy of pricing estimates
+ */
+export interface ConfidenceScoring {
+  overall: number; // 0-100 percentage score
+
+  factors: {
+    materialAvailability: {
+      score: number; // 0-100
+      description: string;
+      impact: 'high' | 'medium' | 'low';
+    };
+    labourAvailability: {
+      score: number;
+      description: string;
+      impact: 'high' | 'medium' | 'low';
+    };
+    priceStability: {
+      score: number;
+      description: string;
+      impact: 'high' | 'medium' | 'low';
+    };
+    seasonalFactors: {
+      score: number;
+      description: string;
+      impact: 'high' | 'medium' | 'low';
+    };
+    dataFreshness: {
+      score: number;
+      description: string;
+      impact: 'high' | 'medium' | 'low';
+    };
+    onsAccuracy: {
+      score: number;
+      description: string;
+      impact: 'high' | 'medium' | 'low';
+    };
+  };
+
+  recommendations: {
+    priority: 'high' | 'medium' | 'low';
+    action: string;
+    impact: string;
+  }[];
+
+  lastCalculated: string;
 }

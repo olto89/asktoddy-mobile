@@ -380,3 +380,11 @@ entrypoint = "./functions/generate-document/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/generate-document/*.html" ]
+
+[functions.update-ons-cache]
+enabled = true
+verify_jwt = false  # Allow cron job access
+import_map = "./functions/update-ons-cache/deno.json"
+entrypoint = "./functions/update-ons-cache/index.ts"
+# Daily cron job at 2 AM to update ONS pricing data
+# schedule = "0 2 * * *"

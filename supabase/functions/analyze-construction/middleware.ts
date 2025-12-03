@@ -136,8 +136,15 @@ export class AIMiddleware {
     let result = await this.analyzeImage(request);
 
     // Enhanced pricing if enabled
+    console.log('🔍 Checking pricing enhancement condition:', {
+      enablePricingEnhancement: this.config.enablePricingEnhancement,
+      alreadyHasPricing: !!result.pricingEnhancement,
+      willEnhance: this.config.enablePricingEnhancement && !result.pricingEnhancement,
+    });
+
     if (this.config.enablePricingEnhancement && !result.pricingEnhancement) {
       console.log('💰 Step 3: Enhancing with real-time pricing...');
+      console.log('🚨 MIDDLEWARE REACHED PRICING SECTION!');
 
       try {
         const pricingContext: PricingContext = {
@@ -146,15 +153,33 @@ export class AIMiddleware {
           includeVAT: true,
         };
 
-        const pricingResponse = await this.pricingEnhancer.enhanceAnalysis(result, {
-          includeToolHire: true,
-          includeLabor: true,
-          projectComplexity: result.difficultyLevel || 'moderate',
+        console.log('🧪 About to enhance pricing for project:', {
+          projectType: result.projectType,
+          hasCostBreakdown: !!result.costBreakdown,
+          originalMaterials: result.costBreakdown?.materials,
         });
 
-        if (pricingResponse.success && pricingResponse.enhancedAnalysis) {
-          result = pricingResponse.enhancedAnalysis;
-          console.log('✅ Pricing enhancement successful');
+        const enhancedResult = await this.pricingEnhancer.enhance(result, request, {
+          materials: true,
+          labour: true,
+          toolHire: true,
+          regional: true,
+          enableDebugLogging: true,
+        });
+
+        console.log('🧪 Pricing enhancement result:', {
+          enhanced: !!enhancedResult.pricingEnhancement,
+          newMaterials: enhancedResult.costBreakdown?.materials,
+          hasItems: !!enhancedResult.costBreakdown?.materials?.items,
+          itemsCount: enhancedResult.costBreakdown?.materials?.items?.length || 0,
+        });
+
+        if (enhancedResult.pricingEnhancement) {
+          result = enhancedResult;
+          console.log('✅ Pricing enhancement successful', {
+            hasProfessionalCosts: !!enhancedResult.pricingEnhancement?.professionalCosts,
+            materialCount: enhancedResult.pricingEnhancement?.marketData?.materials?.length,
+          });
         }
       } catch (error) {
         console.warn('⚠️ Pricing enhancement failed, using base analysis:', error);

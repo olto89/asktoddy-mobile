@@ -23,7 +23,7 @@
       "securityBestPractice": "Never expose API keys in EXPO_PUBLIC_ environment variables"
     }
   },
-  "lastUpdated": "2025-11-27T15:18:00.251Z",
+  "lastUpdated": "2025-11-28T09:03:24.505Z",
   "project": {
     "name": "asktoddy-mobile",
     "version": "1.2.0",
@@ -35,22 +35,15 @@
   },
   "git": {
     "branch": "main",
-    "lastCommit": "36a71dc feat: Restore original gradient header to NewChatScreen",
+    "lastCommit": "45b747d fix: Add proper loading state and message cleanup in NewChatScreen",
     "hasUncommittedChanges": true,
-    "changedFiles": 4
+    "changedFiles": 2
   },
   "environment": {
     "nodeVersion": "v24.3.0",
     "platform": "darwin"
   },
-  "runningProcesses": [
-    {
-      "command": "npm start",
-      "port": 8081,
-      "status": "running",
-      "service": "Expo Dev Server"
-    }
-  ],
+  "runningProcesses": [],
   "recentFiles": [
     "src/navigation/AuthNavigator.tsx",
     "src/screens/NewChatScreen.tsx",

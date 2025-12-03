@@ -18,6 +18,12 @@ import {
 import { NATIONAL_HIRE_RATES } from './national-hire-rates.ts';
 import { TODDY_TOOL_HIRE_RATES } from './toddy-tool-hire-rates.ts';
 
+// Import enhanced material databases (500+ items expansion)
+import { ENHANCED_STRUCTURAL_MATERIALS } from './enhanced-materials-structural.ts';
+import { ENHANCED_ELECTRICAL_MATERIALS } from './enhanced-materials-electrical.ts';
+import { ENHANCED_PLUMBING_MATERIALS } from './enhanced-materials-plumbing.ts';
+import { ENHANCED_FINISHING_MATERIALS } from './enhanced-materials-finishing.ts';
+
 /**
  * UK Regional Pricing Multipliers
  * Based on ONS regional price variations and industry research
@@ -348,8 +354,14 @@ const BUILDBUDDY_MATERIALS: MaterialPrice[] = [
 /**
  * Material Prices - Based on Screwfix, B&Q, Travis Perkins average prices + BuildBuddy scraped data
  * Research from online retailers and trade suppliers 2024, Enhanced with fresh BuildBuddy pricing 2025
+ * EXPANDED: Now includes 500+ materials from enhanced databases (Nov 2024)
  */
 export const MATERIAL_PRICES: MaterialPrice[] = [
+  // Enhanced material databases (500+ items expansion)
+  ...ENHANCED_STRUCTURAL_MATERIALS,
+  ...ENHANCED_ELECTRICAL_MATERIALS,
+  ...ENHANCED_PLUMBING_MATERIALS,
+  ...ENHANCED_FINISHING_MATERIALS,
   // Fresh BuildBuddy scraped data (priority - most recent pricing)
   ...BUILDBUDDY_MATERIALS,
   // Structural Materials

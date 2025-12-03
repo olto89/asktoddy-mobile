@@ -40,15 +40,28 @@ export default function InteractiveQuoteTable({
   onUpdateQuote,
 }: InteractiveQuoteProps) {
   const [editingItem, setEditingItem] = useState<string | null>(null);
+
+  console.log('🚨 InteractiveQuoteTable received analysis:', JSON.stringify(analysis, null, 2));
+
   const [items, setItems] = useState<QuoteItem[]>(() => {
     const allItems: QuoteItem[] = [];
+
+    console.log('🔍 InteractiveQuoteTable analyzing materials:', {
+      hasMaterials: !!analysis.costBreakdown?.materials,
+      hasItems: !!analysis.costBreakdown?.materials?.items,
+      isArray: Array.isArray(analysis.costBreakdown?.materials?.items),
+      itemsLength: analysis.costBreakdown?.materials?.items?.length || 0,
+      materialsStructure: analysis.costBreakdown?.materials,
+    });
 
     // Extract materials from detailed items or fallback to summary
     if (
       analysis.costBreakdown?.materials?.items &&
       Array.isArray(analysis.costBreakdown.materials.items)
     ) {
+      console.log('✅ Processing materials items:', analysis.costBreakdown.materials.items);
       analysis.costBreakdown.materials.items.forEach((item: any, index: number) => {
+        console.log(`📦 Processing material ${index}:`, item);
         allItems.push({
           id: `mat-${index}`,
           name: item.name || 'Material Item',

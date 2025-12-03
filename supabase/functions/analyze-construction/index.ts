@@ -48,6 +48,18 @@ function transformAnalysisForMobile(analysis: ProjectAnalysis): any {
       ...analysis.timeline,
       totalDays: totalDays || 5,
     },
+    // Preserve professional cost breakdown if available
+    professionalCosts: (analysis as any).pricingEnhancement?.professionalCosts,
+    confidenceBreakdown: (analysis as any).pricingEnhancement?.confidenceBreakdown,
+    professionalAdvice: (analysis as any).pricingEnhancement?.professionalAdvice,
+    enhancedPricing: (analysis as any).pricingEnhancement
+      ? {
+          dataSource: (analysis as any).pricingEnhancement.dataSource,
+          materialCount: (analysis as any).pricingEnhancement.marketData?.materials?.length || 0,
+          confidenceScore: (analysis as any).pricingEnhancement.confidenceScore,
+          enhancementApplied: (analysis as any).pricingEnhancement.enhancementApplied,
+        }
+      : null,
   };
 }
 
@@ -143,6 +155,9 @@ Deno.serve(async req => {
       confidence: analysis.confidence,
       provider: analysis.aiProvider,
       timeMs: analysis.processingTimeMs,
+      hasProfessionalCosts: !!transformedAnalysis.professionalCosts,
+      hasEnhancedPricing: !!transformedAnalysis.enhancedPricing,
+      materialCount: transformedAnalysis.enhancedPricing?.materialCount,
     });
 
     return createResponse(response);
