@@ -23,7 +23,7 @@
       "securityBestPractice": "Never expose API keys in EXPO_PUBLIC_ environment variables"
     }
   },
-  "lastUpdated": "2025-11-28T09:03:24.505Z",
+  "lastUpdated": "2025-12-03T09:51:04.243Z",
   "project": {
     "name": "asktoddy-mobile",
     "version": "1.2.0",
@@ -37,18 +37,28 @@
     "branch": "main",
     "lastCommit": "45b747d fix: Add proper loading state and message cleanup in NewChatScreen",
     "hasUncommittedChanges": true,
-    "changedFiles": 2
+    "changedFiles": 49
   },
   "environment": {
     "nodeVersion": "v24.3.0",
     "platform": "darwin"
   },
-  "runningProcesses": [],
+  "runningProcesses": [
+    {
+      "command": "npm start",
+      "port": 8081,
+      "status": "running",
+      "service": "Expo Dev Server"
+    }
+  ],
   "recentFiles": [
-    "src/navigation/AuthNavigator.tsx",
     "src/screens/NewChatScreen.tsx",
-    "src/components/ChatMenuSidebar.tsx",
-    "src/components/ToddyHeader.tsx",
-    "src/hooks/useQuoteUpdates.ts"
+    "src/components/InteractiveQuoteTable.tsx",
+    "src/components/QuotePreviewCard.tsx",
+    "src/components/ConfidenceGuide.tsx",
+    "src/components/PaywallModal.tsx",
+    "src/hooks/useQuoteUpdates.ts",
+    "src/services/PermissionService.ts",
+    "src/services/SubscriptionService.ts"
   ]
 }

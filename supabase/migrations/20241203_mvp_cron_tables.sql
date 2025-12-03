@@ -29,7 +29,7 @@ CREATE TABLE pricing_cache (
 );
 
 -- Optimized indexes for fast lookups
-CREATE INDEX idx_pricing_cache_lookup ON pricing_cache(cache_key) WHERE expires_at IS NULL OR expires_at > NOW();
+CREATE INDEX idx_pricing_cache_lookup ON pricing_cache(cache_key);
 CREATE INDEX idx_pricing_cache_type ON pricing_cache(cache_type, category);
 CREATE INDEX idx_pricing_cache_expiry ON pricing_cache(expires_at) WHERE expires_at IS NOT NULL;
 
@@ -88,8 +88,8 @@ CREATE TABLE cache_access_log (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Partitioned by day for efficient cleanup (optional for MVP)
-CREATE INDEX idx_cache_access_daily ON cache_access_log(DATE(created_at), cache_type);
+-- Index for efficient cleanup by creation date
+CREATE INDEX idx_cache_access_daily ON cache_access_log(created_at, cache_type);
 
 -- ============================================
 -- ROW LEVEL SECURITY
