@@ -1,0 +1,20 @@
+{
+  "quoteId": "quote-2025-12-17T16-03-41-297Z-Estimate 100 10 Digby close",
+  "timestamp": "2025-12-18T07:50:45.951Z",
+  "source": "AskToddy Edge Function",
+  "realQuote": {
+    "total": null,
+    "description": "A major overhaul of an existing conservatory with options for a new roof - totally circa £50k with Vat",
+    "projectType": "extension",
+    "filename": "Estimate 100 10 Digby close.pdf"
+  },
+  "aiEstimate": {
+    "confidence": 51,
+    "source": "AskToddy Edge Function"
+  },
+  "comparison": {
+    "accuracy": "Unknown",
+    "variance": "Unknown",
+    "status": "Unknown"
+  }
+}

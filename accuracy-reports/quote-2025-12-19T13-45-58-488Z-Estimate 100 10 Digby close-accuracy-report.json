@@ -1,0 +1,27 @@
+{
+  "quoteId": "quote-2025-12-19T13-45-58-488Z-Estimate 100 10 Digby close",
+  "timestamp": "2025-12-19T13:46:32.317Z",
+  "source": "Gemini PDF Analysis",
+  "pdfAnalyzed": true,
+  "realQuote": {
+    "total": 50000,
+    "description": "large conservatory rebuild with a new roof",
+    "projectType": "extension",
+    "filename": "Estimate 100 10 Digby close.pdf",
+    "pdfContentUsed": true
+  },
+  "aiEstimate": {
+    "response": "As a UK construction cost estimator, I have independently analyzed the provided project description and quote content, **without referring to any total figures listed in the original quote.** My estimate is based on typical UK market rates for materials, labour, and associated services for a project of this nature and scope.\n\n**Project Description:** Large conservatory rebuild with a new insulated tiled roof, plus additional window replacements and internal finishing work.\n\n---\n\n### 1. Independent Cost Estimate Range\n\nBased on the detailed work description, my independent cost estimate for this project, including contractor's overheads, profit, and VAT at 20%, is:\n\n**£42,000 - £67,000**\n\n---\n\n### 2. Brief Breakdown of Major Cost Categories\n\nHere's a breakdown of the key cost categories that informed my estimate:\n\n*   **Preliminaries & Demolition:** This includes the initial survey, site protection (ground floor sheeting), erection and dismantling of scaffolding, and the significant cost of removing the old conservatory roof, windows, and associated waste disposal.\n*   **Conservatory Structure & Roofing:** This is the largest component, covering the supply and installation of new high-specification UPVC windows and doors for the conservatory, along with the entire new insulated tiled roof system (including timber framework, insulation, breathable membranes, slate-effect tiles, ridges, and internal plasterboard ceiling ready for plastering, plus lead flashing).\n*   **Additional Property Windows:** Costs associated with removing existing windows to the rear of the main property and supplying/installing new anthracite/white UPVC windows, including all internal and external trimming.\n*   **Internal Finishing Works:** This covers the labour and materials for plastering all relevant areas (conservatory walls/ceiling, around new rear windows), installing new window boards, and new skirting boards.\n*   **Electrical Allowance:** The specified allowance for electrical works, which would typically include new lighting, sockets, and potentially heating elements within the conservatory.\n\n---\n\n### 3. Assessment of Reasonableness for UK Market Rates\n\nThis estimate falls within a reasonable range for a project of this scale and specification in the current UK market. Here's why:\n\n*   **Scope of Work:** The project involves significant demolition, scaffolding for safe access, and the construction of a substantial new insulated solid roof conservatory, which is considerably more expensive than traditional glass or polycarbonate roofs due to structural and insulation requirements.\n*   **Material Specification:** The use of \"Anthracite Grey outside, white inside, fully reinforced UPVC with Yale multipoint locking system, A rated, Argon filled sealed units\" for both the conservatory and rear property windows indicates a mid-to-high quality product, which commands a higher price.\n*   **Labour Costs:** Skilled labour for demolition, window/door installation, roofing, plastering, and general construction is a significant factor in the UK, and these costs are reflected in the estimate.\n*   **Logistics & Waste:** Scaffolding and professional waste disposal contribute notably to project costs.\n*   **Exclusions:** The stated exclusions (building control fees, decoration, specific groundworks, unforeseen circumstances) are standard, meaning the core estimate focuses on the physical construction and installation as described.\n\nGiven these factors, an all-inclusive, VAT-inclusive price within the £42,000 - £67,000 range for a large conservatory rebuild with a high-specification insulated tiled roof and additional window replacements is consistent with current UK construction costs.",
+    "costRange": {
+      "min": 42000,
+      "max": 42000
+    },
+    "confidence": 85,
+    "source": "PDF Content Analysis"
+  },
+  "comparison": {
+    "accuracy": "84.0%",
+    "variance": "-16.0%",
+    "status": "Good"
+  }
+}

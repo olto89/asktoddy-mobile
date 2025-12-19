@@ -14,7 +14,7 @@ import { QuoteRefinementDetector } from '../utils/QuoteRefinementDetector.ts';
 export class GeminiProvider implements AIProvider {
   name = 'gemini';
   private apiKey: string;
-  private model = 'gemini-2.0-flash'; // Stable model with available quota
+  private model = 'gemini-2.5-flash'; // Stable model with available quota
   private endpoint = 'https://generativelanguage.googleapis.com/v1beta/models';
   private contextManager?: ContextManager;
 

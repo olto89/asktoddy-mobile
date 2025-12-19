@@ -1,0 +1,27 @@
+{
+  "quoteId": "quote-2025-12-18T08-44-57-688Z-Estimate 100 10 Digby close",
+  "timestamp": "2025-12-18T09:08:42.560Z",
+  "source": "Smart Fallback (API Quota Exceeded)",
+  "pdfAnalyzed": false,
+  "realQuote": {
+    "total": 50000,
+    "description": "an extensive conservatory improvements that includes a new roof",
+    "projectType": "extension",
+    "filename": "Estimate 100 10 Digby close.pdf",
+    "pdfContentUsed": false
+  },
+  "aiEstimate": {
+    "response": "Smart Analysis (API unavailable): Based on the project description, this appears to be a extension project. Major conservatory overhaul including structural work and new roof typically costs £35k-65k in the UK market. Prices include VAT.",
+    "costRange": {
+      "min": 35000,
+      "max": 65000
+    },
+    "confidence": 70,
+    "source": "Smart Fallback Calculator"
+  },
+  "comparison": {
+    "accuracy": "100.0%",
+    "variance": "Unknown",
+    "status": "Unknown"
+  }
+}

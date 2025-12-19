@@ -1,0 +1,27 @@
+{
+  "quoteId": "quote-2025-12-18T08-34-18-520Z-Estimate 100 10 Digby close",
+  "timestamp": "2025-12-18T12:03:33.830Z",
+  "source": "Smart Fallback (API Quota Exceeded)",
+  "pdfAnalyzed": false,
+  "realQuote": {
+    "total": 50000,
+    "description": "Substantial reworking on an existing conservatory, including a new roof.",
+    "projectType": "extension",
+    "filename": "Estimate 100 10 Digby close.pdf",
+    "pdfContentUsed": false
+  },
+  "aiEstimate": {
+    "response": "Smart Analysis (API unavailable): Based on the project description, this appears to be a extension project. Standard conservatory renovation typically costs £15k-35k in the UK market. Prices include VAT.",
+    "costRange": {
+      "min": 15000,
+      "max": 35000
+    },
+    "confidence": 70,
+    "source": "Smart Fallback Calculator"
+  },
+  "comparison": {
+    "accuracy": "50.0%",
+    "variance": "-50.0%",
+    "status": "Poor"
+  }
+}

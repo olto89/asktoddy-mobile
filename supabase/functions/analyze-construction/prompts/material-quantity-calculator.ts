@@ -41,6 +41,25 @@ MATERIAL QUANTITY CALCULATIONS - UK BUILDING STANDARDS:
 - Copper pipe: Measure runs + 25% for fittings
 - Radiators: 1 per room + calculate BTU requirements
 
+🍽️ KITCHEN APPLIANCES (ESSENTIAL - ADD TO ALL KITCHEN QUOTES):
+- Built-in Oven: £250-1200 (Budget/Mid/Premium)
+- Ceramic Hob: £150-800 (4-ring, induction upgrade)
+- Extractor Hood: £80-500 (Built-in or chimney style)
+- Installation: £100 average per appliance
+- Optional: Dishwasher (£280-800), Fridge (£200-1200)
+TOTAL APPLIANCES: £680-2500 + installation
+
+👷 REALISTIC LABOR CALCULATIONS:
+Project Duration Guidelines:
+- Bathroom Small (<4m²): 3-5 days = 24-40 hours
+- Bathroom Medium (4-8m²): 4-7 days = 32-56 hours  
+- Kitchen Small (<10m²): 3-5 days = 24-40 hours
+- Kitchen Medium (10-15m²): 4-7 days = 32-56 hours
+- Kitchen Large (>15m²): 6-10 days = 48-80 hours
+- Extension: 15-35 days based on size
+
+Labor should be 40-50% of total project cost, NOT 70-80%!
+
 🚚 DELIVERY & WASTE:
 - Add delivery charges for bulk materials (concrete, aggregates)
 - Add skip hire for waste disposal
@@ -54,13 +73,27 @@ CALCULATION METHOD:
 5. Include delivery and disposal costs
 6. Add VAT (20%) where applicable
 
-EXAMPLE - 4×4m Single Story Extension:
-Foundation: 4×4×0.8m = 12.8m³ concrete = £1,600
-Walls: ~32m² at 120 bricks/m² = 3,840 bricks = £2,500  
-Roof: Materials ~£3,000-4,000
-Finishes: ~£4,000-6,000
-Services: ~£2,000-3,000
-TOTAL: £13,000-18,000+ materials only
+REALISTIC EXAMPLES:
+
+Kitchen (12m² medium):
+- Materials: £2,000-4,000 (units, worktop, sink, tiles)
+- Appliances: £1,400 (oven, hob, extractor + install)
+- Labor: 5 days = £1,600 (plumber, electrician, carpenter)
+TOTAL: £5,000-7,000
+
+Bathroom (6m² medium):  
+- Materials: £1,000-2,000 (suite, tiles, fittings)
+- Labor: 5 days = £1,600 (plumber, electrician, tiler)
+TOTAL: £2,600-3,600
+
+Extension (16m² single story):
+- Foundation: 4×4×0.8m = 12.8m³ concrete = £1,600
+- Walls: ~32m² at 120 bricks/m² = 3,840 bricks = £2,500  
+- Roof: Materials ~£3,000-4,000
+- Finishes: ~£4,000-6,000
+- Services: ~£2,000-3,000
+- Labor: 20 days = £6,000-8,000
+TOTAL: £19,000-25,000
 
 IMPORTANT: Never use template/example costs. Always calculate based on actual project dimensions.`;
 

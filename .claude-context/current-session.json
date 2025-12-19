@@ -1,29 +1,35 @@
 {
-  "sessionId": "2025-11-24-gemini-api-fix",
-  "date": "2025-11-24",
-  "startTime": "14:00:00Z",
+  "sessionId": "2025-12-08-gemini-integration-fix",
+  "date": "2025-12-08",
+  "startTime": "09:30:00Z",
   "context": {
-    "primaryTask": "Fix Gemini API not working after model deprecation",
-    "discoveries": {
-      "rootCause": "Expired Gemini API key in Supabase edge function secrets, NOT model deprecation",
-      "architecture": "App correctly uses server-side edge functions, client-side providers were legacy/unused",
-      "security": "API keys must only exist in backend edge functions, never in frontend builds"
+    "primaryTask": "MVP Pivot - Site Notes to Professional Quotes for Jan 15 investor meeting",
+    "mvpStatus": {
+      "deadline": "2025-01-15",
+      "phase": "Code cleanup and pivot preparation",
+      "targetFlow": "Site Notes → AI Processing → Task List → Edit Quote → Send"
+    },
+    "pocResults": {
+      "accuracy": "85% cost estimation accuracy with PDF content analysis",
+      "keyInsight": "Detailed context from site notes yields professional-grade quotes",
+      "pdfExtraction": "Working with pdf-parse library"
     },
     "workCompleted": [
-      "Fixed expired GEMINI_API_KEY in Supabase secrets",
-      "Updated fallback provider models to non-deprecated versions",
-      "Fixed InteractiveQuoteTable JSX structure (missing closing View tag)",
-      "Removed client-side API keys from EAS build config for security",
-      "Verified Gemini working via edge function middleware",
-      "Build 23 completed and submitted to TestFlight"
+      "POC server with PDF extraction achieving 85% accuracy",
+      "Fixed cost parsing for accurate range detection",
+      "Designed 5-screen MVP flow with offline-first architecture",
+      "Cleaned up 30+ unused files (old screens, ONS integration, pricing scripts)",
+      "Removed unused AI providers and complex contextual features",
+      "Simplified codebase for rapid MVP development"
     ],
     "keyLearnings": {
-      "apiKeyArchitecture": "Frontend uses supabase.functions.invoke() - API keys only in edge function secrets",
-      "buildNotRequired": "Backend API key fixes don't require frontend rebuilds",
-      "securityBestPractice": "Never expose API keys in EXPO_PUBLIC_ environment variables"
+      "quotaManagement": "Different Gemini models have different free tier quotas",
+      "keyMismatch": "Multiple API keys existed - one in .env (expired), one in AI Studio (working)",
+      "modelUpgrades": "gemini-2.5-flash has better quota availability than gemini-2.0-flash",
+      "debuggingApproach": "Test API keys directly before assuming model deprecation"
     }
   },
-  "lastUpdated": "2025-12-03T09:51:04.243Z",
+  "lastUpdated": "2025-12-19T15:36:35.746Z",
   "project": {
     "name": "asktoddy-mobile",
     "version": "1.2.0",
@@ -35,30 +41,14 @@
   },
   "git": {
     "branch": "main",
-    "lastCommit": "45b747d fix: Add proper loading state and message cleanup in NewChatScreen",
+    "lastCommit": "9ed3213 feat: Add comprehensive production go-live checklist",
     "hasUncommittedChanges": true,
-    "changedFiles": 49
+    "changedFiles": 37
   },
   "environment": {
     "nodeVersion": "v24.3.0",
     "platform": "darwin"
   },
-  "runningProcesses": [
-    {
-      "command": "npm start",
-      "port": 8081,
-      "status": "running",
-      "service": "Expo Dev Server"
-    }
-  ],
-  "recentFiles": [
-    "src/screens/NewChatScreen.tsx",
-    "src/components/InteractiveQuoteTable.tsx",
-    "src/components/QuotePreviewCard.tsx",
-    "src/components/ConfidenceGuide.tsx",
-    "src/components/PaywallModal.tsx",
-    "src/hooks/useQuoteUpdates.ts",
-    "src/services/PermissionService.ts",
-    "src/services/SubscriptionService.ts"
-  ]
+  "runningProcesses": [],
+  "recentFiles": []
 }

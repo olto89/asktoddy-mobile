@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AskToddy Quote Accuracy Testing</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .upload-section, .results-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .section-title {
+            color: #2C3E50;
+            font-size: 1.6rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-title .icon {
+            font-size: 1.8rem;
+            margin-right: 12px;
+        }
+
+        .upload-form {
+            border: 3px dashed #E0E0E0;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .upload-form.dragover {
+            border-color: #FF6B35;
+            background: #FFF8F5;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-input-label {
+            display: inline-block;
+            background: #FF6B35;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            margin-bottom: 15px;
+        }
+
+        .file-input-label:hover {
+            background: #E55A2B;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #2C3E50;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #E0E0E0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        textarea {
+            resize: vertical;
+            height: 100px;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            border-color: #FF6B35;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+        }
+
+        .btn {
+            background: #FF6B35;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.2s ease;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: #E55A2B;
+        }
+
+        .btn:disabled {
+            background: #CCC;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #2C3E50;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #1A252F;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ffffff40;
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .quotes-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .quote-item {
+            background: #F8F9FA;
+            border: 1px solid #E0E0E0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .quote-item:hover {
+            background: #E8F5E8;
+            border-color: #4CAF50;
+        }
+
+        .quote-item.selected {
+            background: #E3F2FD;
+            border-color: #2196F3;
+        }
+
+        .quote-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .quote-filename {
+            font-weight: 600;
+            color: #2C3E50;
+        }
+
+        .quote-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-uploaded {
+            background: #E3F2FD;
+            color: #1976D2;
+        }
+
+        .status-tested {
+            background: #E8F5E8;
+            color: #388E3C;
+        }
+
+        .quote-details {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .accuracy-report {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .comparison-card {
+            border: 1px solid #E0E0E0;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .real-quote {
+            border-left: 4px solid #4CAF50;
+        }
+
+        .ai-estimate {
+            border-left: 4px solid #2196F3;
+        }
+
+        .accuracy-meter {
+            background: #F0F0F0;
+            border-radius: 10px;
+            height: 20px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+
+        .accuracy-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+
+        .accuracy-good { background: #4CAF50; }
+        .accuracy-moderate { background: #FF9800; }
+        .accuracy-poor { background: #F44336; }
+
+        .error {
+            background: #FFE5E5;
+            border: 1px solid #FF5252;
+            color: #C62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .success {
+            background: #E8F5E8;
+            border: 1px solid #4CAF50;
+            color: #2E7D32;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .file-info {
+            background: #E3F2FD;
+            border: 1px solid #2196F3;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        @media (max-width: 768px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 AskToddy</h1>
+            <p>Quote Accuracy Testing - Upload Real PDFs & Compare AI Estimates</p>
+        </div>
+
+        <div class="main-grid">
+            <!-- Upload Section -->
+            <div class="upload-section">
+                <h2 class="section-title">
+                    <span class="icon">📄</span>
+                    Upload Quote PDF
+                </h2>
+
+                <form id="uploadForm" class="upload-form">
+                    <input type="file" id="pdfFile" class="file-input" accept=".pdf">
+                    <label for="pdfFile" class="file-input-label">
+                        📁 Choose PDF Quote
+                    </label>
+                    <p>Drop your PDF quote here or click to browse</p>
+                    <div id="fileInfo" class="file-info" style="display: none;"></div>
+                </form>
+
+                <div class="form-group">
+                    <label for="description">Project Description:</label>
+                    <textarea 
+                        id="description" 
+                        placeholder="Describe the project from the quote (e.g., Kitchen renovation with new units, appliances, flooring, and tiling. 4m x 3m space with standard height...)">
+                    </textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="expectedTotal">Total Cost from PDF (£):</label>
+                    <input 
+                        type="number" 
+                        id="expectedTotal" 
+                        placeholder="e.g., 15000"
+                        step="0.01">
+                </div>
+
+                <div class="form-group">
+                    <label for="projectType">Project Type:</label>
+                    <select id="projectType">
+                        <option value="">Select type...</option>
+                        <option value="bathroom">Bathroom Renovation</option>
+                        <option value="kitchen">Kitchen Renovation</option>
+                        <option value="extension">Extension</option>
+                        <option value="loft">Loft Conversion</option>
+                        <option value="flooring">Flooring</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <button type="button" id="uploadBtn" class="btn" onclick="uploadQuote()" disabled>
+                    Upload Quote
+                </button>
+
+                <div id="uploadStatus"></div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="results-section">
+                <h2 class="section-title">
+                    <span class="icon">📊</span>
+                    Uploaded Quotes
+                </h2>
+
+                <div id="quotesList" class="quotes-list">
+                    <p style="text-align: center; color: #666; padding: 40px;">
+                        Upload a PDF quote to start testing accuracy
+                    </p>
+                </div>
+
+                <button id="testAccuracyBtn" class="btn btn-secondary" onclick="testAccuracy()" disabled>
+                    🧪 Test AI Accuracy
+                </button>
+            </div>
+        </div>
+
+        <!-- Accuracy Report -->
+        <div id="accuracyReport" class="accuracy-report" style="display: none;">
+            <h2 class="section-title">
+                <span class="icon">🎯</span>
+                Accuracy Results
+            </h2>
+            <div id="reportContent"></div>
+        </div>
+    </div>
+
+    <script>
+        let selectedQuote = null;
+        let uploadedQuotes = [];
+
+        // File upload handling
+        const uploadForm = document.getElementById('uploadForm');
+        const fileInput = document.getElementById('pdfFile');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const fileInfo = document.getElementById('fileInfo');
+
+        fileInput.addEventListener('change', handleFileSelect);
+        
+        uploadForm.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadForm.classList.add('dragover');
+        });
+
+        uploadForm.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            uploadForm.classList.remove('dragover');
+        });
+
+        uploadForm.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadForm.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type === 'application/pdf') {
+                fileInput.files = files;
+                handleFileSelect();
+            }
+        });
+
+        function handleFileSelect() {
+            const file = fileInput.files[0];
+            if (file) {
+                fileInfo.style.display = 'block';
+                fileInfo.innerHTML = `
+                    <strong>Selected:</strong> ${file.name}<br>
+                    <strong>Size:</strong> ${(file.size / 1024 / 1024).toFixed(2)} MB
+                `;
+                uploadBtn.disabled = false;
+            } else {
+                fileInfo.style.display = 'none';
+                uploadBtn.disabled = true;
+            }
+        }
+
+        async function uploadQuote() {
+            const file = fileInput.files[0];
+            const description = document.getElementById('description').value.trim();
+            const expectedTotal = document.getElementById('expectedTotal').value;
+            const projectType = document.getElementById('projectType').value;
+
+            if (!file || !description) {
+                showStatus('uploadStatus', 'Please select a PDF and enter a description', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('uploadBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span>Uploading...';
+
+            const formData = new FormData();
+            formData.append('pdfFile', file);
+            formData.append('description', description);
+            formData.append('expectedTotal', expectedTotal);
+            formData.append('projectType', projectType);
+
+            try {
+                const response = await fetch('/api/upload-quote', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStatus('uploadStatus', `✅ Quote uploaded successfully!`, 'success');
+                    
+                    // Reset form
+                    document.getElementById('uploadForm').reset();
+                    document.getElementById('description').value = '';
+                    document.getElementById('expectedTotal').value = '';
+                    document.getElementById('projectType').value = '';
+                    fileInfo.style.display = 'none';
+                    
+                    // Refresh quotes list
+                    await loadQuotes();
+                } else {
+                    showStatus('uploadStatus', `❌ ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus('uploadStatus', `❌ Upload failed: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Upload Quote';
+            }
+        }
+
+        async function loadQuotes() {
+            try {
+                const response = await fetch('/api/quotes');
+                const result = await response.json();
+                
+                uploadedQuotes = result.quotes || [];
+                renderQuotesList();
+                
+            } catch (error) {
+                console.error('Failed to load quotes:', error);
+            }
+        }
+
+        function renderQuotesList() {
+            const container = document.getElementById('quotesList');
+            
+            if (uploadedQuotes.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">No quotes uploaded yet</p>';
+                return;
+            }
+
+            container.innerHTML = uploadedQuotes.map(quote => `
+                <div class="quote-item ${selectedQuote?.quoteId === quote.quoteId ? 'selected' : ''}" 
+                     onclick="selectQuote('${quote.quoteId}')">
+                    <div class="quote-header">
+                        <div class="quote-filename">${quote.originalName}</div>
+                        <div class="quote-status ${quote.hasAccuracyReport ? 'status-tested' : 'status-uploaded'}">
+                            ${quote.hasAccuracyReport ? 'Tested' : 'Uploaded'}
+                        </div>
+                    </div>
+                    <div class="quote-details">
+                        ${quote.projectType ? `${quote.projectType} • ` : ''}
+                        ${quote.expectedTotal ? `£${quote.expectedTotal.toLocaleString()}` : 'No cost entered'} • 
+                        ${new Date(quote.uploadTime).toLocaleDateString()}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function selectQuote(quoteId) {
+            selectedQuote = uploadedQuotes.find(q => q.quoteId === quoteId);
+            renderQuotesList();
+            
+            document.getElementById('testAccuracyBtn').disabled = !selectedQuote;
+            
+            // Load existing report if available
+            if (selectedQuote?.hasAccuracyReport) {
+                loadAccuracyReport(quoteId);
+            } else {
+                document.getElementById('accuracyReport').style.display = 'none';
+            }
+        }
+
+        async function testAccuracy() {
+            if (!selectedQuote) return;
+
+            const btn = document.getElementById('testAccuracyBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span>Testing AI Accuracy...';
+
+            try {
+                const response = await fetch('/api/generate-ai-estimate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        quoteId: selectedQuote.quoteId,
+                        description: selectedQuote.description
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayAccuracyReport(result.report);
+                    await loadQuotes(); // Refresh to show "Tested" status
+                } else {
+                    showStatus('uploadStatus', `❌ ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus('uploadStatus', `❌ Testing failed: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '🧪 Test AI Accuracy';
+            }
+        }
+
+        async function loadAccuracyReport(quoteId) {
+            try {
+                const response = await fetch(`/api/accuracy-report/${quoteId}`);
+                const result = await response.json();
+                
+                if (result.report) {
+                    displayAccuracyReport(result.report);
+                }
+            } catch (error) {
+                console.error('Failed to load accuracy report:', error);
+            }
+        }
+
+        function displayAccuracyReport(report) {
+            const container = document.getElementById('accuracyReport');
+            const content = document.getElementById('reportContent');
+
+            const accuracy = parseFloat(report.comparison.accuracy.replace('%', ''));
+            const variance = parseFloat(report.comparison.variance.replace('%', ''));
+
+            let accuracyClass = 'accuracy-good';
+            if (Math.abs(variance) > 20) accuracyClass = 'accuracy-moderate';
+            if (Math.abs(variance) > 40) accuracyClass = 'accuracy-poor';
+
+            content.innerHTML = `
+                <div class="comparison-grid">
+                    <div class="comparison-card real-quote">
+                        <h4>📄 Real Quote</h4>
+                        <p><strong>Total:</strong> £${report.realQuote.total?.toLocaleString() || 'Not specified'}</p>
+                        <p><strong>Type:</strong> ${report.realQuote.projectType || 'Unknown'}</p>
+                        <p><strong>File:</strong> ${report.realQuote.filename}</p>
+                        <p><strong>Description:</strong> ${report.realQuote.description}</p>
+                    </div>
+                    
+                    <div class="comparison-card ai-estimate">
+                        <h4>🤖 AI Estimate</h4>
+                        <p><strong>Range:</strong> £${report.aiEstimate.costRange?.min?.toLocaleString() || 'N/A'} - £${report.aiEstimate.costRange?.max?.toLocaleString() || 'N/A'}</p>
+                        <p><strong>Confidence:</strong> ${report.aiEstimate.confidence || 'Unknown'}%</p>
+                        <p><strong>Session:</strong> ${report.aiEstimate.sessionId}</p>
+                        <p><strong>Response:</strong> ${report.aiEstimate.response?.substring(0, 200) || 'No response'}...</p>
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <h4>🎯 Accuracy Analysis</h4>
+                    <div style="display: flex; justify-content: space-between; margin: 10px 0;">
+                        <span>Accuracy Score:</span>
+                        <span><strong>${report.comparison.accuracy}</strong></span>
+                    </div>
+                    <div class="accuracy-meter">
+                        <div class="accuracy-fill ${accuracyClass}" style="width: ${Math.max(0, accuracy)}%"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin: 10px 0;">
+                        <span>Variance:</span>
+                        <span><strong>${report.comparison.variance}</strong></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin: 10px 0;">
+                        <span>Status:</span>
+                        <span><strong>${report.comparison.status}</strong></span>
+                    </div>
+                    <p style="font-size: 12px; color: #666; margin-top: 15px;">
+                        <strong>Tested:</strong> ${new Date(report.timestamp).toLocaleString()}
+                    </p>
+                </div>
+            `;
+
+            container.style.display = 'block';
+        }
+
+        function showStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.className = type;
+            element.innerHTML = message;
+            element.style.display = 'block';
+            
+            setTimeout(() => {
+                element.style.display = 'none';
+            }, 5000);
+        }
+
+        // Initialize
+        loadQuotes();
+    </script>
+</body>
+</html>

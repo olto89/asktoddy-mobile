@@ -1,5 +1,46 @@
 # AskToddy Mobile - Work Log
 
+## 2024-12-05 - Production Planning & Cron Jobs Setup
+
+### Completed Today:
+
+1. **Deployed Edge Functions to Staging**
+   - All functions successfully deployed
+   - Project ref: iezmuqawughmwsxlqrim
+
+2. **Configured Staging Cron Jobs**
+   - Daily pricing update (3 AM UTC)
+   - Weekly cleanup (Sunday 4 AM UTC)
+   - Used direct service role key authentication (vault not available)
+
+3. **Created Production Checklist**
+   - Comprehensive go-live documentation
+   - Tracked in PRODUCTION_CHECKLIST.md
+   - Includes rollback procedures and monitoring plans
+
+### Issues Encountered:
+
+- Cloudflare outage preventing edge function testing (500 errors)
+- Production Supabase project suspended (needs reactivation)
+- Vault extension not available (used direct key approach)
+
+### Next Steps:
+
+1. Test cron jobs once Cloudflare recovers
+2. Continue staging validation
+3. Reactivate production project when ready
+4. Complete items in production checklist
+
+### Key Decisions:
+
+- Using direct service role key in cron jobs (secure within Supabase)
+- Tracking all production requirements in PRODUCTION_CHECKLIST.md
+- Focusing on staging validation before production
+
+---
+
+## Previous Sessions
+
 ## 2025-11-11: AI Middleware Success Milestone 🎉
 
 ### MAJOR ACHIEVEMENT: Middleware Working

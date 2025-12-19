@@ -9,7 +9,7 @@ import { createQuantityBasedPrompt, ProjectDimensions } from '../calculators/Qua
 export class GeminiSimpleProvider implements AIProvider {
   name = 'gemini-simple';
   private apiKey: string;
-  private model = 'gemini-2.0-flash';
+  private model = 'gemini-2.5-flash';
   private endpoint = 'https://generativelanguage.googleapis.com/v1beta/models';
 
   constructor(apiKey: string) {

@@ -5,6 +5,7 @@
 
 import { ProjectAnalysis, AnalysisRequest, PricingContext } from '../types.ts';
 import { UKPricingService } from '../../get-pricing/pricing-service.ts';
+import { ProjectMaterialMapper } from '../material-selection/ProjectMaterialMapper.ts';
 import {
   PricingRequest,
   PricingResponse,
@@ -89,8 +90,11 @@ export class PricingEnhancer {
         firstFewMaterials: marketData.materials?.slice(0, 3).map(m => m.name) || [],
       });
 
+      // Override materials with project-specific ones
+      const correctedMarketData = this.correctMaterialSelection(analysis, marketData, request);
+
       // Apply market pricing to analysis
-      const enhancedAnalysis = this.applyMarketPricing(analysis, marketData, options);
+      const enhancedAnalysis = this.applyMarketPricing(analysis, correctedMarketData, options);
 
       // Calculate confidence based on data quality
       const confidenceScore = this.calculateConfidence(analysis, marketData);
@@ -1030,6 +1034,77 @@ export class PricingEnhancer {
     if (analysis.description && analysis.description.length > 50) confidence += 0.05;
 
     return Math.min(0.95, confidence);
+  }
+
+  /**
+   * Correct material selection to be project-appropriate
+   */
+  private correctMaterialSelection(
+    analysis: ProjectAnalysis,
+    marketData: PricingResponse,
+    request: AnalysisRequest
+  ): PricingResponse {
+    // Extract finish level from user message
+    const finishLevel = ProjectMaterialMapper.extractFinishLevel(request.message);
+
+    this.log('🔧 Correcting material selection:', {
+      projectType: analysis.projectType,
+      finishLevel,
+      originalMaterialCount: marketData.materials?.length,
+    });
+
+    // Get project-appropriate materials
+    const projectMaterials = ProjectMaterialMapper.getMaterialsForProject(
+      analysis.projectType,
+      finishLevel,
+      this.extractRoomSize(request)
+    );
+
+    // Convert to market data format
+    const correctedMaterials = projectMaterials.items.map(item => ({
+      id: item.id,
+      name: item.name,
+      category: item.category,
+      priceRange: item.priceRange,
+      unit: item.unit,
+      supplier: 'Matched suppliers',
+      description: item.description,
+    }));
+
+    this.log('✅ Materials corrected:', {
+      finishLevel,
+      materialCount: correctedMaterials.length,
+      materials: correctedMaterials.map(m => m.name),
+    });
+
+    return {
+      ...marketData,
+      materials: correctedMaterials,
+    };
+  }
+
+  /**
+   * Extract room size from request context
+   */
+  private extractRoomSize(request: AnalysisRequest): number {
+    const message = request.message.toLowerCase();
+
+    // Look for dimensions like "3x4", "3m x 4m", "12m²"
+    const dimensionMatch = message.match(/(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)/);
+    if (dimensionMatch) {
+      return parseFloat(dimensionMatch[1]) * parseFloat(dimensionMatch[2]);
+    }
+
+    // Look for square meter notation
+    const areaMatch = message.match(/(\d+(?:\.\d+)?)\s*m[²2]/);
+    if (areaMatch) {
+      return parseFloat(areaMatch[1]);
+    }
+
+    // Default room sizes by type
+    if (message.includes('kitchen')) return 12;
+    if (message.includes('bathroom')) return 6;
+    return 10;
   }
 
   private log(message: string, data?: any) {
