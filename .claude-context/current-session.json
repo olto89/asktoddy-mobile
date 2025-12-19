@@ -18,9 +18,10 @@
       "POC server with PDF extraction achieving 85% accuracy",
       "Fixed cost parsing for accurate range detection",
       "Designed 5-screen MVP flow with offline-first architecture",
-      "Cleaned up 30+ unused files (old screens, ONS integration, pricing scripts)",
-      "Removed unused AI providers and complex contextual features",
-      "Simplified codebase for rapid MVP development"
+      "Cleaned up 30+ unused files (ONS integration, pricing scripts, old AI providers)",
+      "RESTORED authentication screens (Email verification, Login, Account)",
+      "Simplified codebase while keeping essential auth for MVP",
+      "Ready for MVP pivot with lean codebase + working auth"
     ],
     "keyLearnings": {
       "quotaManagement": "Different Gemini models have different free tier quotas",
@@ -29,7 +30,7 @@
       "debuggingApproach": "Test API keys directly before assuming model deprecation"
     }
   },
-  "lastUpdated": "2025-12-19T15:36:35.746Z",
+  "lastUpdated": "2025-12-19T16:04:00.702Z",
   "project": {
     "name": "asktoddy-mobile",
     "version": "1.2.0",
@@ -41,14 +42,17 @@
   },
   "git": {
     "branch": "main",
-    "lastCommit": "9ed3213 feat: Add comprehensive production go-live checklist",
+    "lastCommit": "5e30f27 fix: Restore email verification screens for MVP authentication",
     "hasUncommittedChanges": true,
-    "changedFiles": 37
+    "changedFiles": 1
   },
   "environment": {
     "nodeVersion": "v24.3.0",
     "platform": "darwin"
   },
   "runningProcesses": [],
-  "recentFiles": []
+  "recentFiles": [
+    "src/screens/EmailVerificationScreen.tsx",
+    "src/screens/VerificationSuccessScreen.tsx"
+  ]
 }
