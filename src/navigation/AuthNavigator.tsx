@@ -14,10 +14,9 @@ import VerificationSuccessScreen from '../screens/VerificationSuccessScreen';
 // App screens
 import HomeScreen from '../screens/HomeScreen';
 import ChatScreen from '../screens/ChatScreen';
-import NewChatScreen from '../screens/NewChatScreen';
 import CameraScreen from '../screens/CameraScreen';
 import ResultsScreen from '../screens/ResultsScreen';
-import AccountScreen from '../screens/AccountScreen';
+import DrawerNavigator from './DrawerNavigator';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -68,9 +67,10 @@ export default function AuthNavigator() {
           />
         </Stack.Group>
       ) : (
-        // App stack - user logged in - go directly to Chat with custom header
+        // App stack - user logged in - use DrawerNavigator (MVP)
         <Stack.Group>
-          <Stack.Screen name="Chat" component={NewChatScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Main" component={DrawerNavigator} options={{ headerShown: false }} />
+          <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
           <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'AskToddy' }} />
           <Stack.Screen name="Camera" component={CameraScreen} options={{ title: 'Take Photo' }} />
           <Stack.Screen
@@ -78,7 +78,6 @@ export default function AuthNavigator() {
             component={ResultsScreen}
             options={{ title: 'Quote Results' }}
           />
-          <Stack.Screen name="Account" component={AccountScreen} options={{ headerShown: false }} />
         </Stack.Group>
       )}
     </Stack.Navigator>

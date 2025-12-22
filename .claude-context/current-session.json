@@ -30,7 +30,7 @@
       "debuggingApproach": "Test API keys directly before assuming model deprecation"
     }
   },
-  "lastUpdated": "2025-12-19T16:04:00.702Z",
+  "lastUpdated": "2025-12-19T16:06:28.927Z",
   "project": {
     "name": "asktoddy-mobile",
     "version": "1.2.0",
@@ -41,7 +41,7 @@
     }
   },
   "git": {
-    "branch": "main",
+    "branch": "mvp-site-notes-jan15",
     "lastCommit": "5e30f27 fix: Restore email verification screens for MVP authentication",
     "hasUncommittedChanges": true,
     "changedFiles": 1

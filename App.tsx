@@ -11,6 +11,11 @@ export type RootStackParamList = {
   Login: undefined;
   EmailVerification: { email: string; password: string };
   VerificationSuccess: undefined;
+  Main: undefined;
+  SiteNotes: undefined;
+  TaskList: { siteNotes: any; savedQuote?: any };
+  EditQuote: { tasks: any[]; totalCost: any; siteNotes: any };
+  ShareQuote: { quote: any };
   Home: undefined;
   Chat: undefined;
   Camera: undefined;
