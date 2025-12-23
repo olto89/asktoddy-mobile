@@ -529,8 +529,14 @@ Keep response concise and focused on costs. Use current UK construction market r
       `✅ Analysis complete: £${structuredAnalysis.costBreakdown.total.min.toLocaleString()}-£${structuredAnalysis.costBreakdown.total.max.toLocaleString()}`
     );
 
-    // Return properly structured ProjectAnalysis object
-    return new Response(JSON.stringify(structuredAnalysis), { headers });
+    // Return properly structured response with success wrapper
+    const successResponse = {
+      success: true,
+      data: structuredAnalysis,
+      processingTimeMs: Date.now() - Date.now(), // Will be calculated by frontend
+      aiProvider: 'gemini-structured',
+    };
+    return new Response(JSON.stringify(successResponse), { headers });
   } catch (error) {
     console.error('Edge Function error:', error);
 
@@ -595,8 +601,15 @@ Keep response concise and focused on costs. Use current UK construction market r
       provider: 'fallback-template',
     };
 
+    // Return fallback with same success wrapper format
+    const fallbackResponse = {
+      success: true,
+      data: fallbackAnalysis,
+      processingTimeMs: 0,
+      aiProvider: 'fallback-template',
+    };
     return new Response(
-      JSON.stringify(fallbackAnalysis),
+      JSON.stringify(fallbackResponse),
       { status: 200, headers } // Return 200 with fallback data
     );
   }
