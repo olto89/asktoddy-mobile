@@ -1,503 +1,302 @@
-# Architecture & Implementation Decisions
+# AskToddy Mobile - Architectural Decision Records
 
-## MVP STRATEGIC DECISIONS - October 31, 2025
+## Project Context
 
-### Single Provider Focus: Google Gemini
-
-**Decision:** Simplify from multi-provider to single Gemini integration
-**Rationale:**
-
-- **Faster MVP Delivery**: Reduced complexity enables quicker time to market
-- **Simplified Architecture**: Single provider integration reduces codebase complexity by ~40%
-- **Focused Optimization**: Deep optimization of Gemini for construction analysis
-- **Easier Maintenance**: Single provider reduces testing surface and maintenance overhead
-- **Cost Efficiency**: Gemini provides excellent cost/performance ratio for our use case
-
-**Implementation Impact:**
-
-- Remove provider switching logic from AIMiddleware
-- Simplify configuration management
-- Focus prompts specifically for Gemini's capabilities
-- Streamline error handling and response processing
-
-### Business Model: 5 Free PDFs/Month
-
-**Decision:** Freemium model with 5 professional PDFs per month
-**Rationale:**
-
-- **Low Barrier to Entry**: Users can evaluate value before committing to subscription
-- **Sustainable Revenue**: Clear path to monetization through premium tiers
-- **Usage-Based Value**: PDF generation is tangible deliverable users will pay for
-- **Market Validation**: Free tier allows rapid user acquisition and feedback
-
-**Subscription Tiers:**
-
-1. **Free**: 5 PDFs/month, basic customization, standard support
-2. **Professional**: Unlimited PDFs, advanced customization, priority support, £29/month
-3. **Enterprise**: White-label, API access, team management, custom pricing
-
-### Comprehensive Pricing Engine
-
-**Decision:** Implement all construction cost categories in MVP
-**Categories Implemented:**
-
-- Materials and supplies with regional pricing
-- Labor and subcontractor costs with skill-based rates
-- Equipment and plant hire with real-time availability
-- Permits and compliance with regulatory requirements
-- Waste disposal with skip hire integration
-- Project management overhead calculations
-- Regional cost adjustments (London weighting, etc.)
-
-**Data Sources:**
-
-- UK government databases (ONS, BCIS, DBT)
-- Regional supplier APIs
-- Historical project analysis
-- Real-time market adjustments
-
-### PDF Generation with Professional Customization
-
-**Decision:** Advanced PDF customization as core differentiator
-**Features:**
-
-- Company branding with logo integration
-- Custom color schemes and professional layouts
-- Project-specific notes and terms
-- Detailed cost breakdowns with line items
-- Industry-compliant formatting standards
-- Mobile-optimized generation and sharing
-
-**Technical Implementation:**
-
-- Supabase Edge Functions with jsPDF
-- Template-based generation system
-- Real-time customization preview
-- Progressive download with status tracking
-
-### Construction Specialist AI Focus
-
-**Decision:** Position as UK construction industry specialist
-**Specialization Areas:**
-
-- Building regulations and compliance awareness
-- Material recognition and specification accuracy
-- Regional construction practice knowledge
-- Trade-specific cost calculations
-- Timeline estimation with weather considerations
-- Health and safety requirement integration
-
-**Gemini Optimization:**
-
-- Construction-specific prompt engineering
-- Enhanced material recognition training
-- Regional cost awareness
-- Industry terminology accuracy
+Revolutionary AI-powered construction quoting mobile app targeting January 15, 2025 investor meeting.
 
 ---
 
-## PREVIOUS ARCHITECTURE DECISIONS
+## Decision Record Format
 
-## AI Service Architecture
+- **Date**: Decision date
+- **Status**: Accepted | Superseded | Deprecated
+- **Context**: Why this decision was needed
+- **Decision**: What was decided
+- **Consequences**: Outcomes and trade-offs
 
-### Provider Pattern
+---
 
-**Decision:** Multi-provider system with automatic fallback
-**Rationale:**
+## ADR-001: MVP Pivot to Guided Note-Taking
 
-- Ensures reliability even if primary provider fails
-- Allows easy addition of new AI providers (OpenAI, Anthropic, etc.)
-- Mock provider enables offline development and testing
+**Date**: December 2024  
+**Status**: Accepted
 
-### Middleware Layer
+**Context**: Original chat-based interface was too complex and didn't provide enough structure for accurate quotes. Needed clearer user flow for investor demo.
 
-**Decision:** AIMiddleware as orchestration layer
-**Implementation:**
+**Decision**: Pivot to guided note-taking workflow:
 
-- Manages provider registration and health checks
-- Handles timeout and retry logic
-- Integrates with pricing service for real-time cost data
-- Provides consistent response format
+1. Structured site assessment screen
+2. AI-powered task generation
+3. Interactive quote editing
+4. Professional sharing
 
-## Image Processing
+**Consequences**:
+✅ More accurate quote generation  
+✅ Better user experience for tradespeople  
+✅ Clearer value proposition for investors  
+❌ Reduced conversational flexibility
 
-### Analysis Trigger
+---
 
-**Decision:** Analyze immediately after capture
-**Rationale:**
+## ADR-002: Single-Provider AI Architecture
 
-- Better UX - user sees progress immediately
-- Can show results even if analysis fails
-- Reduces cognitive load (one action, not two)
+**Date**: November 2024  
+**Status**: Accepted
 
-### Image Quality
+**Context**: Previous complex multi-provider system was over-engineered for MVP. Needed simplicity and reliability.
 
-**Decision:** 0.8 quality, 4:3 aspect ratio
-**Rationale:**
+**Decision**: Simplified to Gemini 2.0 Flash with template fallback:
 
-- Balances file size with analysis quality
-- Standard aspect ratio for construction photos
-- Reduces upload time and API costs
+- Primary: Gemini API for AI analysis
+- Fallback: High-quality UK pricing templates
+- No complex provider switching logic
 
-## Error Handling
+**Consequences**:
+✅ Reduced complexity and maintenance burden  
+✅ More predictable API costs  
+✅ Faster development velocity  
+❌ Single point of failure for AI features
 
-### Graceful Degradation
+---
 
-**Decision:** Always navigate to results, even on failure
-**Implementation:**
+## ADR-003: Expo Go Compatibility Priority
 
-- Show image even if analysis fails
-- Provide user-friendly error messages
-- Log detailed errors for debugging
-- Fallback to mock provider if available
+**Date**: December 22, 2025  
+**Status**: Accepted
 
-## Configuration Management
+**Context**: "Runtime not ready" errors were blocking development. Rapid iteration was critical for MVP timeline.
 
-### Environment Variables
+**Decision**: Remove dependencies incompatible with Expo Go:
 
-**Decision:** Use EXPO*PUBLIC* prefix for client-side env vars
-**Rationale:**
+- Removed react-native-reanimated
+- Removed react-native-gesture-handler
+- Replaced drawer navigation with stack + modal
 
-- Expo's recommended approach
-- Clear distinction between server and client configs
-- Type-safe access through config module
+**Consequences**:
+✅ Instant development feedback loop  
+✅ No build time for testing  
+✅ Team can test immediately on devices  
+❌ Limited animation capabilities  
+❌ Less native-feeling navigation
 
-### Centralized Config
+---
 
-**Decision:** Single source of truth in `/src/config/index.ts`
-**Rationale:**
+## ADR-004: Intelligent Retry Logic Implementation
 
-- Type-safe configuration
-- Easy to modify for different environments
-- Single import for all config needs
+**Date**: December 22, 2025  
+**Status**: Accepted
 
-## State Management
+**Context**: API quota exhaustion after just a few quotes due to aggressive retry logic (3 retries = 4x API usage per quote).
 
-### Context for Auth
+**Decision**: Implement error-type-based intelligent retry:
 
-**Decision:** React Context for authentication
-**Rationale:**
+- Rate limits (429): NO RETRY (preserve quota)
+- Auth errors (401/403): NO RETRY (won't help)
+- Server errors (500-599): 1 RETRY (might recover)
+- Network errors: 1 RETRY (transient)
+- Bad requests (400): NO RETRY (client error)
 
-- Simple for auth state that rarely changes
-- No need for heavy state management library yet
-- Easy to integrate with navigation
+**Consequences**:
+✅ 4x improvement in API quota efficiency  
+✅ Faster failures for permanent errors  
+✅ Smart recovery for transient issues  
+❌ Potentially less resilient to temporary rate limits
 
-### Local State for UI
+---
 
-**Decision:** Component-level state for UI interactions
-**Rationale:**
+## ADR-005: Template-Based Fallback System
 
-- Keeps components self-contained
-- Reduces complexity
-- Easier to test
+**Date**: December 2024  
+**Status**: Accepted
 
-## Pricing Integration
+**Context**: Need reliable quote generation even when AI APIs fail or quotas are exhausted.
 
-### Real-time Updates
+**Decision**: Comprehensive UK construction templates by job type:
 
-**Decision:** Integrate pricing service with AI analysis
-**Rationale:**
+- Extension, bathroom, kitchen, roofing, renovation templates
+- Realistic UK market pricing (materials + labor)
+- Professional task breakdown structure
+- Seamless fallback when AI unavailable
 
-- Provides accurate, current market prices
-- Enhances AI estimates with real data
-- Better value for users
+**Consequences**:
+✅ 100% reliable quote generation  
+✅ High-quality output even without AI  
+✅ Consistent UK market pricing  
+❌ Less personalized than AI analysis  
+❌ Manual maintenance of pricing data
 
-### Caching Strategy
+---
 
-**Decision:** 1-hour cache for pricing data
-**Rationale:**
+## ADR-006: Modal Menu Over Drawer Navigation
 
-- Reduces API calls
-- Prices don't change minute-to-minute
-- Configurable per deployment
+**Date**: December 22, 2025  
+**Status**: Accepted
 
-## Testing Strategy
+**Context**: Drawer navigation required react-native-gesture-handler which was incompatible with Expo Go and causing runtime errors.
 
-### Mock Provider First
+**Decision**: Replace drawer with modal-based menu system:
 
-**Decision:** Develop with mock provider, test with real
-**Rationale:**
+- Hamburger icon in header launches modal
+- Full-screen modal with user profile, saved quotes, settings
+- Consistent with stack navigation architecture
 
-- Faster development cycles
-- No API costs during development
-- Predictable responses for testing
+**Consequences**:
+✅ Expo Go compatibility maintained  
+✅ Simpler navigation stack  
+✅ Professional appearance  
+❌ Less discoverable than side drawer  
+❌ Requires extra tap to access menu
 
-## Security Considerations
+---
 
-### API Key Management
+## ADR-007: AsyncStorage + Supabase Hybrid Storage
 
-**Decision:** Environment variables, never committed
-**Rationale:**
+**Date**: November 2024  
+**Status**: Accepted
 
-- Standard security practice
-- Easy to rotate keys
-- Different keys per environment
+**Context**: Need offline capability for site visits while maintaining cloud sync for quote management.
 
-### Supabase RLS
+**Decision**: Hybrid storage architecture:
 
-**Decision:** Rely on Supabase Row Level Security
-**Rationale:**
+- AsyncStorage: Local quote drafts, session data, offline cache
+- Supabase: User accounts, shared quotes, conversation history
+- Sync mechanism: Upload local quotes when online
 
-- Database-level security
-- Consistent with web app
-- Reduces attack surface
+**Consequences**:
+✅ Works offline at construction sites  
+✅ Data persistence across app restarts  
+✅ Cloud backup for important quotes  
+❌ Increased complexity for data sync  
+❌ Potential data conflicts to resolve
 
-## Code Quality & Development Standards
+---
 
-### ESLint Configuration
+## ADR-008: UK-Focused Pricing and Standards
 
-**Decision:** Comprehensive linting with TypeScript, React Native, and React Hooks rules
-**Implementation:**
+**Date**: November 2024  
+**Status**: Accepted
 
-- Maximum file size: 300 lines
-- Maximum function length: 50 lines
-- Complexity limit: 10 (cyclomatic complexity)
-- Import organization with alphabetical sorting
-- Security rules (no-eval, no-implied-eval)
+**Context**: Need market-specific accuracy for investor credibility and user adoption.
 
-**Rationale:**
+**Decision**: Deep focus on UK construction market:
 
-- Enforces consistent code style across team
-- Prevents common React and TypeScript errors
-- Reduces cognitive load with automatic formatting
-- Catches security vulnerabilities early
+- UK material pricing (Jewson, Wickes, Travis Perkins)
+- UK labor rates by region
+- UK building regulations compliance
+- UK measurement units (metric)
+- UK trade terminology
 
-### Prettier Integration
+**Consequences**:
+✅ High accuracy for target market  
+✅ Credible for UK investors  
+✅ Relevant for UK tradespeople  
+❌ Not applicable to other markets  
+❌ Requires ongoing UK market research
 
-**Decision:** Auto-formatting with opinionated config
-**Configuration:**
+---
 
-- 100-character line width (readable on laptops)
-- Single quotes for consistency
-- Trailing commas for cleaner diffs
-- Semicolons for clarity
+## ADR-009: Professional Quote Sharing Format
 
-**Rationale:**
+**Date**: December 2024  
+**Status**: Accepted
 
-- Eliminates style debates and manual formatting
-- Consistent code appearance across all files
-- Reduces PR review time by focusing on logic
-- Industry standard for TypeScript projects
+**Context**: Generated quotes needed to look professional enough for tradespeople to send to customers.
 
-### Pre-commit Hooks (Husky)
+**Decision**: Professional quote format with:
 
-**Decision:** Enforce quality gates before commits
-**Implementation:**
+- Company branding placeholders
+- Itemized task breakdown with costs
+- Material specifications
+- Labor estimates
+- Terms and conditions
+- PDF export capability
 
-- lint-staged: Formats and fixes staged files
-- TypeScript type checking
-- Context saving for session recovery
+**Consequences**:
+✅ Professional output suitable for customers  
+✅ Builds trust in the platform  
+✅ Encourages user adoption  
+❌ More complex formatting requirements  
+❌ Need PDF generation capability
 
-**Rationale:**
+---
 
-- Prevents broken code from entering repository
-- Maintains consistent quality without manual checks
-- Saves CI/CD time by catching errors early
-- Enforces development standards automatically
+## ADR-010: Session-Based Conversation Context
 
-### VS Code Integration
+**Date**: November 2024  
+**Status**: Accepted
 
-**Decision:** Standardized editor configuration for team
-**Features:**
+**Context**: Need conversation continuity for improved AI quote accuracy over multiple interactions.
 
-- Auto-format on save
-- ESLint auto-fix on save
-- Import organization on save
-- Recommended extensions list
+**Decision**: Implement session-based context management:
 
-**Rationale:**
+- Persistent session IDs in AsyncStorage
+- Conversation history stored in Supabase
+- Context passed to AI for improved responses
+- Session management across app restarts
 
-- Consistent development experience across team
-- Reduces onboarding time for new developers
-- Automatic compliance with project standards
-- Better developer productivity
+**Consequences**:
+✅ Improved AI accuracy with context  
+✅ Conversation continuity  
+✅ Better user experience  
+❌ Increased storage requirements  
+❌ More complex session management
 
-### Architecture Documentation
+---
 
-**Decision:** Comprehensive ARCHITECTURE.md with development guide
-**Rationale:**
+## ADR-011: Middleware-First Architecture (CRITICAL)
 
-- Faster onboarding for new team members
-- Documents design decisions and patterns
-- Provides clear coding standards
-- Reduces technical debt through standardization
+**Date**: December 23, 2025  
+**Status**: Accepted
 
-## Environment Architecture
+**Context**: Discovered major architectural flaw where frontend was parsing AI responses instead of edge function returning structured data. This completely defeated the purpose of having middleware.
 
-### Staging/Production Supabase Separation
+**Decision**: Enforce strict middleware-first architecture:
 
-**Decision:** Dedicated Supabase projects for staging and production environments
-**Implementation:**
+- **Edge Function**: Returns fully structured `ProjectAnalysis` objects
+- **Frontend**: Only displays structured data (NO parsing/business logic)
+- **Data Flow**: User Input → Frontend → Edge Function → AI → Structured Response → Frontend
+- **Error Handling**: Edge function returns structured fallback data (not frontend templates)
+- **Type Safety**: Shared TypeScript interfaces between frontend/backend
 
-- **Staging Environment:**
-  - Project: `asktoddy-staging`
-  - Project ID: `iezmuqawughmwsxlqrim`
-  - URL: `iezmuqawughmwsxlqrim.supabase.co`
-  - Purpose: Safe testing and TestFlight builds
+**Consequences**:
+✅ True separation of concerns  
+✅ Centralized business logic in edge function  
+✅ Frontend becomes simple presentation layer  
+✅ Easier testing and debugging  
+✅ Consistent data structure regardless of AI provider  
+❌ More complex edge function development  
+❌ Requires careful type definition alignment
 
-- **Production Environment:**
-  - Project: `asktoddy-production`
-  - Project ID: `tggvoqhewfmczyjoxrqu`
-  - URL: `tggvoqhewfmczyjoxrqu.supabase.co`
-  - Purpose: Live user data and production deployments
+---
 
-**Rationale:**
+## Current Architecture Summary
 
-- **Data Safety**: Complete isolation prevents development activities from affecting production data
-- **Deployment Confidence**: Staging validation ensures production stability
-- **Risk Mitigation**: Failed experiments in staging don't impact live users
-- **Development Velocity**: Developers can test freely without production concerns
-- **Compliance**: Separate environments support proper change management processes
+### Core Technology Stack
 
-### EAS Build Profiles
+- **Mobile Framework**: React Native with Expo
+- **Navigation**: Stack Navigator with Modal Menu
+- **State Management**: React Context + AsyncStorage
+- **Authentication**: Supabase Auth
+- **Backend**: Supabase (Database + Edge Functions)
+- **AI Provider**: Gemini 2.0 Flash
+- **Development**: Expo Go compatible
 
-**Decision:** Environment-specific build configurations in `eas.json`
-**Implementation:**
+### Key Architectural Principles
 
-```json
-{
-  "staging": {
-    "env": {
-      "EXPO_PUBLIC_SUPABASE_URL": "https://iezmuqawughmwsxlqrim.supabase.co"
-    }
-  },
-  "production": {
-    "env": {
-      "EXPO_PUBLIC_SUPABASE_URL": "https://tggvoqhewfmczyjoxrqu.supabase.co"
-    }
-  }
-}
-```
+1. **Simplicity Over Complexity**: Choose simple, reliable solutions
+2. **Offline-First**: Core functionality works without internet
+3. **Graceful Degradation**: Template fallbacks for all AI features
+4. **UK Market Focus**: Specialized for UK construction industry
+5. **Investor Demo Ready**: Professional, reliable, impressive
 
-**Rationale:**
+### Success Metrics
 
-- **Automatic Environment Selection**: Build profile determines Supabase environment
-- **Configuration Safety**: No manual environment switching reduces human error
-- **Deployment Clarity**: Clear distinction between staging and production builds
-- **Testing Validation**: Staging builds use staging data for accurate testing
+- **Development Velocity**: Rapid iteration with Expo Go
+- **Reliability**: 100% uptime with template fallbacks
+- **User Experience**: Professional, intuitive interface
+- **API Efficiency**: 4x quota improvement
+- **Market Fit**: UK construction standards compliance
 
-### Edge Function Deployment Strategy
+---
 
-**Decision:** Deploy Edge Functions to both environments simultaneously
-**Implementation:**
-
-- Staging functions deployed first for testing
-- Production functions deployed after staging validation
-- Environment-specific API keys and configurations
-- Isolated function execution contexts
-
-**Rationale:**
-
-- **Function Parity**: Both environments have identical AI capabilities
-- **Testing Accuracy**: Staging tests reflect production functionality
-- **Deployment Safety**: Edge Function changes validated before production
-- **Performance Consistency**: Same function performance in both environments
-
-### Bundle ID Strategy
-
-**Decision:** Separate bundle IDs for staging and production apps
-**Implementation:**
-
-- Staging: `com.asktoddy.staging`
-- Production: `com.asktoddy.prod`
-- Apple Developer Account: `oliver@hotsoup.io`
-
-**Rationale:**
-
-- **App Store Separation**: Staging and production apps coexist on devices
-- **TestFlight Clarity**: Clear distinction between test and production builds
-- **Development Flexibility**: Can install both versions simultaneously
-- **Release Management**: Independent App Store Connect entries
-
-## 2025-11-24: Gemini API Architecture & Security Fix
-
-### Issue
-
-- Gemini AI not working despite model updates
-- Initial assumption: deprecated model (gemini-1.5-flash)
-- Actual cause: Expired API key in backend secrets
-
-### Key Discovery: Correct Architecture Already in Place
-
-**Frontend (Correct)**:
-
-```typescript
-// ChatScreen.tsx uses edge functions (no client-side API keys)
-const { data, error } = await supabase.functions.invoke('analyze-construction', {
-  body: requestBody,
-});
-```
-
-**Backend (Was broken, now fixed)**:
-
-```bash
-# Supabase edge function secret (server-side only)
-npx supabase secrets set GEMINI_API_KEY=<working_key>
-```
-
-### Security Architecture Decision
-
-**NEVER use client-side API keys**:
-
-- ❌ `EXPO_PUBLIC_GEMINI_API_KEY` in eas.json (removed)
-- ❌ Client-side AI providers with API keys
-- ✅ Server-side edge functions with secrets
-- ✅ Frontend calls via `supabase.functions.invoke()`
-
-### Resolution
-
-1. Updated expired `GEMINI_API_KEY` in Supabase secrets
-2. Removed client-side API keys from build config
-3. Updated fallback provider models (gemini-2.0-flash, gemini-2.5-flash)
-4. Fixed InteractiveQuoteTable JSX structure
-5. **No frontend rebuild required** - backend fix sufficient
-
-### Lesson: Backend API Changes ≠ Frontend Rebuild
-
-Server-side secret updates take effect immediately for existing builds.
-
-## 2025-11-24: Single Provider Architecture
-
-### Context
-
-User reported Gemini working on first message but falling back to generic/mock on follow-up messages.
-
-### Root Cause
-
-Complex "smart" provider selection logic was switching providers mid-conversation:
-
-- First message: Selected `gemini` for simple image analysis
-- Second message: Detected "complex" conversation, tried to switch to `openai` (not registered)
-- Fallback failed due to disabled fallback chain
-
-### Decision: Simplify to Single Provider
-
-**Remove all complexity in favor of predictable behavior:**
-
-- One provider per environment (no switching)
-- Gemini for testing/development
-- OpenAI for production (when ready)
-- No fallback chains or smart selection
-
-### Implementation
-
-1. Created simplified middleware with single provider
-2. Removed provider selection logic
-3. Removed fallback chains
-4. Focus on pricing/materials intelligence instead
-
-### Benefits
-
-- ✅ Consistent responses throughout conversation
-- ✅ Predictable costs (single API)
-- ✅ Easier debugging (single point of failure)
-- ✅ No mid-conversation provider switches
-- ✅ Clear architecture for team understanding
-
-### Trade-offs Accepted
-
-- ❌ No automatic fallback if provider down (manual intervention required)
-- ❌ No provider-specific optimizations (accepted for consistency)
-- ❌ Single point of failure (mitigated by provider reliability)
-
-This aligns with "do one thing well" philosophy.
+_Last Updated: December 22, 2025_

@@ -147,100 +147,154 @@ export class GeminiProvider implements AIProvider {
   private async generateContent(prompt: string): Promise<string> {
     const url = `${this.endpoint}/${this.model}:generateContent?key=${this.apiKey}`;
 
-    // Retry logic for rate limiting
-    let retries = 3;
-    let delay = 1000; // Start with 1 second
+    // Intelligent retry logic based on error types
+    let retries = 1; // Only 1 retry for network errors (was 3)
+    let attempt = 0;
 
-    while (retries > 0) {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [{ text: prompt }],
-            },
-          ],
-        }),
-      });
+    while (attempt <= retries) {
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [{ text: prompt }],
+              },
+            ],
+          }),
+        });
 
-      if (response.ok) {
-        const data = await response.json();
-        if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-          throw new Error('Invalid response from Gemini API');
+        if (response.ok) {
+          const data = await response.json();
+          if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+            throw new Error('Invalid response from Gemini API');
+          }
+          return data.candidates[0].content.parts[0].text;
         }
-        return data.candidates[0].content.parts[0].text;
-      }
 
-      // Check if it's a rate limit error
-      if (response.status === 429) {
-        console.log(`⏳ Rate limited, retrying in ${delay}ms... (${retries} retries left)`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-        delay *= 2; // Exponential backoff
-        retries--;
-        continue;
-      }
+        const errorBody = await response.text();
 
-      // Other errors - don't retry
-      const errorBody = await response.text();
-      console.error(`Gemini API error: ${response.status} ${response.statusText}`, errorBody);
-      throw new Error(`Gemini API error: ${response.status} ${response.statusText} - ${errorBody}`);
+        // Smart error handling based on status code
+        if (response.status === 429) {
+          // Rate limit - DO NOT RETRY to preserve quota
+          console.error('🚫 Rate limited - not retrying to preserve quota');
+          throw new Error(`Gemini API quota exceeded: ${errorBody}`);
+        } else if (response.status === 401 || response.status === 403) {
+          // Auth errors - DO NOT RETRY (won't help)
+          console.error('🔐 Authentication error - not retrying');
+          throw new Error(`Gemini API auth error: ${response.status} - ${errorBody}`);
+        } else if (response.status >= 500 && response.status < 600) {
+          // Server errors - RETRY ONCE (might be temporary)
+          if (attempt < retries) {
+            console.log(`⚠️ Server error ${response.status}, retrying once...`);
+            attempt++;
+            await new Promise(resolve => setTimeout(resolve, 1000)); // 1s delay
+            continue;
+          }
+        } else if (response.status === 400) {
+          // Bad request - DO NOT RETRY (won't help)
+          console.error('❌ Bad request - not retrying');
+          throw new Error(`Gemini API bad request: ${errorBody}`);
+        }
+
+        // Unknown error - don't retry
+        console.error(`Gemini API error: ${response.status} ${response.statusText}`, errorBody);
+        throw new Error(`Gemini API error: ${response.status} - ${errorBody}`);
+      } catch (error) {
+        // Network errors - RETRY ONCE
+        if (error.message?.includes('fetch') || error.message?.includes('network')) {
+          if (attempt < retries) {
+            console.log('🌐 Network error, retrying once...');
+            attempt++;
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            continue;
+          }
+        }
+        throw error;
+      }
     }
 
-    throw new Error('Gemini API rate limited after 3 retries');
+    throw new Error('Failed to get Gemini response after intelligent retries');
   }
 
   private async generateContentWithMedia(prompt: string, mediaData: any): Promise<string> {
     const url = `${this.endpoint}/${this.model}:generateContent?key=${this.apiKey}`;
     const enhancedPrompt = this.enhancePromptForMediaType(prompt, mediaData.inlineData.mimeType);
 
-    // Retry logic for rate limiting
-    let retries = 3;
-    let delay = 1000;
+    // Intelligent retry logic based on error types
+    let retries = 1; // Only 1 retry for network errors
+    let attempt = 0;
 
-    while (retries > 0) {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [{ text: enhancedPrompt }, mediaData],
-            },
-          ],
-        }),
-      });
+    while (attempt <= retries) {
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [{ text: enhancedPrompt }, mediaData],
+              },
+            ],
+          }),
+        });
 
-      if (response.ok) {
-        const data = await response.json();
-        if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-          throw new Error('Invalid response from Gemini API');
+        if (response.ok) {
+          const data = await response.json();
+          if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+            throw new Error('Invalid response from Gemini API');
+          }
+          return data.candidates[0].content.parts[0].text;
         }
-        return data.candidates[0].content.parts[0].text;
-      }
 
-      // Check if it's a rate limit error
-      if (response.status === 429) {
-        console.log(
-          `⏳ Rate limited on media request, retrying in ${delay}ms... (${retries} retries left)`
-        );
-        await new Promise(resolve => setTimeout(resolve, delay));
-        delay *= 2;
-        retries--;
-        continue;
-      }
+        const errorBody = await response.text();
 
-      // Other errors - don't retry
-      const errorBody = await response.text();
-      console.error(`Gemini API error: ${response.status} ${response.statusText}`, errorBody);
-      throw new Error(`Gemini API error: ${response.status} ${response.statusText} - ${errorBody}`);
+        // Smart error handling based on status code
+        if (response.status === 429) {
+          // Rate limit - DO NOT RETRY to preserve quota
+          console.error('🚫 Rate limited on media - not retrying to preserve quota');
+          throw new Error(`Gemini API quota exceeded: ${errorBody}`);
+        } else if (response.status === 401 || response.status === 403) {
+          // Auth errors - DO NOT RETRY
+          console.error('🔐 Authentication error on media - not retrying');
+          throw new Error(`Gemini API auth error: ${response.status} - ${errorBody}`);
+        } else if (response.status >= 500 && response.status < 600) {
+          // Server errors - RETRY ONCE
+          if (attempt < retries) {
+            console.log(`⚠️ Server error ${response.status} on media, retrying once...`);
+            attempt++;
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            continue;
+          }
+        } else if (response.status === 400) {
+          // Bad request - DO NOT RETRY
+          console.error('❌ Bad request on media - not retrying');
+          throw new Error(`Gemini API bad request: ${errorBody}`);
+        }
+
+        // Unknown error - don't retry
+        console.error(`Gemini API error: ${response.status} ${response.statusText}`, errorBody);
+        throw new Error(`Gemini API error: ${response.status} - ${errorBody}`);
+      } catch (error) {
+        // Network errors - RETRY ONCE
+        if (error.message?.includes('fetch') || error.message?.includes('network')) {
+          if (attempt < retries) {
+            console.log('🌐 Network error on media, retrying once...');
+            attempt++;
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            continue;
+          }
+        }
+        throw error;
+      }
     }
 
-    throw new Error('Gemini API rate limited after 3 retries');
+    throw new Error('Failed to get Gemini media response after intelligent retries');
   }
 
   private enhancePromptForMediaType(prompt: string, mimeType: string): string {

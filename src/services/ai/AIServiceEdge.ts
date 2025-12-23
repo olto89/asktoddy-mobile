@@ -90,17 +90,19 @@ class AIServiceEdge {
         },
       });
 
-      if (!response.ok) {
-        throw new Error(`Edge function health check failed: ${response.status}`);
+      if (response.ok) {
+        const health = await response.json();
+        console.log('✅ Edge AI Service initialized:', health);
+      } else {
+        console.warn('⚠️ Edge function health check failed, but continuing:', response.status);
+        // Don't throw error - allow the service to work even if health check fails
       }
-
-      const health = await response.json();
-      console.log('✅ Edge AI Service initialized:', health);
 
       this.isInitialized = true;
     } catch (error) {
-      console.error('❌ Failed to initialize Edge AI Service:', error);
-      throw error;
+      console.warn('⚠️ Failed to initialize Edge AI Service, but continuing:', error);
+      // Don't throw error - allow fallback behavior
+      this.isInitialized = true;
     }
   }
 

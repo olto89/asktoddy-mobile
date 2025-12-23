@@ -14,7 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import designTokens from '../styles/designTokens';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
-import AIServiceEdge from '../services/ai/AIServiceEdge';
+import { AIService } from '../services/ai/AIServiceEdge';
 
 interface Task {
   id: string;
@@ -55,7 +55,7 @@ export default function TaskListScreen({ navigation, route }: any) {
 
   const generateTasksFromNotes = async () => {
     try {
-      const aiService = new AIServiceEdge();
+      const aiService = AIService;
 
       // Prepare the prompt
       const prompt = `Analyze this construction project and generate a detailed task list with cost estimates:
@@ -74,15 +74,14 @@ Please provide:
 4. Provide realistic cost ranges for each task`;
 
       // Call AI service
-      const response = await aiService.analyzeText(prompt);
+      const response = await aiService.processChat(prompt);
 
-      if (response.analysis) {
-        setAiAnalysis(response.analysis);
+      console.log('🤖 AI Response received:', response);
+      setAiAnalysis(response);
 
-        // Parse AI response into structured tasks
-        const parsedTasks = parseAIResponseToTasks(response.analysis);
-        setTasks(parsedTasks);
-      }
+      // Parse AI response into structured tasks
+      const parsedTasks = parseAIResponseToTasks(response);
+      setTasks(parsedTasks);
     } catch (error) {
       console.error('Error generating tasks:', error);
       // Fallback to template-based tasks
@@ -93,24 +92,73 @@ Please provide:
   };
 
   const parseAIResponseToTasks = (aiResponse: any): Task[] => {
-    // This is a simplified parser - in production, you'd have more sophisticated parsing
     const tasks: Task[] = [];
 
-    // Mock parsed tasks based on the job type
-    const taskTemplates = getTaskTemplates(siteNotes.jobType);
+    console.log('📋 Edge Function returned structured data:', aiResponse);
 
-    taskTemplates.forEach((template, index) => {
-      tasks.push({
-        id: `task-${index}`,
-        description: template.description,
-        category: template.category,
-        estimatedCost: template.estimatedCost,
-        materials: template.materials,
-        laborDays: template.laborDays,
-        selected: true,
+    // Edge function now returns fully structured ProjectAnalysis
+    if (aiResponse?.costBreakdown?.materials?.items) {
+      console.log('✨ Using structured edge function data');
+
+      // Convert materials to tasks
+      aiResponse.costBreakdown.materials.items.forEach((item: any, index: number) => {
+        tasks.push({
+          id: `material-${index}`,
+          description: item.name,
+          category: item.category.charAt(0).toUpperCase() + item.category.slice(1),
+          estimatedCost: {
+            min: Math.round(item.totalPrice * 0.9),
+            max: Math.round(item.totalPrice * 1.1),
+          },
+          materials: [item.name],
+          laborDays: 0,
+          selected: true,
+        });
       });
-    });
 
+      // Add labor as a separate task
+      if (aiResponse.costBreakdown.labor) {
+        tasks.push({
+          id: 'labor-task',
+          description: 'Professional labor and installation',
+          category: 'Labor',
+          estimatedCost: {
+            min: aiResponse.costBreakdown.labor.min,
+            max: aiResponse.costBreakdown.labor.max,
+          },
+          materials: ['Professional installation'],
+          laborDays: Math.round(aiResponse.costBreakdown.labor.estimatedHours / 8),
+          selected: true,
+        });
+      }
+
+      // Add project phases as tasks if available
+      if (aiResponse.timeline?.phases) {
+        aiResponse.timeline.phases.forEach((phase: any, index: number) => {
+          tasks.push({
+            id: `phase-${index}`,
+            description: phase.description,
+            category: 'Project Phase',
+            estimatedCost: {
+              min: 0,
+              max: 0,
+            },
+            materials: [],
+            laborDays: parseInt(phase.duration) || 1,
+            selected: false, // Don't select phases by default
+          });
+        });
+      }
+    }
+
+    // Fallback only if no structured data
+    if (tasks.length === 0) {
+      console.log('⚠️ No structured data, using fallback');
+      generateTemplateTasks();
+      return [];
+    }
+
+    console.log(`📋 Generated ${tasks.length} tasks from structured data`);
     return tasks;
   };
 
@@ -374,8 +422,47 @@ Please provide:
     );
   };
 
-  const handleEditQuote = () => {
+  const handleEditQuote = async () => {
     const selectedTasks = tasks.filter(t => t.selected);
+
+    // Save the generated quote with 'generated' status
+    try {
+      const generatedQuote = {
+        id: siteNotes.id || `generated_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        timestamp: siteNotes.timestamp || Date.now(),
+        lastModified: Date.now(),
+        address: siteNotes.address,
+        jobType: siteNotes.jobType,
+        propertyType: siteNotes.propertyType,
+        size: siteNotes.size,
+        tasks: siteNotes.tasks,
+        notes: siteNotes.notes,
+        photos: siteNotes.photos || [],
+        voiceNotes: siteNotes.voiceNotes || '',
+        syncStatus: 'local' as const,
+        status: 'generated' as const, // Mark as generated
+        generatedTasks: selectedTasks,
+        totalCost,
+        aiAnalysis,
+      };
+
+      const existingQuotesJson = await AsyncStorage.getItem('saved_quotes');
+      const existingQuotes = existingQuotesJson ? JSON.parse(existingQuotesJson) : [];
+
+      // Update or add the generated quote
+      const updatedQuotes = existingQuotes.filter((q: any) => q.id !== generatedQuote.id);
+      updatedQuotes.push(generatedQuote);
+
+      // Sort by last modified
+      updatedQuotes.sort((a: any, b: any) => b.lastModified - a.lastModified);
+
+      await AsyncStorage.setItem('saved_quotes', JSON.stringify(updatedQuotes));
+
+      console.log('💾 Saved generated quote:', generatedQuote.id);
+    } catch (error) {
+      console.error('Error saving generated quote:', error);
+    }
+
     navigation.navigate('EditQuote', {
       tasks: selectedTasks,
       totalCost,

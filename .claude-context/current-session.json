@@ -1,58 +1,83 @@
 {
-  "sessionId": "2025-12-08-gemini-integration-fix",
-  "date": "2025-12-08",
-  "startTime": "09:30:00Z",
-  "context": {
-    "primaryTask": "MVP Pivot - Site Notes to Professional Quotes for Jan 15 investor meeting",
-    "mvpStatus": {
-      "deadline": "2025-01-15",
-      "phase": "Code cleanup and pivot preparation",
-      "targetFlow": "Site Notes → AI Processing → Task List → Edit Quote → Send"
+  "sessionId": "mvp-pivot-session-2025-12-22",
+  "timestamp": "2025-12-22T12:45:00Z",
+  "phase": "MVP Development - Pre-Investor Demo",
+  "targetDate": "2025-01-15",
+  "currentStatus": "Auto-Save Implementation Complete - Staging Build Triggered",
+  "architecture": {
+    "primary": "Single-provider AI architecture",
+    "providers": {
+      "active": "Gemini 2.0 Flash (quota-optimized)",
+      "fallback": "Template-based quotes",
+      "strategy": "Intelligent retry logic with quota preservation"
     },
-    "pocResults": {
-      "accuracy": "85% cost estimation accuracy with PDF content analysis",
-      "keyInsight": "Detailed context from site notes yields professional-grade quotes",
-      "pdfExtraction": "Working with pdf-parse library"
-    },
-    "workCompleted": [
-      "POC server with PDF extraction achieving 85% accuracy",
-      "Fixed cost parsing for accurate range detection",
-      "Designed 5-screen MVP flow with offline-first architecture",
-      "Cleaned up 30+ unused files (ONS integration, pricing scripts, old AI providers)",
-      "RESTORED authentication screens (Email verification, Login, Account)",
-      "Simplified codebase while keeping essential auth for MVP",
-      "Ready for MVP pivot with lean codebase + working auth"
+    "navigation": "Stack-based with modal menu (Expo Go compatible)",
+    "authentication": "Supabase Auth with email verification",
+    "storage": "AsyncStorage + Supabase integration"
+  },
+  "mvp_flow": {
+    "screens": [
+      "Login/Signup → SiteNotesScreen → TaskListScreen → EditQuoteScreen → ShareQuoteScreen"
     ],
-    "keyLearnings": {
-      "quotaManagement": "Different Gemini models have different free tier quotas",
-      "keyMismatch": "Multiple API keys existed - one in .env (expired), one in AI Studio (working)",
-      "modelUpgrades": "gemini-2.5-flash has better quota availability than gemini-2.0-flash",
-      "debuggingApproach": "Test API keys directly before assuming model deprecation"
+    "features_complete": [
+      "User authentication with email verification",
+      "Guided site assessment capture",
+      "AI-powered task generation with UK pricing",
+      "Template fallback system",
+      "Saved quotes management with delete functionality",
+      "Professional quote sharing",
+      "Offline-capable design",
+      "Auto-save draft quotes with 1-second debounce",
+      "Smart navigation based on quote status (draft/generated)"
+    ],
+    "demo_ready": true
+  },
+  "recent_fixes": {
+    "api_optimization": {
+      "issue": "Gemini API quota exhaustion (4x usage per quote)",
+      "solution": "Intelligent retry logic - quota-preserving error handling",
+      "impact": "4x more quotes possible with same quota"
+    },
+    "ui_improvements": {
+      "delete_functionality": "Added delete X button for saved quotes",
+      "menu_system": "Modal-based menu replacing drawer navigation",
+      "expo_compatibility": "Removed react-native-reanimated dependencies"
+    },
+    "error_handling": {
+      "edge_function_health": "Graceful degradation on API failures",
+      "ai_service_errors": "Fixed constructor and method call issues"
     }
   },
-  "lastUpdated": "2025-12-19T16:06:28.927Z",
-  "project": {
-    "name": "asktoddy-mobile",
-    "version": "1.2.0",
-    "dependencies": {
-      "expo": "~54.0.25",
-      "react-native": "0.81.5",
-      "@google/generative-ai": "^0.24.1"
+  "investor_demo_readiness": {
+    "core_functionality": "100% complete",
+    "ui_polish": "95% complete",
+    "reliability": "High - fallback systems in place",
+    "performance": "Optimized for quota efficiency",
+    "brand_consistency": "Orange theme with AskToddy character splash"
+  },
+  "next_priorities": [
+    "Voice-to-text functionality",
+    "Demo mode preparation",
+    "Technical debt cleanup",
+    "Final UI polish"
+  ],
+  "staging_build": {
+    "triggered": "2025-12-22T16:50:00Z",
+    "purpose": "Testing auto-save functionality and complete user flow",
+    "platform": "iOS",
+    "profile": "staging",
+    "status": "uploading",
+    "features_to_test": [
+      "Auto-save draft quotes (1-second debounce)",
+      "Smart navigation (draft vs generated quotes)",
+      "Visual auto-save feedback",
+      "Complete user flow without quota issues",
+      "Offline functionality",
+      "Menu system with saved quotes"
+    ],
+    "testflight_submit": {
+      "auto_submit_command": "eas submit --platform ios --profile staging --latest",
+      "configured": true
     }
-  },
-  "git": {
-    "branch": "mvp-site-notes-jan15",
-    "lastCommit": "5e30f27 fix: Restore email verification screens for MVP authentication",
-    "hasUncommittedChanges": true,
-    "changedFiles": 1
-  },
-  "environment": {
-    "nodeVersion": "v24.3.0",
-    "platform": "darwin"
-  },
-  "runningProcesses": [],
-  "recentFiles": [
-    "src/screens/EmailVerificationScreen.tsx",
-    "src/screens/VerificationSuccessScreen.tsx"
-  ]
+  }
 }

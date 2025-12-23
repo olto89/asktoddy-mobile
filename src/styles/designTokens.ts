@@ -75,7 +75,10 @@ export const designTokens = {
       900: '#18181b',
     },
     // Semantic colors for mobile
-    background: '#ffffff',
+    background: {
+      primary: '#ffffff',
+      secondary: '#f8fafc',
+    },
     surface: '#f8fafc',
     text: {
       primary: '#2C3E50',
@@ -83,7 +86,10 @@ export const designTokens = {
       tertiary: '#6c7482',
       inverse: '#ffffff',
     },
-    border: '#e2e6ea',
+    border: {
+      primary: '#e2e6ea',
+      secondary: '#f0f2f5',
+    },
   },
 
   // Typography (React Native compatible)

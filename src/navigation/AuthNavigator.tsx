@@ -16,7 +16,7 @@ import HomeScreen from '../screens/HomeScreen';
 import ChatScreen from '../screens/ChatScreen';
 import CameraScreen from '../screens/CameraScreen';
 import ResultsScreen from '../screens/ResultsScreen';
-import DrawerNavigator from './DrawerNavigator';
+import SimpleNavigator from './DrawerNavigator';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -67,9 +67,9 @@ export default function AuthNavigator() {
           />
         </Stack.Group>
       ) : (
-        // App stack - user logged in - use DrawerNavigator (MVP)
+        // App stack - user logged in - use SimpleNavigator (MVP)
         <Stack.Group>
-          <Stack.Screen name="Main" component={DrawerNavigator} options={{ headerShown: false }} />
+          <Stack.Screen name="Main" component={SimpleNavigator} options={{ headerShown: false }} />
           <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
           <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'AskToddy' }} />
           <Stack.Screen name="Camera" component={CameraScreen} options={{ title: 'Take Photo' }} />

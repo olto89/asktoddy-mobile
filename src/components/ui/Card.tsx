@@ -23,7 +23,7 @@ export default function Card({ children, variant = 'default', padding = 'lg', st
 const styles = StyleSheet.create({
   base: {
     borderRadius: designTokens.borderRadius.xl,
-    backgroundColor: designTokens.colors.background,
+    backgroundColor: designTokens.colors.background.primary,
   },
 
   default: {
@@ -36,7 +36,7 @@ const styles = StyleSheet.create({
 
   outlined: {
     borderWidth: 1,
-    borderColor: designTokens.colors.border,
+    borderColor: designTokens.colors.border.primary,
     shadowOpacity: 0,
     elevation: 0,
   },
