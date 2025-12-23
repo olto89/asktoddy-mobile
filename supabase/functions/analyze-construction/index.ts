@@ -88,7 +88,7 @@ interface ProjectAnalysis {
 
 // Intelligent Gemini API call with smart retry logic
 async function callGemini(prompt: string, apiKey: string): Promise<string> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
   // Intelligent retry logic based on error types
   let retries = 1; // Only 1 retry for network/server errors
