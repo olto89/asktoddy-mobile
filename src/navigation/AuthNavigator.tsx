@@ -21,7 +21,7 @@ import SimpleNavigator from './DrawerNavigator';
 const Stack = createStackNavigator<RootStackParamList>();
 
 export default function AuthNavigator() {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, isAnonymous } = useAuth();
 
   // Show loading with orange background to match splash screen
   if (loading) {
@@ -51,35 +51,30 @@ export default function AuthNavigator() {
         },
       }}
     >
-      {!isAuthenticated ? (
-        // Auth stack - user not logged in
-        <Stack.Group>
-          <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-          <Stack.Screen
-            name="EmailVerification"
-            component={EmailVerificationScreen}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="VerificationSuccess"
-            component={VerificationSuccessScreen}
-            options={{ headerShown: false }}
-          />
-        </Stack.Group>
-      ) : (
-        // App stack - user logged in - use SimpleNavigator (MVP)
-        <Stack.Group>
-          <Stack.Screen name="Main" component={SimpleNavigator} options={{ headerShown: false }} />
-          <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'AskToddy' }} />
-          <Stack.Screen name="Camera" component={CameraScreen} options={{ title: 'Take Photo' }} />
-          <Stack.Screen
-            name="Results"
-            component={ResultsScreen}
-            options={{ title: 'Quote Results' }}
-          />
-        </Stack.Group>
-      )}
+      {/* Always show main app - anonymous users can use it but will hit paywall for quotes */}
+      <Stack.Group>
+        <Stack.Screen name="Main" component={SimpleNavigator} options={{ headerShown: false }} />
+        <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'AskToddy' }} />
+        <Stack.Screen name="Camera" component={CameraScreen} options={{ title: 'Take Photo' }} />
+        <Stack.Screen
+          name="Results"
+          component={ResultsScreen}
+          options={{ title: 'Quote Results' }}
+        />
+        {/* Auth screens still available for login from modals */}
+        <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+        <Stack.Screen
+          name="EmailVerification"
+          component={EmailVerificationScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="VerificationSuccess"
+          component={VerificationSuccessScreen}
+          options={{ headerShown: false }}
+        />
+      </Stack.Group>
     </Stack.Navigator>
   );
 }

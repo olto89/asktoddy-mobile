@@ -29,7 +29,7 @@ interface Task {
 }
 
 export default function EditQuoteScreen({ navigation, route }: any) {
-  const { tasks, totalCost, siteNotes } = route.params;
+  const { tasks = [], totalCost = { min: 0, max: 0 }, siteNotes, savedQuote } = route.params;
   const [editedTasks, setEditedTasks] = useState<Task[]>(tasks);
   const [projectNotes, setProjectNotes] = useState('');
   const [customerName, setCustomerName] = useState('');
@@ -79,35 +79,35 @@ export default function EditQuoteScreen({ navigation, route }: any) {
 
   const handleSaveQuote = async () => {
     try {
-      const quote = {
-        id: Date.now().toString(),
-        timestamp: Date.now(),
+      const updatedQuote = {
+        ...route.params.savedQuote, // Keep existing quote data
         quoteName,
         customerName,
-        siteNotes,
-        tasks: editedTasks,
+        generatedTasks: editedTasks, // Update the tasks
         totalCost: calculateTotal(),
         projectNotes,
-        status: 'draft',
+        lastModified: Date.now(),
+        status: 'generated', // Keep as generated quote
       };
 
-      // Save to AsyncStorage
+      // Update the existing quote in AsyncStorage
       const existingQuotes = await AsyncStorage.getItem('saved_quotes');
       const quotes = existingQuotes ? JSON.parse(existingQuotes) : [];
-      quotes.unshift(quote); // Add to beginning
-      await AsyncStorage.setItem('saved_quotes', JSON.stringify(quotes));
 
-      Alert.alert('Quote Saved', 'Your quote has been saved successfully!', [
+      // Find and update the existing quote
+      const updatedQuotes = quotes.map((q: any) => (q.id === updatedQuote.id ? updatedQuote : q));
+
+      await AsyncStorage.setItem('saved_quotes', JSON.stringify(updatedQuotes));
+
+      // Simple success message and go back to QuoteView
+      Alert.alert('Quote Updated', 'Your changes have been saved.', [
         {
-          text: 'Share Quote',
-          onPress: () => navigation.navigate('ShareQuote', { quote }),
-        },
-        {
-          text: 'View Saved Quotes',
+          text: 'OK',
           onPress: () => navigation.goBack(),
         },
       ]);
     } catch (error) {
+      console.error('Error saving quote:', error);
       Alert.alert('Error', 'Failed to save quote. Please try again.');
     }
   };
@@ -164,59 +164,91 @@ export default function EditQuoteScreen({ navigation, route }: any) {
         {/* Tasks */}
         <View style={styles.tasksContainer}>
           <Text style={styles.sectionTitle}>Tasks & Costs</Text>
-          {editedTasks.map((task, index) => (
-            <Card key={task.id} style={styles.taskCard}>
-              <View style={styles.taskHeader}>
-                <Text style={styles.taskNumber}>{index + 1}.</Text>
-                <Text style={styles.taskCategory}>{task.category}</Text>
-                <TouchableOpacity onPress={() => removeTask(task.id)}>
-                  <Ionicons name="trash-outline" size={20} color={designTokens.colors.error[500]} />
-                </TouchableOpacity>
+          {editedTasks.length === 0 ? (
+            <Card style={styles.emptyTasksCard}>
+              <View style={styles.emptyTasksContent}>
+                <Ionicons
+                  name="construct-outline"
+                  size={48}
+                  color={designTokens.colors.text.tertiary}
+                />
+                <Text style={styles.emptyTasksTitle}>No Tasks Available</Text>
+                <Text style={styles.emptyTasksText}>
+                  This quote doesn't have any tasks to edit. You may need to regenerate the quote.
+                </Text>
+                <Button
+                  title="Regenerate Quote"
+                  onPress={() => {
+                    if (siteNotes) {
+                      navigation.navigate('TaskList', { siteNotes });
+                    } else {
+                      Alert.alert('Error', 'Cannot regenerate quote - missing site information');
+                    }
+                  }}
+                  variant="secondary"
+                  style={{ marginTop: designTokens.spacing.md }}
+                />
               </View>
-
-              <TextInput
-                style={styles.taskDescriptionInput}
-                value={task.description}
-                onChangeText={text => updateTaskDescription(task.id, text)}
-                multiline
-                placeholder="Task description..."
-                placeholderTextColor={designTokens.colors.text.tertiary}
-              />
-
-              <View style={styles.costInputs}>
-                <View style={styles.costInput}>
-                  <Text style={styles.costLabel}>Min Cost (£)</Text>
-                  <TextInput
-                    style={styles.costField}
-                    value={task.estimatedCost.min.toString()}
-                    onChangeText={text => updateTaskCost(task.id, 'min', text)}
-                    keyboardType="numeric"
-                    placeholder="0"
-                    placeholderTextColor={designTokens.colors.text.tertiary}
-                  />
-                </View>
-
-                <View style={styles.costInput}>
-                  <Text style={styles.costLabel}>Max Cost (£)</Text>
-                  <TextInput
-                    style={styles.costField}
-                    value={task.estimatedCost.max.toString()}
-                    onChangeText={text => updateTaskCost(task.id, 'max', text)}
-                    keyboardType="numeric"
-                    placeholder="0"
-                    placeholderTextColor={designTokens.colors.text.tertiary}
-                  />
-                </View>
-              </View>
-
-              {task.materials && task.materials.length > 0 && (
-                <View style={styles.materialsContainer}>
-                  <Text style={styles.materialsLabel}>Materials:</Text>
-                  <Text style={styles.materialsText}>{task.materials.join(', ')}</Text>
-                </View>
-              )}
             </Card>
-          ))}
+          ) : (
+            editedTasks.map((task, index) => (
+              <Card key={task.id} style={styles.taskCard}>
+                <View style={styles.taskHeader}>
+                  <Text style={styles.taskNumber}>{index + 1}.</Text>
+                  <Text style={styles.taskCategory}>{task.category}</Text>
+                  <TouchableOpacity onPress={() => removeTask(task.id)}>
+                    <Ionicons
+                      name="trash-outline"
+                      size={20}
+                      color={designTokens.colors.error[500]}
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                <TextInput
+                  style={styles.taskDescriptionInput}
+                  value={task.description}
+                  onChangeText={text => updateTaskDescription(task.id, text)}
+                  multiline
+                  placeholder="Task description..."
+                  placeholderTextColor={designTokens.colors.text.tertiary}
+                />
+
+                <View style={styles.costInputs}>
+                  <View style={styles.costInput}>
+                    <Text style={styles.costLabel}>Min Cost (£)</Text>
+                    <TextInput
+                      style={styles.costField}
+                      value={task.estimatedCost.min.toString()}
+                      onChangeText={text => updateTaskCost(task.id, 'min', text)}
+                      keyboardType="numeric"
+                      placeholder="0"
+                      placeholderTextColor={designTokens.colors.text.tertiary}
+                    />
+                  </View>
+
+                  <View style={styles.costInput}>
+                    <Text style={styles.costLabel}>Max Cost (£)</Text>
+                    <TextInput
+                      style={styles.costField}
+                      value={task.estimatedCost.max.toString()}
+                      onChangeText={text => updateTaskCost(task.id, 'max', text)}
+                      keyboardType="numeric"
+                      placeholder="0"
+                      placeholderTextColor={designTokens.colors.text.tertiary}
+                    />
+                  </View>
+                </View>
+
+                {task.materials && task.materials.length > 0 && (
+                  <View style={styles.materialsContainer}>
+                    <Text style={styles.materialsLabel}>Materials:</Text>
+                    <Text style={styles.materialsText}>{task.materials.join(', ')}</Text>
+                  </View>
+                )}
+              </Card>
+            ))
+          )}
         </View>
 
         {/* Updated Total */}
@@ -394,5 +426,27 @@ const styles = StyleSheet.create({
   actions: {
     paddingHorizontal: designTokens.spacing.md,
     paddingVertical: designTokens.spacing.lg,
+  },
+  emptyTasksCard: {
+    marginBottom: designTokens.spacing.md,
+    padding: designTokens.spacing.xl,
+  },
+  emptyTasksContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyTasksTitle: {
+    fontSize: designTokens.typography.fontSize.lg,
+    fontWeight: designTokens.typography.fontWeight.semibold as any,
+    color: designTokens.colors.text.primary,
+    marginTop: designTokens.spacing.md,
+    marginBottom: designTokens.spacing.sm,
+    textAlign: 'center',
+  },
+  emptyTasksText: {
+    fontSize: designTokens.typography.fontSize.base,
+    color: designTokens.colors.text.secondary,
+    textAlign: 'center',
+    lineHeight: 22,
   },
 });

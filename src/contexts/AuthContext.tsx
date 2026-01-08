@@ -1,11 +1,28 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { Linking, AppState, AppStateStatus } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase, authHelpers } from '../services/supabase';
 import { navigate } from '../services/NavigationService';
 
+// Enhanced user types for freemium model
+type UserTier = 'anonymous' | 'free' | 'premium';
+
+interface FreemiumUser {
+  id: string;
+  email?: string;
+  tier: UserTier;
+  quotesUsed: number;
+  quotesLimit: number;
+  subscriptionStatus?: 'active' | 'canceled' | 'past_due';
+  subscriptionId?: string;
+  createdAt: string;
+  anonymousId?: string; // For anonymous users
+}
+
 interface AuthContextType {
   user: User | null;
+  freemiumUser: FreemiumUser;
   session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
@@ -13,6 +30,10 @@ interface AuthContextType {
   signUpTest: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   isAuthenticated: boolean;
+  isAnonymous: boolean;
+  canGenerateQuote: () => boolean;
+  incrementQuoteUsage: () => Promise<void>;
+  upgradeUser: (tier: UserTier) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,9 +50,33 @@ interface AuthProviderProps {
   children: React.ReactNode;
 }
 
+// Helper functions for anonymous user management
+const generateAnonymousId = (): string => {
+  return `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+};
+
+const createAnonymousUser = (): FreemiumUser => ({
+  id: generateAnonymousId(),
+  tier: 'anonymous',
+  quotesUsed: 0,
+  quotesLimit: 0, // Anonymous users can't generate quotes
+  createdAt: new Date().toISOString(),
+  anonymousId: generateAnonymousId(),
+});
+
+const createFreeUser = (user: User): FreemiumUser => ({
+  id: user.id,
+  email: user.email,
+  tier: 'free',
+  quotesUsed: 0,
+  quotesLimit: 5, // Free tier limit
+  createdAt: user.created_at || new Date().toISOString(),
+});
+
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [freemiumUser, setFreemiumUser] = useState<FreemiumUser>(createAnonymousUser());
   const [loading, setLoading] = useState(true);
 
   // Use ref to track current session for intervals without causing re-renders
@@ -50,6 +95,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         console.log('🔄 Initializing authentication...');
 
+        // First, try to load existing freemium user data from storage
+        const storedFreemiumUser = await loadFreemiumUserFromStorage();
+        if (storedFreemiumUser) {
+          setFreemiumUser(storedFreemiumUser);
+          console.log('💾 Loaded existing freemium user:', storedFreemiumUser.tier);
+        }
+
         // Get initial session - let Supabase handle this naturally
         const {
           data: { session },
@@ -60,22 +112,52 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         if (error) {
           console.error('❌ Error getting initial session:', error);
+
+          // If it's an invalid refresh token error, clear the session
+          if (
+            error.message?.includes('Invalid Refresh Token') ||
+            error.message?.includes('Refresh Token Not Found')
+          ) {
+            console.log('🔄 Clearing invalid session...');
+            await supabase.auth.signOut();
+          }
+
           setSession(null);
           setUser(null);
+          // Keep anonymous user if no session
+          if (!storedFreemiumUser) {
+            const anonymousUser = createAnonymousUser();
+            setFreemiumUser(anonymousUser);
+            await saveFreemiumUserToStorage(anonymousUser);
+          }
         } else if (session) {
           console.log('✅ Initial session found for:', session.user?.email);
           setSession(session);
           setUser(session.user);
+          // Convert to free user if not already upgraded
+          const freeUser = createFreeUser(session.user);
+          setFreemiumUser(freeUser);
+          await saveFreemiumUserToStorage(freeUser);
         } else {
           console.log('ℹ️ No initial session found');
           setSession(null);
           setUser(null);
+          // Keep anonymous user if no session
+          if (!storedFreemiumUser) {
+            const anonymousUser = createAnonymousUser();
+            setFreemiumUser(anonymousUser);
+            await saveFreemiumUserToStorage(anonymousUser);
+          }
         }
       } catch (error) {
         console.error('❌ Error during auth initialization:', error);
         if (mounted) {
           setSession(null);
           setUser(null);
+          // Fallback to anonymous user
+          const anonymousUser = createAnonymousUser();
+          setFreemiumUser(anonymousUser);
+          await saveFreemiumUserToStorage(anonymousUser);
         }
       } finally {
         if (mounted) {
@@ -103,12 +185,37 @@ export function AuthProvider({ children }: AuthProviderProps) {
           console.log('✅ User signed in');
           setSession(session);
           setUser(session?.user ?? null);
+          // Preserve anonymous session data when converting to free user
+          if (session?.user) {
+            // Get current anonymous session ID if exists
+            const currentSessionId = freemiumUser.anonymousId;
+            const currentQuotesUsed = freemiumUser.quotesUsed; // Preserve quotes used
+
+            const freeUser = createFreeUser(session.user);
+            // Preserve the anonymous session data
+            freeUser.anonymousId = currentSessionId; // Keep the session ID for continuity
+            freeUser.quotesUsed = currentQuotesUsed; // Preserve quota usage
+
+            console.log('🆔 Creating free user with preserved session:', {
+              tier: freeUser.tier,
+              quotesUsed: freeUser.quotesUsed,
+              quotesLimit: freeUser.quotesLimit,
+              preservedSessionId: currentSessionId,
+            });
+            setFreemiumUser(freeUser);
+            await saveFreemiumUserToStorage(freeUser);
+            console.log('💾 Free user saved to storage with preserved session data');
+          }
           setLoading(false);
           break;
         case 'SIGNED_OUT':
           console.log('👋 User signed out');
           setSession(null);
           setUser(null);
+          // Revert to anonymous user on sign out
+          const anonymousUser = createAnonymousUser();
+          setFreemiumUser(anonymousUser);
+          await saveFreemiumUserToStorage(anonymousUser);
           setLoading(false);
           break;
         case 'TOKEN_REFRESHED':
@@ -123,6 +230,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
           if (session) {
             setSession(session);
             setUser(session.user);
+            // Update freemium user data
+            const updatedFreeUser = createFreeUser(session.user);
+            setFreemiumUser(updatedFreeUser);
+            await saveFreemiumUserToStorage(updatedFreeUser);
           }
           break;
         default:
@@ -242,6 +353,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
             if (error || !freshSession) {
               console.warn('⚠️ Session check failed, might be expired');
+
+              // If it's an invalid refresh token error, clear the session
+              if (
+                error?.message?.includes('Invalid Refresh Token') ||
+                error?.message?.includes('Refresh Token Not Found')
+              ) {
+                console.log('🔄 Clearing invalid session during periodic check...');
+                await supabase.auth.signOut();
+              }
+
               // Session is invalid, clear it
               setSession(null);
               setUser(null);
@@ -297,6 +418,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.log('🔐 Attempting sign in for:', email);
       console.log('🔐 Current session before sign in:', session?.user?.email || 'none');
 
+      // Store current anonymous session data before sign in
+      const currentAnonymousId = freemiumUser.anonymousId;
+      const currentQuotesUsed = freemiumUser.quotesUsed;
+
       // Set a timeout to prevent hanging (but don't set global loading)
       timeoutId = setTimeout(() => {
         console.warn('SignIn timeout reached');
@@ -324,6 +449,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
           '✅ Session obtained:',
           data.session.access_token ? 'token present' : 'no token'
         );
+
+        // Immediately update freemium user to preserve session continuity
+        const freeUser = createFreeUser(data.user);
+        freeUser.anonymousId = currentAnonymousId;
+        freeUser.quotesUsed = currentQuotesUsed;
+        setFreemiumUser(freeUser);
+        await saveFreemiumUserToStorage(freeUser);
+
         // The auth state change listener will handle setting the session
         return { error: null };
       }
@@ -426,19 +559,107 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Clear local state
       setUser(null);
       setSession(null);
+
+      // Clear all user data from AsyncStorage for privacy/security
+      await AsyncStorage.removeItem('saved_quotes');
+      await AsyncStorage.removeItem('freemium_user');
+
+      // Revert to anonymous user
+      const anonymousUser = createAnonymousUser();
+      setFreemiumUser(anonymousUser);
+      await saveFreemiumUserToStorage(anonymousUser);
+
       console.log('✅ User signed out successfully');
     } catch (error) {
       console.error('❌ Sign out exception:', error);
       // Still clear local state on error
       setUser(null);
       setSession(null);
+
+      // Clear all user data from AsyncStorage even on error
+      try {
+        await AsyncStorage.removeItem('saved_quotes');
+        await AsyncStorage.removeItem('freemium_user');
+      } catch (clearError) {
+        console.error('❌ Error clearing AsyncStorage:', clearError);
+      }
+
+      // Still revert to anonymous
+      const anonymousUser = createAnonymousUser();
+      setFreemiumUser(anonymousUser);
+      await saveFreemiumUserToStorage(anonymousUser);
     } finally {
       setLoading(false);
     }
   };
 
+  // Freemium helper functions
+  const loadFreemiumUserFromStorage = async (): Promise<FreemiumUser | null> => {
+    try {
+      const storedUser = await AsyncStorage.getItem('freemium_user');
+      return storedUser ? JSON.parse(storedUser) : null;
+    } catch (error) {
+      console.error('Error loading freemium user from storage:', error);
+      return null;
+    }
+  };
+
+  const saveFreemiumUserToStorage = async (freemiumUser: FreemiumUser) => {
+    try {
+      await AsyncStorage.setItem('freemium_user', JSON.stringify(freemiumUser));
+    } catch (error) {
+      console.error('Error saving freemium user to storage:', error);
+    }
+  };
+
+  const canGenerateQuote = (): boolean => {
+    // Anonymous users cannot generate quotes - must sign up
+    if (freemiumUser.tier === 'anonymous') {
+      return false;
+    }
+
+    // Free users have limits
+    if (freemiumUser.tier === 'free') {
+      return freemiumUser.quotesUsed < freemiumUser.quotesLimit;
+    }
+
+    // Premium users have unlimited quotes
+    if (freemiumUser.tier === 'premium') {
+      return true;
+    }
+
+    return false;
+  };
+
+  const incrementQuoteUsage = async (): Promise<void> => {
+    if (freemiumUser.tier === 'free' && freemiumUser.quotesUsed < freemiumUser.quotesLimit) {
+      const updatedUser = {
+        ...freemiumUser,
+        quotesUsed: freemiumUser.quotesUsed + 1,
+      };
+      setFreemiumUser(updatedUser);
+      await saveFreemiumUserToStorage(updatedUser);
+      console.log(
+        `📊 Quote usage incremented: ${updatedUser.quotesUsed}/${updatedUser.quotesLimit}`
+      );
+    }
+  };
+
+  const upgradeUser = async (tier: UserTier): Promise<void> => {
+    const upgradedUser = {
+      ...freemiumUser,
+      tier,
+      quotesLimit: tier === 'premium' ? 999999 : 5, // Effectively unlimited for premium
+      subscriptionStatus: tier === 'premium' ? ('active' as const) : undefined,
+    };
+    setFreemiumUser(upgradedUser);
+    await saveFreemiumUserToStorage(upgradedUser);
+    console.log(`🎉 User upgraded to ${tier}`);
+  };
+
   const value: AuthContextType = {
     user,
+    freemiumUser,
     session,
     loading,
     signIn,
@@ -446,6 +667,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     signUpTest,
     signOut,
     isAuthenticated: !!user,
+    isAnonymous: freemiumUser.tier === 'anonymous',
+    canGenerateQuote,
+    incrementQuoteUsage,
+    upgradeUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

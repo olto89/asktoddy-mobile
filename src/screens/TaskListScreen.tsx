@@ -15,6 +15,9 @@ import designTokens from '../styles/designTokens';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { AIService } from '../services/ai/AIServiceEdge';
+import { useAuth } from '../contexts/AuthContext';
+import LoginSignupModal from '../components/modals/LoginSignupModal';
+import UpgradePromptModal from '../components/modals/UpgradePromptModal';
 
 interface Task {
   id: string;
@@ -30,15 +33,49 @@ interface Task {
 }
 
 export default function TaskListScreen({ navigation, route }: any) {
-  const { siteNotes } = route.params;
+  const { siteNotes, savedQuote, isViewingGenerated } = route.params;
+  const { canGenerateQuote, incrementQuoteUsage, isAnonymous, freemiumUser } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [isProcessing, setIsProcessing] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(!isViewingGenerated); // Skip processing if viewing existing
   const [totalCost, setTotalCost] = useState({ min: 0, max: 0 });
   const [aiAnalysis, setAiAnalysis] = useState<any>(null);
+  const [currentQuote, setCurrentQuote] = useState<any>(savedQuote || null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [pendingQuoteGeneration, setPendingQuoteGeneration] = useState(false);
+  const [previousAuthState, setPreviousAuthState] = useState(isAnonymous);
 
   useEffect(() => {
-    generateTasksFromNotes();
+    if (isViewingGenerated && savedQuote) {
+      // Load existing generated quote data - NO AI CALL NEEDED
+      console.log('🔄 Loading existing quote, skipping AI generation');
+      loadExistingQuoteData();
+    } else {
+      // Generate new quote from site notes
+      console.log('🚀 Generating new quote with AI');
+      generateTasksFromNotes();
+    }
   }, []);
+
+  // Watch for auth state changes and retry quote generation if needed
+  useEffect(() => {
+    // Detect transition from anonymous to authenticated
+    if (previousAuthState === true && isAnonymous === false) {
+      console.log('🔄 User authenticated! Auth transition detected');
+      setPreviousAuthState(false);
+
+      // If we have pending quote generation, retry after a small delay
+      if (pendingQuoteGeneration && canGenerateQuote()) {
+        console.log('⏱️ Waiting for auth state to stabilize...');
+        setTimeout(() => {
+          console.log('🚀 Retrying quote generation after auth...');
+          setPendingQuoteGeneration(false);
+          setIsProcessing(true); // Show loading state during AI processing
+          generateTasksFromNotes();
+        }, 500); // Small delay to ensure auth state is fully propagated
+      }
+    }
+  }, [isAnonymous, freemiumUser.tier, pendingQuoteGeneration, previousAuthState]);
 
   useEffect(() => {
     // Calculate total when tasks change
@@ -53,25 +90,132 @@ export default function TaskListScreen({ navigation, route }: any) {
     setTotalCost(total);
   }, [tasks]);
 
+  const loadExistingQuoteData = () => {
+    console.log('📋 Loading existing quote data:', savedQuote.id);
+
+    if (savedQuote.generatedTasks) {
+      setTasks(savedQuote.generatedTasks);
+    }
+
+    if (savedQuote.totalCost) {
+      setTotalCost(savedQuote.totalCost);
+    }
+
+    if (savedQuote.aiAnalysis) {
+      setAiAnalysis(savedQuote.aiAnalysis);
+    }
+
+    setIsProcessing(false);
+  };
+
+  const autoSaveGeneratedQuote = async (generatedTasks: Task[], aiResponse: any) => {
+    try {
+      // Calculate total cost
+      const calculatedTotal = generatedTasks
+        .filter(t => t.selected)
+        .reduce(
+          (acc, task) => ({
+            min: acc.min + task.estimatedCost.min,
+            max: acc.max + task.estimatedCost.max,
+          }),
+          { min: 0, max: 0 }
+        );
+
+      const generatedQuote = {
+        id: siteNotes.id || `generated_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        timestamp: siteNotes.timestamp || Date.now(),
+        lastModified: Date.now(),
+        address: siteNotes.address,
+        jobType: siteNotes.jobType,
+        propertyType: siteNotes.propertyType,
+        size: siteNotes.size,
+        tasks: siteNotes.tasks,
+        notes: siteNotes.notes,
+        photos: siteNotes.photos || [],
+        voiceNotes: siteNotes.voiceNotes || '',
+        syncStatus: 'local' as const,
+        status: 'generated' as const,
+        generatedTasks,
+        totalCost: calculatedTotal,
+        aiAnalysis: aiResponse,
+        siteNotes,
+      };
+
+      const existingQuotesJson = await AsyncStorage.getItem('saved_quotes');
+      const existingQuotes = existingQuotesJson ? JSON.parse(existingQuotesJson) : [];
+
+      // Update or add the generated quote
+      const updatedQuotes = existingQuotes.filter((q: any) => q.id !== generatedQuote.id);
+      updatedQuotes.push(generatedQuote);
+
+      // Sort by last modified
+      updatedQuotes.sort((a: any, b: any) => b.lastModified - a.lastModified);
+
+      await AsyncStorage.setItem('saved_quotes', JSON.stringify(updatedQuotes));
+
+      setCurrentQuote(generatedQuote);
+      console.log('💾 Auto-saved generated quote:', generatedQuote.id);
+    } catch (error) {
+      console.error('Error auto-saving generated quote:', error);
+    }
+  };
+
   const generateTasksFromNotes = async () => {
     try {
+      // Debug auth state
+      console.log('🔍 Quote generation check:', {
+        isAnonymous,
+        canGenerate: canGenerateQuote(),
+        userTier: freemiumUser.tier,
+        quotesUsed: freemiumUser.quotesUsed,
+        quotesLimit: freemiumUser.quotesLimit,
+      });
+
+      // Check if user can generate quotes (freemium check)
+      if (!canGenerateQuote()) {
+        if (isAnonymous) {
+          // Show login/signup modal for anonymous users
+          setPendingQuoteGeneration(true); // Mark that we want to generate after login
+          setShowLoginModal(true);
+          setIsProcessing(false);
+          return;
+        } else {
+          // Show upgrade modal for free users who hit limit
+          setShowUpgradeModal(true);
+          setIsProcessing(false);
+          return;
+        }
+      }
+
       const aiService = AIService;
 
-      // Prepare the prompt
-      const prompt = `Analyze this construction project and generate a detailed task list with cost estimates:
+      // Prepare comprehensive prompt with ALL user input
+      const prompt = `You are a UK construction cost estimator. Analyze this project in detail and provide accurate quotes based on ALL the information provided.
 
-Property: ${siteNotes.address}
-Job Type: ${siteNotes.jobType}
-Property Type: ${siteNotes.propertyType || 'Not specified'}
-Size: ${siteNotes.size || 'Not specified'}
-Selected Tasks: ${siteNotes.tasks.join(', ')}
-Additional Notes: ${siteNotes.notes}
+PROJECT DETAILS:
+📍 Location: ${siteNotes.address}
+🏠 Property Type: ${siteNotes.propertyType || 'Not specified'}
+📐 Size/Dimensions: ${siteNotes.size || 'Not specified'}
+🔧 Job Type: ${siteNotes.jobType}
 
-Please provide:
-1. A comprehensive task list with UK market cost estimates
-2. Break down each task with materials and labor
-3. Identify any additional tasks that might be needed
-4. Provide realistic cost ranges for each task`;
+USER REQUIREMENTS:
+✅ Selected Work Items: ${siteNotes.tasks && siteNotes.tasks.length > 0 ? siteNotes.tasks.join(', ') : 'None specified'}
+
+📝 DETAILED NOTES: ${siteNotes.notes || 'None provided'}
+
+🎤 VOICE NOTES: ${siteNotes.voiceNotes || 'None provided'}
+
+${siteNotes.photos && siteNotes.photos.length > 0 ? `📸 Photos: ${siteNotes.photos.length} photo(s) provided for context` : ''}
+
+ANALYSIS REQUIREMENTS:
+• Pay special attention to the dimensions/size - this heavily impacts material quantities and costs
+• Consider the specific requirements mentioned in notes and voice notes
+• Factor in the property type and location for accurate regional pricing
+• Include all selected work items plus any obviously necessary additional tasks
+• Provide realistic UK construction costs for 2024/2025
+• Consider quality levels appropriate for the property type
+
+Provide detailed cost breakdown with materials, labor, and realistic price ranges based on current UK market rates.`;
 
       // Call AI service
       const response = await aiService.processChat(prompt);
@@ -82,6 +226,12 @@ Please provide:
       // Parse AI response into structured tasks
       const parsedTasks = parseAIResponseToTasks(response);
       setTasks(parsedTasks);
+
+      // Auto-save the generated quote
+      await autoSaveGeneratedQuote(parsedTasks, response);
+
+      // Increment quote usage for tracking
+      await incrementQuoteUsage();
     } catch (error) {
       console.error('Error generating tasks:', error);
       // Fallback to template-based tasks
@@ -132,21 +282,42 @@ Please provide:
         });
       }
 
-      // Add project phases as tasks if available
-      if (aiResponse.timeline?.phases) {
-        aiResponse.timeline.phases.forEach((phase: any, index: number) => {
-          tasks.push({
-            id: `phase-${index}`,
-            description: phase.description,
-            category: 'Project Phase',
-            estimatedCost: {
-              min: 0,
-              max: 0,
-            },
-            materials: [],
-            laborDays: parseInt(phase.duration) || 1,
-            selected: false, // Don't select phases by default
-          });
+      // Add user-selected tasks from the form if they're not already covered
+      if (siteNotes.tasks && siteNotes.tasks.length > 0) {
+        console.log('🔍 Processing user tasks:', siteNotes.tasks);
+        siteNotes.tasks.forEach((userTask: any, index: number) => {
+          // Ensure userTask is a valid string
+          if (!userTask || typeof userTask !== 'string') {
+            console.warn('Skipping invalid task:', userTask);
+            return;
+          }
+
+          // Check if this task is already covered by AI materials/labor
+          const alreadyCovered = tasks.some(
+            task =>
+              task.description.toLowerCase().includes(userTask.toLowerCase()) ||
+              userTask.toLowerCase().includes(task.description.toLowerCase())
+          );
+
+          if (!alreadyCovered) {
+            // Add user task with estimated cost based on project total
+            const avgCost =
+              (aiResponse.costBreakdown.total.min + aiResponse.costBreakdown.total.max) / 2;
+            const taskCost = Math.round(avgCost * 0.15); // Roughly 15% of total per additional task
+
+            tasks.push({
+              id: `user-task-${index}`,
+              description: userTask,
+              category: 'Additional Work',
+              estimatedCost: {
+                min: Math.round(taskCost * 0.8),
+                max: Math.round(taskCost * 1.2),
+              },
+              materials: [userTask],
+              laborDays: 2,
+              selected: true, // User selected these
+            });
+          }
         });
       }
     }
@@ -425,48 +596,25 @@ Please provide:
   const handleEditQuote = async () => {
     const selectedTasks = tasks.filter(t => t.selected);
 
-    // Save the generated quote with 'generated' status
-    try {
-      const generatedQuote = {
-        id: siteNotes.id || `generated_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        timestamp: siteNotes.timestamp || Date.now(),
-        lastModified: Date.now(),
-        address: siteNotes.address,
-        jobType: siteNotes.jobType,
-        propertyType: siteNotes.propertyType,
-        size: siteNotes.size,
-        tasks: siteNotes.tasks,
-        notes: siteNotes.notes,
-        photos: siteNotes.photos || [],
-        voiceNotes: siteNotes.voiceNotes || '',
-        syncStatus: 'local' as const,
-        status: 'generated' as const, // Mark as generated
-        generatedTasks: selectedTasks,
-        totalCost,
-        aiAnalysis,
-      };
-
-      const existingQuotesJson = await AsyncStorage.getItem('saved_quotes');
-      const existingQuotes = existingQuotesJson ? JSON.parse(existingQuotesJson) : [];
-
-      // Update or add the generated quote
-      const updatedQuotes = existingQuotes.filter((q: any) => q.id !== generatedQuote.id);
-      updatedQuotes.push(generatedQuote);
-
-      // Sort by last modified
-      updatedQuotes.sort((a: any, b: any) => b.lastModified - a.lastModified);
-
-      await AsyncStorage.setItem('saved_quotes', JSON.stringify(updatedQuotes));
-
-      console.log('💾 Saved generated quote:', generatedQuote.id);
-    } catch (error) {
-      console.error('Error saving generated quote:', error);
-    }
-
+    // Navigate to edit screen with current data
     navigation.navigate('EditQuote', {
       tasks: selectedTasks,
       totalCost,
       siteNotes,
+      savedQuote: currentQuote,
+    });
+  };
+
+  const handleShareQuote = async () => {
+    const selectedTasks = tasks.filter(t => t.selected);
+
+    // Navigate to share screen
+    navigation.navigate('ShareQuote', {
+      quote: {
+        ...currentQuote,
+        tasks: selectedTasks,
+        totalCost,
+      },
     });
   };
 
@@ -488,17 +636,8 @@ Please provide:
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={24} color={designTokens.colors.text.primary} />
-          </TouchableOpacity>
-          <Text style={styles.title}>📋 Generated Tasks</Text>
-          <View style={{ width: 24 }} />
-        </View>
-
         {/* Project Summary */}
         <Card style={styles.summaryCard}>
           <Text style={styles.summaryTitle}>{siteNotes.address}</Text>
@@ -574,15 +713,61 @@ Please provide:
 
         {/* Actions */}
         <View style={styles.actions}>
-          <Button
-            title="Edit Quote"
-            onPress={handleEditQuote}
-            variant="primary"
-            fullWidth
-            icon={<Ionicons name="create-outline" size={20} color="white" />}
-          />
+          {!isViewingGenerated && (
+            <Text style={styles.actionHint}>
+              ✨ Your quote has been generated and saved! Choose your next step:
+            </Text>
+          )}
+          <View style={styles.actionButtons}>
+            <Button
+              title="Edit Quote"
+              onPress={handleEditQuote}
+              variant="secondary"
+              style={styles.actionButton}
+              icon={
+                <Ionicons
+                  name="create-outline"
+                  size={20}
+                  color={designTokens.colors.text.primary}
+                />
+              }
+            />
+            <Button
+              title="Share Quote"
+              onPress={handleShareQuote}
+              variant="primary"
+              style={styles.actionButton}
+              icon={<Ionicons name="share-outline" size={20} color="white" />}
+            />
+          </View>
         </View>
       </ScrollView>
+
+      {/* Login/Signup Modal for Anonymous Users */}
+      <LoginSignupModal
+        visible={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onSuccess={() => {
+          setShowLoginModal(false);
+          // The useEffect will handle retrying when auth state updates
+          console.log('✅ Login successful, waiting for auth state update...');
+        }}
+        mode="signup"
+        title="Sign Up to Generate Your Quote"
+        subtitle="Join thousands of contractors saving time with AI quotes"
+      />
+
+      {/* Upgrade Modal for Free Users */}
+      <UpgradePromptModal
+        visible={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        onUpgrade={() => {
+          setShowUpgradeModal(false);
+          // TODO: Navigate to payment flow
+          Alert.alert('Coming Soon', 'Payment integration coming in next update');
+        }}
+        reason="quota_exceeded"
+      />
     </SafeAreaView>
   );
 }
@@ -749,5 +934,29 @@ const styles = StyleSheet.create({
   actions: {
     paddingHorizontal: designTokens.spacing.md,
     paddingVertical: designTokens.spacing.lg,
+  },
+  actionHint: {
+    fontSize: designTokens.typography.fontSize.sm,
+    color: designTokens.colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: designTokens.spacing.md,
+    fontStyle: 'italic',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: designTokens.spacing.md,
+    marginBottom: designTokens.spacing.lg,
+  },
+  actionButton: {
+    flex: 1,
+  },
+  menuLink: {
+    alignSelf: 'center',
+    padding: designTokens.spacing.sm,
+  },
+  menuLinkText: {
+    fontSize: designTokens.typography.fontSize.sm,
+    color: designTokens.colors.primary[600],
+    textAlign: 'center',
   },
 });

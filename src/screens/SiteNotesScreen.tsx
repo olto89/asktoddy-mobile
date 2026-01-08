@@ -142,7 +142,10 @@ export default function SiteNotesScreen({ navigation, route }: any) {
       voiceTranscript.trim() ||
       photos.length > 0;
 
-    if (hasAnyData && !isSaving) {
+    // Only auto-save if there's meaningful data AND it's not a fresh new assessment
+    const shouldAutoSave = hasAnyData && !isSaving && (!isNewAssessment || currentQuoteId);
+
+    if (shouldAutoSave) {
       const timeoutId = setTimeout(() => {
         autoSaveDraft();
       }, 1000); // Auto-save after 1 second of no changes

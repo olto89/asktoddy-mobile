@@ -1,5 +1,14 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Alert,
+  Modal,
+  Pressable,
+} from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,14 +22,19 @@ import TaskListScreen from '../screens/TaskListScreen';
 import EditQuoteScreen from '../screens/EditQuoteScreen';
 import ShareQuoteScreen from '../screens/ShareQuoteScreen';
 import AccountScreen from '../screens/AccountScreen';
+import PricingScreen from '../screens/PricingScreen';
+
+// Import modals
+import LoginSignupModal from '../components/modals/LoginSignupModal';
 
 const Stack = createStackNavigator();
 
 // MenuModal component for drawer-like functionality
 function MenuModal({ visible, onClose, navigation }: any) {
-  const { signOut, user } = useAuth();
+  const { signOut, user, isAnonymous, freemiumUser } = useAuth();
   const [savedQuotes, setSavedQuotes] = React.useState<any[]>([]);
   const [expandedSection, setExpandedSection] = React.useState<string | null>('quotes');
+  const [showLoginModal, setShowLoginModal] = React.useState(false);
 
   React.useEffect(() => {
     if (visible) {
@@ -45,19 +59,25 @@ function MenuModal({ visible, onClose, navigation }: any) {
   };
 
   const handleQuotePress = (quote: any) => {
+    console.log('📱 Quote pressed:', quote.id, 'Status:', quote.status);
     onClose();
 
     // Smart navigation based on quote status
-    if (quote.status === 'draft') {
-      // Draft quotes go to SiteNotesScreen for editing
+    if (quote.status === 'draft' || !quote.status) {
+      // Draft quotes (or quotes without status) go to SiteNotesScreen for completion
+      console.log('📝 Navigating to SiteNotes for draft/incomplete quote');
       navigation.navigate('SiteNotes', {
         existingQuote: quote,
       });
     } else if (quote.status === 'generated') {
-      // Generated quotes go directly to EditQuoteScreen
-      navigation.navigate('EditQuote', {
+      // Generated quotes go to TaskList (QuoteView) screen to view with Edit/Share options
+      console.log('📋 Navigating to TaskList (QuoteView) for generated quote');
+
+      // Navigate to TaskList which now shows the quote with Edit/Share buttons
+      navigation.navigate('TaskList', {
         siteNotes: quote.siteNotes || quote,
         savedQuote: quote,
+        isViewingGenerated: true, // Flag to indicate we're viewing a saved quote
       });
     } else {
       // Legacy quotes or unknown status - default to TaskList
@@ -68,21 +88,28 @@ function MenuModal({ visible, onClose, navigation }: any) {
     }
   };
 
-  const handleDeleteQuote = async (quoteId: string, event: any) => {
-    // Prevent triggering the parent onPress
-    event.stopPropagation();
-
-    try {
-      const quotesJson = await AsyncStorage.getItem('saved_quotes');
-      if (quotesJson) {
-        const quotes = JSON.parse(quotesJson);
-        const updatedQuotes = quotes.filter((q: any) => q.id !== quoteId);
-        await AsyncStorage.setItem('saved_quotes', JSON.stringify(updatedQuotes));
-        setSavedQuotes(updatedQuotes.slice(0, 10));
-      }
-    } catch (error) {
-      console.error('Error deleting quote:', error);
-    }
+  const handleDeleteQuote = async (quoteId: string) => {
+    Alert.alert('Delete Quote', 'Are you sure you want to delete this quote?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            const quotesJson = await AsyncStorage.getItem('saved_quotes');
+            if (quotesJson) {
+              const quotes = JSON.parse(quotesJson);
+              const updatedQuotes = quotes.filter((q: any) => q.id !== quoteId);
+              await AsyncStorage.setItem('saved_quotes', JSON.stringify(updatedQuotes));
+              setSavedQuotes(updatedQuotes.slice(0, 10));
+            }
+          } catch (error) {
+            console.error('Error deleting quote:', error);
+            Alert.alert('Error', 'Failed to delete quote. Please try again.');
+          }
+        },
+      },
+    ]);
   };
 
   const handleSignOut = () => {
@@ -112,11 +139,24 @@ function MenuModal({ visible, onClose, navigation }: any) {
           <View style={styles.modalHeader}>
             <View style={styles.userInfo}>
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{user?.email?.[0]?.toUpperCase() || 'U'}</Text>
+                <Text style={styles.avatarText}>
+                  {isAnonymous ? '🚀' : user?.email?.[0]?.toUpperCase() || 'U'}
+                </Text>
               </View>
               <View style={styles.userDetails}>
-                <Text style={styles.userName}>Welcome back!</Text>
-                <Text style={styles.userEmail}>{user?.email || 'Guest User'}</Text>
+                <Text style={styles.userName}>
+                  {isAnonymous ? 'Welcome to AskToddy!' : 'Welcome back!'}
+                </Text>
+                <Text style={styles.userEmail}>
+                  {isAnonymous
+                    ? `Anonymous User • ${freemiumUser.tier}`
+                    : user?.email || 'Guest User'}
+                </Text>
+                {!isAnonymous && freemiumUser.tier === 'free' && (
+                  <Text style={styles.quotesUsage}>
+                    {freemiumUser.quotesUsed}/{freemiumUser.quotesLimit} quotes used
+                  </Text>
+                )}
               </View>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -165,7 +205,7 @@ function MenuModal({ visible, onClose, navigation }: any) {
                 <Text style={styles.emptyText}>No saved quotes yet</Text>
               ) : (
                 savedQuotes.map(quote => (
-                  <TouchableOpacity
+                  <Pressable
                     key={quote.id}
                     style={styles.quoteItem}
                     onPress={() => handleQuotePress(quote)}
@@ -185,17 +225,18 @@ function MenuModal({ visible, onClose, navigation }: any) {
                           : `£${quote.totalCost?.min?.toLocaleString() || '0'} - £${quote.totalCost?.max?.toLocaleString() || '0'}`}
                       </Text>
                     </View>
-                    <TouchableOpacity
+                    <Pressable
                       style={styles.deleteButton}
-                      onPress={event => handleDeleteQuote(quote.id, event)}
+                      onPress={() => handleDeleteQuote(quote.id)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
                       <Ionicons
                         name="close-circle"
                         size={24}
                         color={designTokens.colors.error[500]}
                       />
-                    </TouchableOpacity>
-                  </TouchableOpacity>
+                    </Pressable>
+                  </Pressable>
                 ))
               )}
             </View>
@@ -216,6 +257,19 @@ function MenuModal({ visible, onClose, navigation }: any) {
                 color={designTokens.colors.text.secondary}
               />
               <Text style={styles.menuItemText}>My Profile</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                onClose();
+                navigation.navigate('Pricing');
+              }}
+            >
+              <Ionicons name="star-outline" size={20} color={designTokens.colors.primary[600]} />
+              <Text style={[styles.menuItemText, { color: designTokens.colors.primary[600] }]}>
+                Pricing & Upgrade
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -249,13 +303,40 @@ function MenuModal({ visible, onClose, navigation }: any) {
             </TouchableOpacity>
           </View>
 
-          {/* Sign Out */}
-          <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-            <Ionicons name="log-out-outline" size={24} color={designTokens.colors.error[500]} />
-            <Text style={styles.signOutText}>Sign Out</Text>
-          </TouchableOpacity>
+          {/* Sign Out / Sign In */}
+          {isAnonymous ? (
+            <TouchableOpacity
+              style={[styles.signOutButton, { backgroundColor: designTokens.colors.primary[50] }]}
+              onPress={() => {
+                setShowLoginModal(true);
+              }}
+            >
+              <Ionicons name="log-in-outline" size={24} color={designTokens.colors.primary[600]} />
+              <Text style={[styles.signOutText, { color: designTokens.colors.primary[600] }]}>
+                Sign In / Sign Up
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
+              <Ionicons name="log-out-outline" size={24} color={designTokens.colors.error[500]} />
+              <Text style={styles.signOutText}>Sign Out</Text>
+            </TouchableOpacity>
+          )}
         </ScrollView>
       </SafeAreaView>
+
+      {/* Login/Signup Modal */}
+      <LoginSignupModal
+        visible={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onSuccess={() => {
+          setShowLoginModal(false);
+          onClose(); // Close the menu modal after successful login
+        }}
+        mode="login"
+        title="Sign In to Continue"
+        subtitle="Access your saved quotes and generate new ones"
+      />
     </Modal>
   );
 }
@@ -300,10 +381,22 @@ function SimpleNavigator() {
         <Stack.Screen
           name="TaskList"
           component={TaskListScreen}
-          options={{
-            title: 'Task List',
+          options={({ navigation }) => ({
+            title: '✅ Quote Generated',
             headerShown: true,
-          }}
+            headerLeft: () => null, // This removes ONLY the back button
+            headerRight: () => (
+              <TouchableOpacity
+                onPress={() => {
+                  setCurrentNavigation(navigation);
+                  setMenuVisible(true);
+                }}
+                style={{ marginRight: 15 }}
+              >
+                <Ionicons name="menu" size={24} color="white" />
+              </TouchableOpacity>
+            ),
+          })}
         />
         <Stack.Screen
           name="EditQuote"
@@ -326,6 +419,14 @@ function SimpleNavigator() {
           component={AccountScreen}
           options={{
             title: 'My Account',
+            headerShown: true,
+          }}
+        />
+        <Stack.Screen
+          name="Pricing"
+          component={PricingScreen}
+          options={{
+            title: 'Pricing',
             headerShown: true,
           }}
         />
@@ -386,6 +487,12 @@ const styles = StyleSheet.create({
     fontSize: designTokens.typography.fontSize.sm,
     color: designTokens.colors.text.secondary,
     marginTop: 2,
+  },
+  quotesUsage: {
+    fontSize: designTokens.typography.fontSize.xs,
+    color: designTokens.colors.primary[600],
+    marginTop: 2,
+    fontWeight: designTokens.typography.fontWeight.medium as any,
   },
   closeButton: {
     padding: designTokens.spacing.sm,

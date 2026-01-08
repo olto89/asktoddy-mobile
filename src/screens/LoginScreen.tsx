@@ -25,7 +25,21 @@ interface Props {
 }
 
 export default function LoginScreen({ navigation }: Props) {
-  const { signIn, signUp, loading } = useAuth();
+  const { signIn, signUp, loading, isAuthenticated } = useAuth();
+  const [hasNavigated, setHasNavigated] = useState(false);
+
+  // Redirect if already authenticated - but only once
+  React.useEffect(() => {
+    if (isAuthenticated && !hasNavigated) {
+      console.log('🔄 User already authenticated, redirecting...');
+      setHasNavigated(true);
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      } else {
+        navigation.navigate('Main');
+      }
+    }
+  }, [isAuthenticated, hasNavigated, navigation]);
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -111,6 +125,8 @@ export default function LoginScreen({ navigation }: Props) {
           return;
         } else {
           console.log('✅ Login successful');
+          // Don't navigate here - let the auth state change handle it
+          // This prevents double navigation
         }
       } else {
         const { error, needsVerification } = await signUp(email, password);

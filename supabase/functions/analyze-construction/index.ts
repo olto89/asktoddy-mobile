@@ -482,13 +482,19 @@ Deno.serve(async req => {
   }
 
   try {
-    const { message, sessionId, analysisType } = await req.json();
+    const { message, sessionId, userId, analysisType, context, history } = await req.json();
 
     if (!message) {
       return new Response(JSON.stringify({ error: 'Message is required' }), {
         status: 400,
         headers,
       });
+    }
+
+    // Log session continuity for debugging
+    console.log(`🔐 Session: ${sessionId || 'no-session'}, User: ${userId || 'anonymous'}`);
+    if (context) {
+      console.log(`📍 Location: ${context.city || 'Unknown'}, Region: ${context.region || 'UK'}`);
     }
 
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
@@ -504,29 +510,18 @@ Deno.serve(async req => {
     // Extract project type from message
     const projectType = extractProjectType(message);
 
-    // Create focused UK construction analysis prompt
-    const analysisPrompt = `You are a UK construction cost estimator. Analyze this project and provide a realistic cost estimate.
-
-Project: ${message}
-
-Please provide:
-1. Brief project analysis (2-3 sentences)
-2. Realistic UK cost range in format: £X,000 - £Y,000  
-3. Key cost factors
-4. Timeline estimate
-5. Difficulty assessment
-
-Keep response concise and focused on costs. Use current UK construction market rates including materials, labor, and typical overheads.`;
+    // Use the detailed prompt directly from the frontend
+    const analysisPrompt = message;
 
     // Call AI API
     const aiResponse = await callGemini(analysisPrompt, geminiApiKey);
 
     // Parse into structured ProjectAnalysis object
     const structuredAnalysis = parseStructuredResponse(aiResponse, projectType);
-    structuredAnalysis.sessionId = sessionId;
+    structuredAnalysis.sessionId = sessionId || `session_${Date.now()}`;
 
     console.log(
-      `✅ Analysis complete: £${structuredAnalysis.costBreakdown.total.min.toLocaleString()}-£${structuredAnalysis.costBreakdown.total.max.toLocaleString()}`
+      `✅ Analysis complete: £${structuredAnalysis.costBreakdown.total.min.toLocaleString()}-£${structuredAnalysis.costBreakdown.total.max.toLocaleString()}, Session: ${structuredAnalysis.sessionId}`
     );
 
     // Return properly structured response with success wrapper
