@@ -330,8 +330,11 @@ function MenuModal({ visible, onClose, navigation }: any) {
         visible={showLoginModal}
         onClose={() => setShowLoginModal(false)}
         onSuccess={() => {
-          setShowLoginModal(false);
-          onClose(); // Close the menu modal after successful login
+          // Don't close both modals at once - let auth state settle
+          setTimeout(() => {
+            setShowLoginModal(false);
+            onClose(); // Close the menu modal after auth settles
+          }, 500);
         }}
         mode="login"
         title="Sign In to Continue"

@@ -10,7 +10,7 @@ export default function ShareQuoteScreen({ navigation, route }: any) {
   const { quote } = route.params;
 
   const formatQuoteText = () => {
-    let quoteText = `📋 QUOTE: ${quote.quoteName}\n\n`;
+    let quoteText = `📋 QUOTE: ${quote.quoteName || 'Construction Quote'}\n\n`;
 
     if (quote.customerName) {
       quoteText += `👤 Customer: ${quote.customerName}\n`;
@@ -19,12 +19,19 @@ export default function ShareQuoteScreen({ navigation, route }: any) {
     quoteText += `📍 Property: ${quote.siteNotes?.address || 'Not specified'}\n`;
     quoteText += `🏗️ Job Type: ${quote.siteNotes?.jobType || 'General'}\n\n`;
 
-    quoteText += `💰 ESTIMATED TOTAL: £${quote.totalCost.min.toLocaleString()} - £${quote.totalCost.max.toLocaleString()}\n\n`;
+    // Show Your Quote Total (finalCost) prominently
+    if (quote.finalCost) {
+      quoteText += `💰 YOUR QUOTE TOTAL: £${quote.finalCost.toLocaleString()}\n\n`;
+    } else {
+      quoteText += `💰 ESTIMATED TOTAL: £${quote.totalCost?.min?.toLocaleString() || 0} - £${quote.totalCost?.max?.toLocaleString() || 0}\n\n`;
+    }
 
     quoteText += `📋 BREAKDOWN:\n`;
-    quote.tasks.forEach((task: any, index: number) => {
+    quote.tasks?.forEach((task: any, index: number) => {
       quoteText += `${index + 1}. ${task.description}\n`;
-      quoteText += `   Cost: £${task.estimatedCost.min.toLocaleString()} - £${task.estimatedCost.max.toLocaleString()}\n\n`;
+      // Show Your Price per line item
+      const yourPrice = task.finalPrice || task.estimatedCost?.max || 0;
+      quoteText += `   Your Price: £${yourPrice.toLocaleString()}\n\n`;
     });
 
     if (quote.projectNotes) {
@@ -32,7 +39,7 @@ export default function ShareQuoteScreen({ navigation, route }: any) {
     }
 
     quoteText += `⚡ Generated with AskToddy - Professional Quotes in Minutes\n`;
-    quoteText += `📅 Quote Date: ${new Date(quote.timestamp).toLocaleDateString()}`;
+    quoteText += `📅 Quote Date: ${new Date(quote.timestamp || Date.now()).toLocaleDateString()}`;
 
     return quoteText;
   };

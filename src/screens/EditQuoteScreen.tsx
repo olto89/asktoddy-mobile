@@ -23,6 +23,7 @@ interface Task {
     min: number;
     max: number;
   };
+  finalPrice?: number; // User's quoted price for this line item
   materials?: string[];
   laborDays?: number;
   selected: boolean;
@@ -30,30 +31,32 @@ interface Task {
 
 export default function EditQuoteScreen({ navigation, route }: any) {
   const { tasks = [], totalCost = { min: 0, max: 0 }, siteNotes, savedQuote } = route.params;
-  const [editedTasks, setEditedTasks] = useState<Task[]>(tasks);
-  const [projectNotes, setProjectNotes] = useState('');
-  const [customerName, setCustomerName] = useState('');
+
+  // Initialize tasks with finalPrice defaulting to max cost
+  const initializeTasks = (taskList: Task[]): Task[] => {
+    return taskList.map(task => ({
+      ...task,
+      finalPrice: task.finalPrice ?? task.estimatedCost.max,
+    }));
+  };
+
+  const [editedTasks, setEditedTasks] = useState<Task[]>(initializeTasks(tasks));
+  const [projectNotes, setProjectNotes] = useState(savedQuote?.projectNotes || '');
+  const [customerName, setCustomerName] = useState(savedQuote?.customerName || '');
   const [quoteName, setQuoteName] = useState('');
 
   useEffect(() => {
     // Set initial quote name based on site notes
-    setQuoteName(`${siteNotes?.jobType || 'Project'} - ${siteNotes?.address || 'Quote'}`);
-  }, [siteNotes]);
+    setQuoteName(
+      savedQuote?.quoteName ||
+        `${siteNotes?.jobType || 'Project'} - ${siteNotes?.address || 'Quote'}`
+    );
+  }, [siteNotes, savedQuote]);
 
-  const updateTaskCost = (taskId: string, field: 'min' | 'max', value: string) => {
+  const updateTaskFinalPrice = (taskId: string, value: string) => {
     const numValue = parseFloat(value) || 0;
     setEditedTasks(prev =>
-      prev.map(task =>
-        task.id === taskId
-          ? {
-              ...task,
-              estimatedCost: {
-                ...task.estimatedCost,
-                [field]: numValue,
-              },
-            }
-          : task
-      )
+      prev.map(task => (task.id === taskId ? { ...task, finalPrice: numValue } : task))
     );
   };
 
@@ -63,11 +66,24 @@ export default function EditQuoteScreen({ navigation, route }: any) {
     );
   };
 
+  const updateTaskMaterials = (taskId: string, materialsText: string) => {
+    // Convert comma-separated string to array
+    const materials = materialsText
+      .split(',')
+      .map(m => m.trim())
+      .filter(m => m.length > 0);
+    setEditedTasks(prev => prev.map(task => (task.id === taskId ? { ...task, materials } : task)));
+  };
+
   const removeTask = (taskId: string) => {
     setEditedTasks(prev => prev.filter(task => task.id !== taskId));
   };
 
-  const calculateTotal = () => {
+  const calculateFinalTotal = () => {
+    return editedTasks.reduce((acc, task) => acc + (task.finalPrice || 0), 0);
+  };
+
+  const calculateRange = () => {
     return editedTasks.reduce(
       (acc, task) => ({
         min: acc.min + task.estimatedCost.min,
@@ -79,12 +95,15 @@ export default function EditQuoteScreen({ navigation, route }: any) {
 
   const handleSaveQuote = async () => {
     try {
+      const rangeTotal = calculateRange();
+      const finalTotal = calculateFinalTotal();
       const updatedQuote = {
         ...route.params.savedQuote, // Keep existing quote data
         quoteName,
         customerName,
-        generatedTasks: editedTasks, // Update the tasks
-        totalCost: calculateTotal(),
+        generatedTasks: editedTasks, // Update the tasks with finalPrice per item
+        totalCost: rangeTotal,
+        finalCost: finalTotal, // Auto-calculated from line items
         projectNotes,
         lastModified: Date.now(),
         status: 'generated', // Keep as generated quote
@@ -99,11 +118,18 @@ export default function EditQuoteScreen({ navigation, route }: any) {
 
       await AsyncStorage.setItem('saved_quotes', JSON.stringify(updatedQuotes));
 
-      // Simple success message and go back to QuoteView
+      // Navigate back with updated data so the previous screen can refresh
       Alert.alert('Quote Updated', 'Your changes have been saved.', [
         {
           text: 'OK',
-          onPress: () => navigation.goBack(),
+          onPress: () => {
+            // Navigate back to TaskList with updated quote data
+            navigation.navigate('TaskList', {
+              siteNotes: route.params.siteNotes,
+              savedQuote: updatedQuote,
+              isViewingGenerated: true,
+            });
+          },
         },
       ]);
     } catch (error) {
@@ -111,8 +137,6 @@ export default function EditQuoteScreen({ navigation, route }: any) {
       Alert.alert('Error', 'Failed to save quote. Please try again.');
     }
   };
-
-  const currentTotal = calculateTotal();
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -214,50 +238,55 @@ export default function EditQuoteScreen({ navigation, route }: any) {
                   placeholderTextColor={designTokens.colors.text.tertiary}
                 />
 
-                <View style={styles.costInputs}>
-                  <View style={styles.costInput}>
-                    <Text style={styles.costLabel}>Min Cost (£)</Text>
-                    <TextInput
-                      style={styles.costField}
-                      value={task.estimatedCost.min.toString()}
-                      onChangeText={text => updateTaskCost(task.id, 'min', text)}
-                      keyboardType="numeric"
-                      placeholder="0"
-                      placeholderTextColor={designTokens.colors.text.tertiary}
-                    />
+                <View style={styles.costSection}>
+                  <View style={styles.priceInputRow}>
+                    <Text style={styles.priceLabel}>Your Price:</Text>
+                    <View style={styles.priceInputContainer}>
+                      <Text style={styles.priceCurrency}>£</Text>
+                      <TextInput
+                        style={styles.priceInput}
+                        value={(task.finalPrice || 0).toString()}
+                        onChangeText={text => updateTaskFinalPrice(task.id, text)}
+                        keyboardType="numeric"
+                        placeholder="0"
+                        placeholderTextColor={designTokens.colors.text.tertiary}
+                      />
+                    </View>
                   </View>
-
-                  <View style={styles.costInput}>
-                    <Text style={styles.costLabel}>Max Cost (£)</Text>
-                    <TextInput
-                      style={styles.costField}
-                      value={task.estimatedCost.max.toString()}
-                      onChangeText={text => updateTaskCost(task.id, 'max', text)}
-                      keyboardType="numeric"
-                      placeholder="0"
-                      placeholderTextColor={designTokens.colors.text.tertiary}
-                    />
-                  </View>
+                  <Text style={styles.rangeHint}>
+                    AI estimate: £{task.estimatedCost.min.toLocaleString()} - £
+                    {task.estimatedCost.max.toLocaleString()}
+                  </Text>
                 </View>
 
-                {task.materials && task.materials.length > 0 && (
-                  <View style={styles.materialsContainer}>
-                    <Text style={styles.materialsLabel}>Materials:</Text>
-                    <Text style={styles.materialsText}>{task.materials.join(', ')}</Text>
-                  </View>
-                )}
+                <View style={styles.materialsContainer}>
+                  <Text style={styles.materialsLabel}>Materials (comma-separated):</Text>
+                  <TextInput
+                    style={styles.materialsInput}
+                    value={task.materials?.join(', ') || ''}
+                    onChangeText={text => updateTaskMaterials(task.id, text)}
+                    placeholder="e.g., Concrete, Steel, Timber..."
+                    placeholderTextColor={designTokens.colors.text.tertiary}
+                    multiline
+                  />
+                </View>
               </Card>
             ))
           )}
         </View>
 
-        {/* Updated Total */}
+        {/* Cost Summary */}
         <Card style={styles.totalCard}>
-          <Text style={styles.totalLabel}>Updated Total</Text>
-          <Text style={styles.totalAmount}>
-            £{currentTotal.min.toLocaleString()} - £{currentTotal.max.toLocaleString()}
-          </Text>
-          <Text style={styles.totalNote}>*Prices include materials and labor</Text>
+          <Text style={styles.quoteTotalLabel}>Quote Total</Text>
+          <Text style={styles.quoteTotalAmount}>£{calculateFinalTotal().toLocaleString()}</Text>
+          <Text style={styles.quoteTotalNote}>Auto-calculated from line items above</Text>
+
+          <View style={styles.rangeContainer}>
+            <Text style={styles.rangeLabel}>AI Estimated Range:</Text>
+            <Text style={styles.rangeValue}>
+              £{calculateRange().min.toLocaleString()} - £{calculateRange().max.toLocaleString()}
+            </Text>
+          </View>
         </Card>
 
         {/* Actions */}
@@ -362,33 +391,50 @@ const styles = StyleSheet.create({
     marginBottom: designTokens.spacing.sm,
     minHeight: 60,
   },
-  costInputs: {
+  costSection: {
+    marginTop: designTokens.spacing.sm,
+  },
+  priceInputRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: designTokens.spacing.sm,
   },
-  costInput: {
-    flex: 1,
-  },
-  costLabel: {
-    fontSize: designTokens.typography.fontSize.xs,
+  priceLabel: {
+    fontSize: designTokens.typography.fontSize.sm,
+    fontWeight: designTokens.typography.fontWeight.medium as any,
     color: designTokens.colors.text.secondary,
-    marginBottom: designTokens.spacing.xs,
   },
-  costField: {
-    borderWidth: 1,
-    borderColor: designTokens.colors.border.primary,
+  priceInputContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  priceCurrency: {
+    fontSize: designTokens.typography.fontSize.lg,
+    fontWeight: designTokens.typography.fontWeight.bold as any,
+    color: designTokens.colors.primary[600],
+    marginRight: designTokens.spacing.xs,
+  },
+  priceInput: {
+    flex: 1,
+    borderWidth: 2,
+    borderColor: designTokens.colors.primary[500],
     borderRadius: designTokens.borderRadius.md,
     paddingHorizontal: designTokens.spacing.sm,
     paddingVertical: designTokens.spacing.xs,
-    fontSize: designTokens.typography.fontSize.base,
-    color: designTokens.colors.text.primary,
+    fontSize: designTokens.typography.fontSize.lg,
+    fontWeight: designTokens.typography.fontWeight.semibold as any,
+    color: designTokens.colors.primary[600],
     backgroundColor: 'white',
+  },
+  rangeHint: {
+    fontSize: designTokens.typography.fontSize.xs,
+    color: designTokens.colors.text.tertiary,
+    marginTop: designTokens.spacing.xs,
+    fontStyle: 'italic',
   },
   materialsContainer: {
     marginTop: designTokens.spacing.sm,
-    padding: designTokens.spacing.sm,
-    backgroundColor: designTokens.colors.background.secondary,
-    borderRadius: designTokens.borderRadius.md,
   },
   materialsLabel: {
     fontSize: designTokens.typography.fontSize.xs,
@@ -396,10 +442,16 @@ const styles = StyleSheet.create({
     color: designTokens.colors.text.secondary,
     marginBottom: designTokens.spacing.xs,
   },
-  materialsText: {
+  materialsInput: {
+    borderWidth: 1,
+    borderColor: designTokens.colors.border.primary,
+    borderRadius: designTokens.borderRadius.md,
+    paddingHorizontal: designTokens.spacing.sm,
+    paddingVertical: designTokens.spacing.sm,
     fontSize: designTokens.typography.fontSize.sm,
     color: designTokens.colors.text.primary,
-    lineHeight: 18,
+    backgroundColor: 'white',
+    minHeight: 40,
   },
   totalCard: {
     marginHorizontal: designTokens.spacing.md,
@@ -408,20 +460,40 @@ const styles = StyleSheet.create({
     backgroundColor: designTokens.colors.primary[50],
     borderColor: designTokens.colors.primary[200],
   },
-  totalLabel: {
+  quoteTotalLabel: {
     fontSize: designTokens.typography.fontSize.base,
+    fontWeight: designTokens.typography.fontWeight.medium as any,
     color: designTokens.colors.text.secondary,
   },
-  totalAmount: {
-    fontSize: designTokens.typography.fontSize['2xl'],
+  quoteTotalAmount: {
+    fontSize: designTokens.typography.fontSize['3xl'],
     fontWeight: designTokens.typography.fontWeight.bold as any,
     color: designTokens.colors.primary[600],
     marginTop: designTokens.spacing.xs,
   },
-  totalNote: {
+  quoteTotalNote: {
+    fontSize: designTokens.typography.fontSize.sm,
+    color: designTokens.colors.text.tertiary,
+    marginTop: designTokens.spacing.xs,
+    fontStyle: 'italic',
+  },
+  rangeContainer: {
+    marginTop: designTokens.spacing.md,
+    paddingTop: designTokens.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: designTokens.colors.primary[200],
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  rangeLabel: {
     fontSize: designTokens.typography.fontSize.sm,
     color: designTokens.colors.text.secondary,
-    marginTop: designTokens.spacing.sm,
+  },
+  rangeValue: {
+    fontSize: designTokens.typography.fontSize.sm,
+    fontWeight: designTokens.typography.fontWeight.semibold as any,
+    color: designTokens.colors.text.secondary,
   },
   actions: {
     paddingHorizontal: designTokens.spacing.md,

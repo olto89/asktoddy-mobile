@@ -25,6 +25,9 @@ const JOB_TYPES = [
   { id: 'extension', label: 'Extension', icon: 'home-outline' },
   { id: 'bathroom', label: 'Bathroom', icon: 'water-outline' },
   { id: 'kitchen', label: 'Kitchen', icon: 'restaurant-outline' },
+  { id: 'patio', label: 'Patio', icon: 'grid-outline' },
+  { id: 'driveway', label: 'Driveway', icon: 'car-outline' },
+  { id: 'conservatory', label: 'Conservatory', icon: 'sunny-outline' },
   { id: 'roofing', label: 'Roofing', icon: 'umbrella-outline' },
   { id: 'renovation', label: 'Renovation', icon: 'hammer-outline' },
   { id: 'other', label: 'Other', icon: 'construct-outline' },
@@ -62,6 +65,37 @@ const COMMON_TASKS = {
     'Worktops',
     'Appliances',
     'Decoration',
+  ],
+  patio: [
+    'Site Clearance',
+    'Ground Preparation',
+    'Sub-base/Hardcore',
+    'Edging/Border',
+    'Paving/Slabs',
+    'Pointing/Jointing',
+    'Drainage',
+    'Outdoor Lighting',
+  ],
+  driveway: [
+    'Site Clearance',
+    'Excavation',
+    'Sub-base Installation',
+    'Edging/Kerbs',
+    'Block Paving',
+    'Tarmac/Resin',
+    'Drainage',
+    'Drop Kerb',
+  ],
+  conservatory: [
+    'Planning/Building Regs',
+    'Foundations',
+    'Dwarf Walls',
+    'Frame Installation',
+    'Glazing',
+    'Roof System',
+    'Electrics',
+    'Flooring',
+    'Heating',
   ],
   roofing: [
     'Strip Tiles/Slates',
@@ -516,6 +550,8 @@ export default function SiteNotesScreen({ navigation, route }: any) {
                       styles.jobTypeLabel,
                       selectedJobType === job.id && styles.jobTypeLabelActive,
                     ]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
                   >
                     {job.label}
                   </Text>
@@ -763,6 +799,7 @@ const styles = StyleSheet.create({
     fontSize: designTokens.typography.fontSize.xs,
     color: designTokens.colors.text.secondary,
     marginTop: designTokens.spacing.xs,
+    textAlign: 'center',
   },
   jobTypeLabelActive: {
     color: 'white',

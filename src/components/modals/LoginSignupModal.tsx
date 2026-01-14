@@ -103,12 +103,12 @@ export default function LoginSignupModal({
             Alert.alert('Sign In Error', error.message || 'Failed to sign in');
           }
         } else {
-          // Successful sign in - wait briefly for auth state to propagate
+          // Successful sign in - wait for auth state to fully propagate
           console.log('✅ Sign in successful, waiting for auth state...');
           setTimeout(() => {
             handleClose();
             onSuccess?.();
-          }, 300); // Small delay to ensure auth state propagates
+          }, 1500); // Longer delay for Expo Go stability
         }
       }
     } catch (error) {

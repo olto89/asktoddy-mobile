@@ -3,9 +3,7 @@
  * Returns fully structured ProjectAnalysis - NO frontend parsing required
  */
 
-import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
-
-console.log('🏗️ STRUCTURED Analyze Construction Edge Function');
+console.log('🏗️ STRUCTURED Analyze Construction Edge Function - v2');
 
 // Type definitions matching frontend interfaces
 interface MaterialItem {
@@ -84,11 +82,250 @@ interface ProjectAnalysis {
   sessionId?: string;
   provider?: string;
   timestamp?: string;
+
+  // Pass-through tasks for frontend grouping
+  tasks?: Array<{
+    description: string;
+    category: string;
+    min_cost: number;
+    max_cost: number;
+    materials: string[];
+    labor_days: number;
+    notes?: string;
+  }>;
+  summary?: {
+    total_min: number;
+    total_max: number;
+    timeline_days: number;
+    confidence: number;
+    location_multiplier?: number;
+    size_multiplier?: number;
+    spec_multiplier?: number;
+  };
+}
+
+// Calculate size multiplier based on property dimensions
+function calculateSizeMultiplier(sizeStr: string): number {
+  if (!sizeStr || typeof sizeStr !== 'string') {
+    console.warn('Invalid sizeStr provided to calculateSizeMultiplier:', sizeStr);
+    return 1.0;
+  }
+
+  const size = sizeStr.toLowerCase();
+
+  // Try to extract square meters
+  const sqmMatch = size.match(/(\d+)\s*(?:sqm|m2|square\s*met)/i);
+  if (sqmMatch && sqmMatch[1]) {
+    const sqm = parseInt(sqmMatch[1]);
+    if (!isNaN(sqm)) {
+      if (sqm < 50) return 0.8;
+      if (sqm < 100) return 1.0;
+      if (sqm < 200) return 1.5;
+      return 2.0;
+    }
+  }
+
+  // Try to extract square feet and convert
+  const sqftMatch = size.match(/(\d+)\s*(?:sqft|ft2|square\s*fe)/i);
+  if (sqftMatch && sqftMatch[1]) {
+    const sqft = parseInt(sqftMatch[1]);
+    if (!isNaN(sqft)) {
+      const sqm = sqft / 10.764; // Convert to sqm
+      if (sqm < 50) return 0.8;
+      if (sqm < 100) return 1.0;
+      if (sqm < 200) return 1.5;
+      return 2.0;
+    }
+  }
+
+  // Text-based size detection
+  if (size.includes('small') || size.includes('studio') || size.includes('1 bed')) return 0.8;
+  if (size.includes('large') || size.includes('4 bed') || size.includes('5 bed')) return 1.5;
+  if (size.includes('very large') || size.includes('mansion')) return 2.0;
+
+  // Room counts for extensions
+  if (size.includes('single room')) return 0.8;
+  if (size.includes('double room') || size.includes('two room')) return 1.3;
+
+  return 1.0; // Default medium
+}
+
+// Calculate regional multiplier based on UK location
+function calculateRegionalMultiplier(location: string): number {
+  if (!location || typeof location !== 'string') {
+    console.warn('Invalid location provided to calculateRegionalMultiplier:', location);
+    return 1.0;
+  }
+
+  const loc = location.toLowerCase();
+
+  // London and surroundings
+  if (loc.includes('london') || loc.includes('sw1') || loc.includes('ec1') || loc.includes('w1'))
+    return 1.25;
+  if (loc.includes('surrey') || loc.includes('hertford') || loc.includes('berkshire')) return 1.15;
+
+  // South regions
+  if (loc.includes('brighton') || loc.includes('oxford') || loc.includes('cambridge')) return 1.15;
+  if (loc.includes('south') || loc.includes('sussex') || loc.includes('kent')) return 1.1;
+
+  // Midlands
+  if (loc.includes('birmingham') || loc.includes('midland') || loc.includes('leicester'))
+    return 1.0;
+
+  // North regions
+  if (loc.includes('manchester') || loc.includes('liverpool') || loc.includes('leeds')) return 0.95;
+  if (loc.includes('newcastle') || loc.includes('north') || loc.includes('yorkshire')) return 0.9;
+
+  // Scotland, Wales, NI
+  if (loc.includes('scotland') || loc.includes('edinburgh') || loc.includes('glasgow')) return 0.85;
+  if (loc.includes('wales') || loc.includes('cardiff') || loc.includes('swansea')) return 0.88;
+  if (loc.includes('belfast') || loc.includes('northern ireland')) return 0.83;
+
+  return 1.0; // Default UK average
+}
+
+// Calculate spec level multiplier from notes
+function calculateSpecMultiplier(notes: string): { multiplier: number; level: string } {
+  if (!notes || typeof notes !== 'string') {
+    return { multiplier: 1.0, level: 'standard' };
+  }
+
+  const text = notes.toLowerCase();
+
+  // High-end spec indicators
+  if (
+    text.includes('high spec') ||
+    text.includes('high-spec') ||
+    text.includes('luxury') ||
+    text.includes('premium') ||
+    text.includes('top quality') ||
+    text.includes('high end') ||
+    text.includes('high-end') ||
+    text.includes('designer') ||
+    text.includes('bespoke')
+  ) {
+    return { multiplier: 1.5, level: 'high-spec' };
+  }
+
+  // Mid-high spec
+  if (text.includes('good quality') || text.includes('quality finish') || text.includes('modern')) {
+    return { multiplier: 1.25, level: 'mid-high' };
+  }
+
+  // Budget spec indicators
+  if (
+    text.includes('budget') ||
+    text.includes('basic') ||
+    text.includes('cheap') ||
+    text.includes('low cost') ||
+    text.includes('economy') ||
+    text.includes('simple')
+  ) {
+    return { multiplier: 0.75, level: 'budget' };
+  }
+
+  return { multiplier: 1.0, level: 'standard' };
+}
+
+// Create a structured prompt for JSON output
+function createStructuredPrompt(message: string, projectType: string): string {
+  if (!message || typeof message !== 'string') {
+    console.warn('Invalid message provided to createStructuredPrompt:', message);
+    message = 'General construction project';
+  }
+
+  // Extract key information from the message
+  // Use more flexible patterns that capture multi-line content until the next section
+  const sizeMatch = message.match(/Size[\/\s]*Dimensions[:\s]+([^\n]+)/i);
+  const locationMatch = message.match(/Location[:\s]+([^\n]+)/i);
+  const tasksMatch = message.match(/Selected Work Items[:\s]+([^\n]+)/i);
+  // Capture notes until VOICE NOTES section or end of relevant content
+  const notesMatch = message.match(
+    /DETAILED NOTES[:\s]+([\s\S]*?)(?=🎤 VOICE|ANALYSIS REQUIREMENTS|$)/i
+  );
+
+  // Clean up extracted values - remove trailing punctuation and labels
+  const cleanValue = (val: string | undefined): string => {
+    if (!val) return '';
+    // Remove trailing "Property Type:", "Job Type:", etc. and trim
+    return val
+      .replace(/\s*(Property Type|Job Type|Size|Location|Selected|DETAILED|VOICE)[:\s]*$/i, '')
+      .trim();
+  };
+
+  const size = cleanValue(sizeMatch?.[1]) || 'standard';
+  const location = cleanValue(locationMatch?.[1]) || 'UK';
+  const userTasks = cleanValue(tasksMatch?.[1]) || '';
+  const notes = cleanValue(notesMatch?.[1]) || '';
+
+  console.log('📊 Extracted from prompt:', {
+    size,
+    location,
+    userTasks: userTasks.substring(0, 50),
+    notes: notes.substring(0, 100),
+  });
+
+  // Calculate multipliers
+  const sizeMultiplier = calculateSizeMultiplier(size);
+  const locationMultiplier = calculateRegionalMultiplier(location);
+  const specInfo = calculateSpecMultiplier(notes);
+
+  // Combined multiplier
+  const totalMultiplier = sizeMultiplier * locationMultiplier * specInfo.multiplier;
+
+  console.log('📈 Multipliers:', {
+    size: sizeMultiplier,
+    location: locationMultiplier,
+    spec: specInfo.multiplier,
+    total: totalMultiplier.toFixed(2),
+  });
+
+  return `UK construction estimator. Return ONLY JSON, no extra text.
+
+${projectType} project in ${location}, size: ${size}
+Spec level: ${specInfo.level} (${notes ? `Customer notes: "${notes}"` : 'standard specification'})
+Tasks requested: ${userTasks}
+
+IMPORTANT: Apply ${totalMultiplier.toFixed(2)}x price adjustment based on:
+- Location: ${locationMultiplier}x (${location})
+- Size: ${sizeMultiplier}x (${size})
+- Spec level: ${specInfo.multiplier}x (${specInfo.level})
+${specInfo.level === 'high-spec' ? '- Use PREMIUM materials and finishes in estimates' : ''}
+${specInfo.level === 'budget' ? '- Use BUDGET materials and basic finishes' : ''}
+
+Provide 5-8 main construction tasks with COMBINED materials+labor costs.
+
+JSON format:
+{
+  "tasks": [
+    {
+      "description": "Install bathroom suite",
+      "category": "Fixtures",
+      "min_cost": 1500,
+      "max_cost": 3000,
+      "materials": ["toilet", "basin", "bath"],
+      "labor_days": 2,
+      "notes": "includes materials and labor"
+    }
+  ],
+  "summary": {
+    "total_min": 8000,
+    "total_max": 15000,
+    "timeline_days": 14,
+    "confidence": 85,
+    "location_multiplier": ${locationMultiplier},
+    "size_multiplier": ${sizeMultiplier},
+    "spec_multiplier": ${specInfo.multiplier}
+  }
+}`;
 }
 
 // Intelligent Gemini API call with smart retry logic
 async function callGemini(prompt: string, apiKey: string): Promise<string> {
-  const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  console.log('🤖 Calling Gemini API...');
+  console.log('📝 Prompt length:', prompt.length, 'characters');
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
   // Intelligent retry logic based on error types
   let retries = 1; // Only 1 retry for network/server errors
@@ -96,13 +333,20 @@ async function callGemini(prompt: string, apiKey: string): Promise<string> {
 
   while (attempt <= retries) {
     try {
+      // Create abort controller for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 second timeout for Gemini 2.5
+
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
         }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (response.ok) {
         const data = await response.json();
@@ -137,11 +381,19 @@ async function callGemini(prompt: string, apiKey: string): Promise<string> {
       throw new Error(`Gemini API error: ${response.status} - ${errorBody}`);
     } catch (error) {
       if (attempt >= retries) {
+        // Handle timeout specifically
+        if (error.name === 'AbortError') {
+          throw new Error('Gemini API timeout after 15 seconds');
+        }
         throw error;
       }
 
-      // Network errors - RETRY ONCE (might be transient)
-      console.log('🔄 Network error, retrying once...');
+      // Network/timeout errors - RETRY ONCE (might be transient)
+      if (error.name === 'AbortError') {
+        console.log('⏰ API timeout, retrying with shorter prompt...');
+      } else {
+        console.log('🔄 Network error, retrying once...');
+      }
       attempt++;
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
@@ -150,9 +402,217 @@ async function callGemini(prompt: string, apiKey: string): Promise<string> {
   throw new Error('Max retries exceeded');
 }
 
+// Process valid parsed JSON into ProjectAnalysis
+function processValidJson(parsed: any, projectType: string): ProjectAnalysis {
+  // Convert parsed JSON to ProjectAnalysis format
+  const tasks = Array.isArray(parsed.tasks) ? parsed.tasks : [];
+  const summary = parsed.summary && typeof parsed.summary === 'object' ? parsed.summary : {};
+
+  // Build material items from tasks
+  const materialItems: MaterialItem[] = [];
+  tasks.forEach((task: any) => {
+    if (
+      task &&
+      typeof task === 'object' &&
+      Array.isArray(task.materials) &&
+      task.materials.length > 0
+    ) {
+      task.materials.forEach((material: string) => {
+        if (material && typeof material === 'string') {
+          const minCost = typeof task.min_cost === 'number' ? task.min_cost : 0;
+          const maxCost = typeof task.max_cost === 'number' ? task.max_cost : 0;
+          const materialCount = task.materials.length || 1;
+
+          materialItems.push({
+            name: material,
+            quantity: task.quantity || '1',
+            unitPrice: Math.round((minCost + maxCost) / 2 / materialCount),
+            totalPrice: Math.round((minCost + maxCost) / 2 / materialCount),
+            category: mapToMaterialCategory(task.category),
+          });
+        }
+      });
+    }
+  });
+
+  return {
+    projectType,
+    description: `AI-generated ${projectType} quote with location and size adjustments`,
+    difficultyLevel: determineDifficulty(summary.total_max || 10000),
+    responseType: 'quote',
+
+    costBreakdown: {
+      materials: {
+        min: tasks.reduce((sum: number, t: any) => sum + t.min_cost * 0.6, 0),
+        max: tasks.reduce((sum: number, t: any) => sum + t.max_cost * 0.6, 0),
+        items: materialItems,
+      },
+      labor: {
+        min: tasks.reduce((sum: number, t: any) => sum + t.min_cost * 0.4, 0),
+        max: tasks.reduce((sum: number, t: any) => sum + t.max_cost * 0.4, 0),
+        hourlyRate: 30,
+        estimatedHours: tasks.reduce((sum: number, t: any) => sum + (t.labor_days || 1), 0) * 8,
+      },
+      total: {
+        min: summary.total_min || tasks.reduce((sum: number, t: any) => sum + t.min_cost, 0),
+        max: summary.total_max || tasks.reduce((sum: number, t: any) => sum + t.max_cost, 0),
+      },
+    },
+
+    timeline: {
+      diy: `${(summary.timeline_days || 10) + 5} days`,
+      professional: `${summary.timeline_days || 10} days`,
+      totalDays: summary.timeline_days || 10,
+      phases: generatePhasesFromTasks(tasks, projectType),
+    },
+
+    toolsRequired: generateToolsRequired(projectType),
+    safetyConsiderations: generateSafetyConsiderations(projectType),
+    permitsRequired: generatePermitsRequired(projectType),
+    requiresProfessional: (summary.total_max || 0) > 20000,
+
+    confidence: summary.confidence || 75,
+    recommendations: summary.assumptions || [
+      'Get multiple quotes',
+      'Check material prices locally',
+    ],
+    warnings: ['Prices may vary based on specific site conditions'],
+
+    timestamp: new Date().toISOString(),
+    provider: 'gemini-json',
+
+    // Pass through raw tasks for frontend to use for grouped display
+    tasks: tasks.map((task: any) => ({
+      description: task.description || 'Construction task',
+      category: task.category || 'General',
+      min_cost: task.min_cost || 0,
+      max_cost: task.max_cost || 0,
+      materials: Array.isArray(task.materials) ? task.materials : [],
+      labor_days: task.labor_days || 1,
+      notes: task.notes,
+    })),
+    summary: {
+      total_min:
+        summary.total_min || tasks.reduce((sum: number, t: any) => sum + (t.min_cost || 0), 0),
+      total_max:
+        summary.total_max || tasks.reduce((sum: number, t: any) => sum + (t.max_cost || 0), 0),
+      timeline_days: summary.timeline_days || 10,
+      confidence: summary.confidence || 75,
+      location_multiplier: summary.location_multiplier,
+      size_multiplier: summary.size_multiplier,
+      spec_multiplier: summary.spec_multiplier,
+    },
+  };
+}
+
 // Parse structured AI response into ProjectAnalysis
+// New JSON parser for Gemini responses
+function parseJsonResponse(aiText: string, projectType: string): ProjectAnalysis {
+  try {
+    if (!aiText || typeof aiText !== 'string') {
+      throw new Error('Invalid aiText provided to parseJsonResponse');
+    }
+
+    // Try to extract and parse JSON from response
+    console.log('🔍 Raw AI response (first 500 chars):', aiText.substring(0, 500));
+    console.log(
+      '🔍 Raw AI response (last 200 chars):',
+      aiText.substring(Math.max(0, aiText.length - 200))
+    );
+
+    const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+    if (jsonMatch && jsonMatch[0]) {
+      const jsonStr = jsonMatch[0];
+      console.log('📝 Extracted JSON string length:', jsonStr.length);
+      console.log('📝 JSON preview (first 300 chars):', jsonStr.substring(0, 300));
+
+      try {
+        const parsed = JSON.parse(jsonStr);
+
+        // Validate that parsed is an object
+        if (!parsed || typeof parsed !== 'object') {
+          throw new Error('Parsed JSON is not a valid object');
+        }
+
+        console.log('✅ Successfully parsed JSON from Gemini');
+        console.log(
+          '📊 Tasks count:',
+          Array.isArray(parsed.tasks) ? parsed.tasks.length : 'No tasks array'
+        );
+
+        if (!Array.isArray(parsed.tasks) || parsed.tasks.length === 0) {
+          console.warn('⚠️ No valid tasks array found in parsed JSON, will use fallback parsing');
+          throw new Error('No tasks in JSON'); // This will trigger fallback parsing
+        }
+
+        // If we get here, we have valid JSON with tasks
+        return processValidJson(parsed, projectType);
+      } catch (parseError) {
+        console.error('❌ JSON parse error:', parseError.message);
+        console.log('🔍 Failed JSON string:', jsonStr.substring(0, 200) + '...');
+        // Fall through to template parser below
+      }
+    }
+  } catch (error) {
+    console.error('Failed to parse JSON from Gemini:', error);
+  }
+
+  // Fallback to template parsing if JSON fails
+  console.log('⚠️ JSON parsing failed, using fallback template parser');
+  return parseStructuredResponse(aiText, projectType);
+}
+
+// Helper function to map categories
+function mapToMaterialCategory(
+  category: string
+): 'structural' | 'finishing' | 'electrical' | 'plumbing' | 'other' {
+  const cat = (category || '').toLowerCase();
+  if (cat.includes('structural')) return 'structural';
+  if (cat.includes('finishing')) return 'finishing';
+  if (cat.includes('electrical')) return 'electrical';
+  if (cat.includes('plumbing') || cat.includes('services')) return 'plumbing';
+  return 'other';
+}
+
+// Helper function to determine difficulty
+function determineDifficulty(totalMax: number): ProjectAnalysis['difficultyLevel'] {
+  if (totalMax < 5000) return 'Easy';
+  if (totalMax < 15000) return 'Moderate';
+  if (totalMax < 30000) return 'Difficult';
+  return 'Professional Required';
+}
+
+// Helper function to generate phases from tasks
+function generatePhasesFromTasks(
+  tasks: any[],
+  projectType: string
+): Array<{ name: string; duration: string; description: string }> {
+  const phases: Array<{ name: string; duration: string; description: string }> = [];
+
+  // Group tasks by category
+  const categories: { [key: string]: any[] } = {};
+  tasks.forEach(task => {
+    const cat = task.category || 'General';
+    if (!categories[cat]) categories[cat] = [];
+    categories[cat].push(task);
+  });
+
+  // Create phases from categories
+  Object.entries(categories).forEach(([category, catTasks]) => {
+    const totalDays = catTasks.reduce((sum, t) => sum + (t.labor_days || 1), 0);
+    phases.push({
+      name: category,
+      duration: `${totalDays} days`,
+      description: catTasks.map((t: any) => t.description).join(', '),
+    });
+  });
+
+  return phases.length > 0 ? phases : generateProjectPhases(projectType, 10);
+}
+
+// Original template-based parser (fallback)
 function parseStructuredResponse(aiText: string, projectType: string): ProjectAnalysis {
-  console.log('🔍 Parsing AI response...');
+  console.log('🔍 Using template-based parsing (fallback)...');
 
   // Extract cost ranges
   const costMatches = aiText.match(/£([\d,]+)(?:\s*[-–]\s*£([\d,]+))?/g) || [];
@@ -482,7 +942,9 @@ Deno.serve(async req => {
   }
 
   try {
+    console.log('🚀 Edge function started, parsing request...');
     const { message, sessionId, userId, analysisType, context, history } = await req.json();
+    console.log('📩 Request parsed successfully, message length:', message?.length || 0);
 
     if (!message) {
       return new Response(JSON.stringify({ error: 'Message is required' }), {
@@ -497,27 +959,36 @@ Deno.serve(async req => {
       console.log(`📍 Location: ${context.city || 'Unknown'}, Region: ${context.region || 'UK'}`);
     }
 
+    console.log('🔑 Checking API key...');
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
     if (!geminiApiKey) {
+      console.log('❌ No GEMINI_API_KEY found!');
       return new Response(JSON.stringify({ error: 'GEMINI_API_KEY not configured' }), {
         status: 500,
         headers,
       });
     }
+    console.log('✅ API key found');
 
     console.log(`📝 Processing: ${message.substring(0, 100)}...`);
 
     // Extract project type from message
+    console.log('📋 Extracting project type...');
     const projectType = extractProjectType(message);
+    console.log('🏗️ Project type:', projectType);
 
-    // Use the detailed prompt directly from the frontend
-    const analysisPrompt = message;
+    // Create structured prompt for JSON output
+    console.log('🎯 Creating structured prompt...');
+    const structuredPrompt = createStructuredPrompt(message, projectType);
+    console.log('📏 Prompt created, length:', structuredPrompt.length);
 
-    // Call AI API
-    const aiResponse = await callGemini(analysisPrompt, geminiApiKey);
+    // Call AI API with structured prompt
+    console.log('📞 About to call Gemini...');
+    const aiResponse = await callGemini(structuredPrompt, geminiApiKey);
+    console.log('✅ Gemini responded, length:', aiResponse.length);
 
-    // Parse into structured ProjectAnalysis object
-    const structuredAnalysis = parseStructuredResponse(aiResponse, projectType);
+    // Parse JSON response with new parser
+    const structuredAnalysis = parseJsonResponse(aiResponse, projectType);
     structuredAnalysis.sessionId = sessionId || `session_${Date.now()}`;
 
     console.log(
@@ -533,12 +1004,14 @@ Deno.serve(async req => {
     };
     return new Response(JSON.stringify(successResponse), { headers });
   } catch (error) {
-    console.error('Edge Function error:', error);
+    console.error('❌ Edge Function critical error:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error message:', error.message);
 
-    // Return fallback structured response
+    // Return fallback structured response with error details for debugging
     const fallbackAnalysis: ProjectAnalysis = {
       projectType: 'general',
-      description: 'Fallback analysis due to AI service unavailability',
+      description: `Fallback: ${error.message || 'Unknown error'}`,
       difficultyLevel: 'Preliminary Estimate',
       responseType: 'quote',
 
@@ -614,23 +1087,63 @@ Deno.serve(async req => {
 function extractProjectType(message: string): string {
   const text = message.toLowerCase();
 
+  // PRIORITY 1: Check explicit "Job Type:" field from form (most reliable)
+  const jobTypeMatch = text.match(/job type[:\s]+(\w+)/i);
+  if (jobTypeMatch) {
+    const jobType = jobTypeMatch[1].toLowerCase();
+    const validTypes = [
+      'extension',
+      'bathroom',
+      'kitchen',
+      'patio',
+      'driveway',
+      'conservatory',
+      'roofing',
+      'renovation',
+    ];
+    if (validTypes.includes(jobType)) {
+      return jobType;
+    }
+  }
+
+  // PRIORITY 2: Keyword-based detection (fallback for chat/free-form input)
+  // Order matters - more specific matches first
+
   if (text.includes('bathroom') || text.includes('ensuite') || text.includes('shower room')) {
     return 'bathroom';
   }
   if (text.includes('kitchen') || text.includes('galley')) {
     return 'kitchen';
   }
-  if (
-    text.includes('extension') ||
-    text.includes('conservatory') ||
-    text.includes('loft conversion')
-  ) {
+  if (text.includes('driveway') || text.includes('tarmac') || text.includes('drop kerb')) {
+    return 'driveway';
+  }
+  if (text.includes('patio') || text.includes('garden slabs') || text.includes('paving slabs')) {
+    return 'patio';
+  }
+  if (text.includes('conservatory') || text.includes('orangery') || text.includes('sunroom')) {
+    return 'conservatory';
+  }
+  if (text.includes('extension') || text.includes('loft conversion')) {
     return 'extension';
   }
-  if (text.includes('roof') || text.includes('tiles') || text.includes('guttering')) {
+  // Roofing - use specific terms to avoid conflicts with "tiling" or "roofing" as subtasks
+  if (
+    text.includes('re-roof') ||
+    text.includes('roof repair') ||
+    text.includes('roof replacement') ||
+    text.includes('new roof') ||
+    text.includes('flat roof') ||
+    text.includes('pitched roof') ||
+    (text.includes('roofing') && !text.includes('job type'))
+  ) {
     return 'roofing';
   }
-  if (text.includes('renovation') || text.includes('refurbishment')) {
+  if (
+    text.includes('renovation') ||
+    text.includes('refurbishment') ||
+    text.includes('full house')
+  ) {
     return 'renovation';
   }
 

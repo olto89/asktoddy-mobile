@@ -27,6 +27,7 @@ interface Task {
     min: number;
     max: number;
   };
+  finalPrice?: number; // User's quoted price (defaults to max)
   materials?: string[];
   laborDays?: number;
   selected: boolean;
@@ -38,6 +39,7 @@ export default function TaskListScreen({ navigation, route }: any) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isProcessing, setIsProcessing] = useState(!isViewingGenerated); // Skip processing if viewing existing
   const [totalCost, setTotalCost] = useState({ min: 0, max: 0 });
+  const [finalCost, setFinalCost] = useState<number | null>(null);
   const [aiAnalysis, setAiAnalysis] = useState<any>(null);
   const [currentQuote, setCurrentQuote] = useState<any>(savedQuote || null);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -50,12 +52,12 @@ export default function TaskListScreen({ navigation, route }: any) {
       // Load existing generated quote data - NO AI CALL NEEDED
       console.log('🔄 Loading existing quote, skipping AI generation');
       loadExistingQuoteData();
-    } else {
+    } else if (!isViewingGenerated) {
       // Generate new quote from site notes
       console.log('🚀 Generating new quote with AI');
       generateTasksFromNotes();
     }
-  }, []);
+  }, [savedQuote]); // Re-run when savedQuote changes (e.g., after editing)
 
   // Watch for auth state changes and retry quote generation if needed
   useEffect(() => {
@@ -78,8 +80,10 @@ export default function TaskListScreen({ navigation, route }: any) {
   }, [isAnonymous, freemiumUser.tier, pendingQuoteGeneration, previousAuthState]);
 
   useEffect(() => {
-    // Calculate total when tasks change
+    // Calculate totals when tasks change
     const selected = tasks.filter(t => t.selected);
+
+    // AI estimated range
     const total = selected.reduce(
       (acc, task) => ({
         min: acc.min + task.estimatedCost.min,
@@ -88,6 +92,13 @@ export default function TaskListScreen({ navigation, route }: any) {
       { min: 0, max: 0 }
     );
     setTotalCost(total);
+
+    // Your Price total (sum of finalPrice values)
+    const yourPriceTotal = selected.reduce(
+      (acc, task) => acc + (task.finalPrice || task.estimatedCost.max),
+      0
+    );
+    setFinalCost(yourPriceTotal);
   }, [tasks]);
 
   const loadExistingQuoteData = () => {
@@ -101,9 +112,16 @@ export default function TaskListScreen({ navigation, route }: any) {
       setTotalCost(savedQuote.totalCost);
     }
 
+    if (savedQuote.finalCost) {
+      setFinalCost(savedQuote.finalCost);
+    }
+
     if (savedQuote.aiAnalysis) {
       setAiAnalysis(savedQuote.aiAnalysis);
     }
+
+    // Update current quote reference
+    setCurrentQuote(savedQuote);
 
     setIsProcessing(false);
   };
@@ -246,20 +264,54 @@ Provide detailed cost breakdown with materials, labor, and realistic price range
 
     console.log('📋 Edge Function returned structured data:', aiResponse);
 
-    // Edge function now returns fully structured ProjectAnalysis
-    if (aiResponse?.costBreakdown?.materials?.items) {
-      console.log('✨ Using structured edge function data');
+    // Check if we have JSON-parsed tasks from Gemini
+    if (aiResponse?.tasks && Array.isArray(aiResponse.tasks)) {
+      console.log('✨ Using AI-generated JSON tasks from Gemini');
+
+      // Convert Gemini tasks to app format
+      aiResponse.tasks.forEach((task: any, index: number) => {
+        const maxCost = task.max_cost || 500;
+        tasks.push({
+          id: `task-${index}`,
+          description: task.description,
+          category: task.category || 'General',
+          estimatedCost: {
+            min: task.min_cost || 100,
+            max: maxCost,
+          },
+          finalPrice: maxCost, // Default to max estimate
+          materials: task.materials || [],
+          laborDays: task.labor_days || 1,
+          selected: true,
+        });
+      });
+
+      // Store summary for display
+      if (aiResponse.summary) {
+        setAiAnalysis({
+          ...aiResponse,
+          confidence: aiResponse.summary.confidence || 75,
+          locationMultiplier: aiResponse.summary.location_multiplier || 1.0,
+          sizeMultiplier: aiResponse.summary.size_multiplier || 1.0,
+        });
+      }
+    }
+    // Fallback to materials if no tasks
+    else if (aiResponse?.costBreakdown?.materials?.items) {
+      console.log('⚠️ No tasks from Gemini, using material items');
 
       // Convert materials to tasks
       aiResponse.costBreakdown.materials.items.forEach((item: any, index: number) => {
+        const maxCost = Math.round(item.totalPrice * 1.1);
         tasks.push({
           id: `material-${index}`,
           description: item.name,
           category: item.category.charAt(0).toUpperCase() + item.category.slice(1),
           estimatedCost: {
             min: Math.round(item.totalPrice * 0.9),
-            max: Math.round(item.totalPrice * 1.1),
+            max: maxCost,
           },
+          finalPrice: maxCost, // Default to max estimate
           materials: [item.name],
           laborDays: 0,
           selected: true,
@@ -268,14 +320,16 @@ Provide detailed cost breakdown with materials, labor, and realistic price range
 
       // Add labor as a separate task
       if (aiResponse.costBreakdown.labor) {
+        const laborMax = aiResponse.costBreakdown.labor.max;
         tasks.push({
           id: 'labor-task',
           description: 'Professional labor and installation',
           category: 'Labor',
           estimatedCost: {
             min: aiResponse.costBreakdown.labor.min,
-            max: aiResponse.costBreakdown.labor.max,
+            max: laborMax,
           },
+          finalPrice: laborMax, // Default to max estimate
           materials: ['Professional installation'],
           laborDays: Math.round(aiResponse.costBreakdown.labor.estimatedHours / 8),
           selected: true,
@@ -304,6 +358,7 @@ Provide detailed cost breakdown with materials, labor, and realistic price range
             const avgCost =
               (aiResponse.costBreakdown.total.min + aiResponse.costBreakdown.total.max) / 2;
             const taskCost = Math.round(avgCost * 0.15); // Roughly 15% of total per additional task
+            const maxTaskCost = Math.round(taskCost * 1.2);
 
             tasks.push({
               id: `user-task-${index}`,
@@ -311,8 +366,9 @@ Provide detailed cost breakdown with materials, labor, and realistic price range
               category: 'Additional Work',
               estimatedCost: {
                 min: Math.round(taskCost * 0.8),
-                max: Math.round(taskCost * 1.2),
+                max: maxTaskCost,
               },
+              finalPrice: maxTaskCost, // Default to max estimate
               materials: [userTask],
               laborDays: 2,
               selected: true, // User selected these
@@ -460,6 +516,138 @@ Provide detailed cost breakdown with materials, labor, and realistic price range
           laborDays: 1,
         },
       ],
+      patio: [
+        {
+          description: 'Site clearance and preparation',
+          category: 'Groundwork',
+          estimatedCost: { min: 300, max: 600 },
+          materials: ['Skip hire', 'Weed killer'],
+          laborDays: 1,
+        },
+        {
+          description: 'Excavation and sub-base',
+          category: 'Groundwork',
+          estimatedCost: { min: 800, max: 1500 },
+          materials: ['Hardcore', 'MOT Type 1', 'Sand'],
+          laborDays: 2,
+        },
+        {
+          description: 'Edging and borders',
+          category: 'Structure',
+          estimatedCost: { min: 400, max: 800 },
+          materials: ['Edging blocks', 'Cement', 'Sand'],
+          laborDays: 1,
+        },
+        {
+          description: 'Paving slabs installation',
+          category: 'Surface',
+          estimatedCost: { min: 2000, max: 4500 },
+          materials: ['Paving slabs', 'Mortar', 'Jointing compound'],
+          laborDays: 3,
+        },
+        {
+          description: 'Pointing and finishing',
+          category: 'Finishing',
+          estimatedCost: { min: 300, max: 500 },
+          materials: ['Pointing compound', 'Sealant'],
+          laborDays: 1,
+        },
+      ],
+      driveway: [
+        {
+          description: 'Site clearance and excavation',
+          category: 'Groundwork',
+          estimatedCost: { min: 1000, max: 2000 },
+          materials: ['Skip hire', 'Machinery hire'],
+          laborDays: 2,
+        },
+        {
+          description: 'Sub-base installation',
+          category: 'Groundwork',
+          estimatedCost: { min: 1500, max: 3000 },
+          materials: ['MOT Type 1', 'Hardcore', 'Compactor hire'],
+          laborDays: 2,
+        },
+        {
+          description: 'Edging and kerbs',
+          category: 'Structure',
+          estimatedCost: { min: 600, max: 1200 },
+          materials: ['Kerb stones', 'Edging', 'Cement'],
+          laborDays: 1,
+        },
+        {
+          description: 'Block paving / surface',
+          category: 'Surface',
+          estimatedCost: { min: 3000, max: 6000 },
+          materials: ['Block pavers', 'Kiln dried sand', 'Edge restraints'],
+          laborDays: 4,
+        },
+        {
+          description: 'Drainage installation',
+          category: 'Services',
+          estimatedCost: { min: 500, max: 1000 },
+          materials: ['Channel drain', 'Soakaway crate', 'Pipes'],
+          laborDays: 1,
+        },
+        {
+          description: 'Drop kerb (council application)',
+          category: 'Planning',
+          estimatedCost: { min: 800, max: 1500 },
+          materials: ['Council fees', 'Dropped kerb stones'],
+          laborDays: 1,
+        },
+      ],
+      conservatory: [
+        {
+          description: 'Planning and building regulations',
+          category: 'Planning',
+          estimatedCost: { min: 500, max: 1500 },
+          materials: ['Planning documents', 'Building regs fees'],
+          laborDays: 0,
+        },
+        {
+          description: 'Foundations and base',
+          category: 'Structural',
+          estimatedCost: { min: 3000, max: 5000 },
+          materials: ['Concrete', 'DPM', 'Steel reinforcement'],
+          laborDays: 5,
+        },
+        {
+          description: 'Dwarf walls construction',
+          category: 'Structural',
+          estimatedCost: { min: 1500, max: 3000 },
+          materials: ['Bricks', 'Blocks', 'Mortar', 'DPC'],
+          laborDays: 3,
+        },
+        {
+          description: 'Frame and glazing installation',
+          category: 'Structure',
+          estimatedCost: { min: 6000, max: 12000 },
+          materials: ['UPVC/Aluminium frame', 'Double glazing units'],
+          laborDays: 4,
+        },
+        {
+          description: 'Roof system',
+          category: 'Structure',
+          estimatedCost: { min: 3000, max: 6000 },
+          materials: ['Polycarbonate/Glass roof', 'Roof bars', 'Guttering'],
+          laborDays: 2,
+        },
+        {
+          description: 'Electrical installation',
+          category: 'Services',
+          estimatedCost: { min: 800, max: 1500 },
+          materials: ['Cables', 'Sockets', 'Lighting'],
+          laborDays: 1,
+        },
+        {
+          description: 'Flooring and finishing',
+          category: 'Finishing',
+          estimatedCost: { min: 1500, max: 3000 },
+          materials: ['Floor tiles', 'Underfloor heating', 'Skirting'],
+          laborDays: 2,
+        },
+      ],
       roofing: [
         {
           description: 'Scaffolding',
@@ -582,6 +770,7 @@ Provide detailed cost breakdown with materials, labor, and realistic price range
       tasks.map((t: any, i: number) => ({
         ...t,
         id: `task-${i}`,
+        finalPrice: t.estimatedCost.max, // Default to max estimate
         selected: true,
       }))
     );
@@ -608,12 +797,13 @@ Provide detailed cost breakdown with materials, labor, and realistic price range
   const handleShareQuote = async () => {
     const selectedTasks = tasks.filter(t => t.selected);
 
-    // Navigate to share screen
+    // Navigate to share screen with finalPrice per task and finalCost total
     navigation.navigate('ShareQuote', {
       quote: {
         ...currentQuote,
         tasks: selectedTasks,
         totalCost,
+        finalCost, // Your Price total
       },
     });
   };
@@ -680,8 +870,11 @@ Provide detailed cost breakdown with materials, labor, and realistic price range
               </View>
 
               <View style={styles.taskCost}>
+                <Text style={[styles.yourPrice, !task.selected && styles.costRangeInactive]}>
+                  Your Price: £{(task.finalPrice || task.estimatedCost.max).toLocaleString()}
+                </Text>
                 <Text style={[styles.costRange, !task.selected && styles.costRangeInactive]}>
-                  £{task.estimatedCost.min.toLocaleString()} - £
+                  AI estimate: £{task.estimatedCost.min.toLocaleString()} - £
                   {task.estimatedCost.max.toLocaleString()}
                 </Text>
                 {task.laborDays ? (
@@ -702,13 +895,68 @@ Provide detailed cost breakdown with materials, labor, and realistic price range
           ))}
         </View>
 
-        {/* Total Cost */}
+        {/* Total Cost with Confidence */}
         <Card style={styles.totalCard}>
-          <Text style={styles.totalLabel}>Estimated Total</Text>
-          <Text style={styles.totalAmount}>
+          {/* Final Cost (if set) */}
+          {finalCost !== null && (
+            <View style={styles.finalCostDisplay}>
+              <Text style={styles.finalCostDisplayLabel}>Your Quote Price</Text>
+              <Text style={styles.finalCostDisplayAmount}>£{finalCost.toLocaleString()}</Text>
+            </View>
+          )}
+
+          <Text style={styles.totalLabel}>
+            {finalCost !== null ? 'Estimated Range' : 'Estimated Total'}
+          </Text>
+          <Text style={[styles.totalAmount, finalCost !== null && styles.totalAmountSmall]}>
             £{totalCost.min.toLocaleString()} - £{totalCost.max.toLocaleString()}
           </Text>
           <Text style={styles.totalNote}>*Prices include materials and labor</Text>
+
+          {/* Confidence & Adjustments Indicator */}
+          {aiAnalysis && (
+            <View style={styles.confidenceContainer}>
+              <View style={styles.confidenceRow}>
+                <Text style={styles.confidenceLabel}>Quote Confidence:</Text>
+                <View style={styles.confidenceBar}>
+                  <View
+                    style={[
+                      styles.confidenceFill,
+                      {
+                        width: `${aiAnalysis.confidence || 75}%`,
+                        backgroundColor:
+                          (aiAnalysis.confidence || 75) > 80
+                            ? designTokens.colors.success[500]
+                            : (aiAnalysis.confidence || 75) > 60
+                              ? designTokens.colors.warning[500]
+                              : designTokens.colors.error[500],
+                      },
+                    ]}
+                  />
+                </View>
+                <Text style={styles.confidencePercent}>{aiAnalysis.confidence || 75}%</Text>
+              </View>
+
+              {/* Show applied adjustments */}
+              {(aiAnalysis.sizeMultiplier || aiAnalysis.locationMultiplier) && (
+                <View style={styles.adjustmentsContainer}>
+                  <Text style={styles.adjustmentsTitle}>Price Adjustments Applied:</Text>
+                  {aiAnalysis.sizeMultiplier && aiAnalysis.sizeMultiplier !== 1 && (
+                    <Text style={styles.adjustmentItem}>
+                      • Size factor: {aiAnalysis.sizeMultiplier}x{' '}
+                      {siteNotes.size && `(${siteNotes.size})`}
+                    </Text>
+                  )}
+                  {aiAnalysis.locationMultiplier && aiAnalysis.locationMultiplier !== 1 && (
+                    <Text style={styles.adjustmentItem}>
+                      • Location factor: {aiAnalysis.locationMultiplier}x{' '}
+                      {siteNotes.address && `(${siteNotes.address.split(',')[0]})`}
+                    </Text>
+                  )}
+                </View>
+              )}
+            </View>
+          )}
         </Card>
 
         {/* Actions */}
@@ -879,10 +1127,17 @@ const styles = StyleSheet.create({
     marginTop: designTokens.spacing.sm,
     marginLeft: 32,
   },
-  costRange: {
+  yourPrice: {
     fontSize: designTokens.typography.fontSize.lg,
-    fontWeight: designTokens.typography.fontWeight.semibold as any,
+    fontWeight: designTokens.typography.fontWeight.bold as any,
     color: designTokens.colors.primary[600],
+    marginBottom: 2,
+  },
+  costRange: {
+    fontSize: designTokens.typography.fontSize.xs,
+    fontWeight: designTokens.typography.fontWeight.normal as any,
+    color: designTokens.colors.text.tertiary,
+    fontStyle: 'italic',
   },
   costRangeInactive: {
     color: designTokens.colors.text.tertiary,
@@ -926,6 +1181,27 @@ const styles = StyleSheet.create({
     color: designTokens.colors.primary[600],
     marginTop: designTokens.spacing.xs,
   },
+  totalAmountSmall: {
+    fontSize: designTokens.typography.fontSize.lg,
+    color: designTokens.colors.text.secondary,
+  },
+  finalCostDisplay: {
+    marginBottom: designTokens.spacing.md,
+    paddingBottom: designTokens.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: designTokens.colors.primary[200],
+  },
+  finalCostDisplayLabel: {
+    fontSize: designTokens.typography.fontSize.sm,
+    color: designTokens.colors.text.secondary,
+    fontWeight: designTokens.typography.fontWeight.medium as any,
+  },
+  finalCostDisplayAmount: {
+    fontSize: designTokens.typography.fontSize['3xl'],
+    fontWeight: designTokens.typography.fontWeight.bold as any,
+    color: designTokens.colors.primary[600],
+    marginTop: designTokens.spacing.xs,
+  },
   totalNote: {
     fontSize: designTokens.typography.fontSize.sm,
     color: designTokens.colors.text.secondary,
@@ -958,5 +1234,53 @@ const styles = StyleSheet.create({
     fontSize: designTokens.typography.fontSize.sm,
     color: designTokens.colors.primary[600],
     textAlign: 'center',
+  },
+  confidenceContainer: {
+    marginTop: designTokens.spacing.md,
+    paddingTop: designTokens.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: designTokens.colors.border.secondary,
+  },
+  confidenceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: designTokens.spacing.sm,
+  },
+  confidenceLabel: {
+    fontSize: designTokens.typography.fontSize.sm,
+    color: designTokens.colors.text.secondary,
+    fontWeight: designTokens.typography.fontWeight.medium as any,
+  },
+  confidenceBar: {
+    flex: 1,
+    height: 8,
+    backgroundColor: designTokens.colors.background.secondary,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  confidenceFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  confidencePercent: {
+    fontSize: designTokens.typography.fontSize.sm,
+    fontWeight: designTokens.typography.fontWeight.semibold as any,
+    color: designTokens.colors.text.primary,
+    minWidth: 35,
+  },
+  adjustmentsContainer: {
+    marginTop: designTokens.spacing.sm,
+  },
+  adjustmentsTitle: {
+    fontSize: designTokens.typography.fontSize.xs,
+    color: designTokens.colors.text.secondary,
+    fontWeight: designTokens.typography.fontWeight.medium as any,
+    marginBottom: designTokens.spacing.xs,
+  },
+  adjustmentItem: {
+    fontSize: designTokens.typography.fontSize.xs,
+    color: designTokens.colors.text.tertiary,
+    marginLeft: designTokens.spacing.sm,
+    lineHeight: 18,
   },
 });
