@@ -4,6 +4,7 @@ import { Linking, AppState, AppStateStatus } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase, authHelpers } from '../services/supabase';
 import { navigate } from '../services/NavigationService';
+import revenueCatService from '../services/RevenueCatService';
 
 // Enhanced user types for freemium model
 type UserTier = 'anonymous' | 'free' | 'premium';
@@ -31,9 +32,11 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   isAuthenticated: boolean;
   isAnonymous: boolean;
+  isPremium: boolean;
   canGenerateQuote: () => boolean;
   incrementQuoteUsage: () => Promise<void>;
   upgradeUser: (tier: UserTier) => Promise<void>;
+  refreshPremiumStatus: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -205,6 +208,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
             setFreemiumUser(freeUser);
             await saveFreemiumUserToStorage(freeUser);
             console.log('💾 Free user saved to storage with preserved session data');
+
+            // Set RevenueCat user ID and sync premium status
+            await revenueCatService.setUserId(session.user.id);
+            // Check if user has active subscription (will upgrade if needed)
+            const status = await revenueCatService.checkPremiumStatus();
+            if (status.isPremium) {
+              console.log('💎 User has active premium subscription');
+              freeUser.tier = 'premium';
+              freeUser.quotesLimit = 999999;
+              freeUser.subscriptionStatus = 'active';
+              setFreemiumUser(freeUser);
+              await saveFreemiumUserToStorage(freeUser);
+            }
           }
           setLoading(false);
           break;
@@ -548,6 +564,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setLoading(true);
       console.log('🔄 Signing out user...');
 
+      // Clear RevenueCat user ID
+      await revenueCatService.clearUserId();
+
       // Sign out from Supabase (this also clears AsyncStorage)
       const { error } = await authHelpers.signOut();
 
@@ -657,6 +676,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
     console.log(`🎉 User upgraded to ${tier}`);
   };
 
+  // Sync premium status with RevenueCat
+  const syncRevenueCatStatus = async (): Promise<void> => {
+    try {
+      const status = await revenueCatService.checkPremiumStatus();
+
+      if (status.isPremium && freemiumUser.tier !== 'premium') {
+        // User has premium subscription in RevenueCat
+        console.log('💎 RevenueCat reports premium status, upgrading user');
+        await upgradeUser('premium');
+      } else if (!status.isPremium && freemiumUser.tier === 'premium') {
+        // Premium expired or cancelled
+        console.log('⚠️ Premium expired, downgrading to free');
+        const downgraded = {
+          ...freemiumUser,
+          tier: 'free' as UserTier,
+          quotesLimit: 5,
+          subscriptionStatus: undefined,
+        };
+        setFreemiumUser(downgraded);
+        await saveFreemiumUserToStorage(downgraded);
+      }
+    } catch (error) {
+      console.warn('Failed to sync RevenueCat status:', error);
+    }
+  };
+
   const value: AuthContextType = {
     user,
     freemiumUser,
@@ -668,9 +713,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     signOut,
     isAuthenticated: !!user,
     isAnonymous: freemiumUser.tier === 'anonymous',
+    isPremium: freemiumUser.tier === 'premium',
     canGenerateQuote,
     incrementQuoteUsage,
     upgradeUser,
+    refreshPremiumStatus: syncRevenueCatStatus,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

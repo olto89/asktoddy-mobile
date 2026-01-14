@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-gesture-handler';
@@ -6,6 +6,7 @@ import 'react-native-gesture-handler';
 import { AuthProvider } from './src/contexts/AuthContext';
 import AuthNavigator from './src/navigation/AuthNavigator';
 import { navigationRef } from './src/services/NavigationService';
+import revenueCatService from './src/services/RevenueCatService';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -24,6 +25,20 @@ export type RootStackParamList = {
 };
 
 export default function App() {
+  // Initialize RevenueCat on app start
+  useEffect(() => {
+    const initRevenueCat = async () => {
+      try {
+        await revenueCatService.initialize();
+        console.log('RevenueCat initialized in App');
+      } catch (error) {
+        console.warn('RevenueCat initialization failed:', error);
+      }
+    };
+
+    initRevenueCat();
+  }, []);
+
   return (
     <AuthProvider>
       <NavigationContainer ref={navigationRef}>

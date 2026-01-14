@@ -1,8 +1,18 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Modal,
+  TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
+import useSubscription from '../../hooks/useSubscription';
 import designTokens from '../../styles/designTokens';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
@@ -20,7 +30,18 @@ export default function UpgradePromptModal({
   onUpgrade,
   reason = 'quota_exceeded',
 }: UpgradePromptModalProps) {
-  const { freemiumUser } = useAuth();
+  const { freemiumUser, refreshPremiumStatus } = useAuth();
+  const {
+    isLoading,
+    monthlyPackage,
+    annualPackage,
+    purchaseMonthly,
+    restorePurchases,
+    error,
+    clearError,
+  } = useSubscription();
+
+  const [isPurchasing, setIsPurchasing] = useState(false);
 
   const getReasonContent = () => {
     switch (reason) {
@@ -47,10 +68,53 @@ export default function UpgradePromptModal({
 
   const { title, subtitle, emoji } = getReasonContent();
 
-  const handleUpgrade = () => {
-    onUpgrade?.();
-    // TODO: Navigate to payment screen
+  const handleUpgrade = async () => {
+    setIsPurchasing(true);
+    clearError();
+
+    try {
+      const success = await purchaseMonthly();
+
+      if (success) {
+        // Refresh premium status in AuthContext
+        await refreshPremiumStatus();
+        Alert.alert(
+          'Welcome to Premium!',
+          'You now have unlimited quotes and all premium features.'
+        );
+        onUpgrade?.();
+        onClose();
+      }
+    } catch (err) {
+      console.error('Purchase error:', err);
+    } finally {
+      setIsPurchasing(false);
+    }
   };
+
+  const handleRestore = async () => {
+    setIsPurchasing(true);
+    clearError();
+
+    try {
+      const restored = await restorePurchases();
+
+      if (restored) {
+        await refreshPremiumStatus();
+        Alert.alert('Purchases Restored', 'Your premium subscription has been restored.');
+        onClose();
+      } else {
+        Alert.alert('No Purchases Found', 'We could not find any previous purchases to restore.');
+      }
+    } catch (err) {
+      console.error('Restore error:', err);
+    } finally {
+      setIsPurchasing(false);
+    }
+  };
+
+  // Get actual price from RevenueCat if available
+  const monthlyPrice = monthlyPackage?.product?.priceString || '£9.99/month';
 
   return (
     <Modal
@@ -141,7 +205,7 @@ export default function UpgradePromptModal({
                 <View style={styles.planHeader}>
                   <View>
                     <Text style={styles.planName}>Premium</Text>
-                    <Text style={styles.planPrice}>£9.99/month</Text>
+                    <Text style={styles.planPrice}>{monthlyPrice}</Text>
                     <Text style={styles.planSaving}>Save 2+ hours per quote</Text>
                   </View>
                 </View>
@@ -197,12 +261,29 @@ export default function UpgradePromptModal({
                 </View>
 
                 <Button
-                  title="Upgrade to Premium"
+                  title={isPurchasing ? 'Processing...' : `Upgrade to Premium - ${monthlyPrice}`}
                   onPress={handleUpgrade}
                   variant="primary"
                   style={styles.upgradeButton}
-                  icon={<Ionicons name="star" size={20} color="white" />}
+                  disabled={isPurchasing || isLoading}
+                  icon={
+                    isPurchasing ? (
+                      <ActivityIndicator size="small" color="white" />
+                    ) : (
+                      <Ionicons name="star" size={20} color="white" />
+                    )
+                  }
                 />
+
+                <TouchableOpacity
+                  onPress={handleRestore}
+                  style={styles.restoreButton}
+                  disabled={isPurchasing}
+                >
+                  <Text style={styles.restoreButtonText}>Restore Purchases</Text>
+                </TouchableOpacity>
+
+                {error && <Text style={styles.errorText}>{error}</Text>}
               </Card>
             </View>
 
@@ -378,6 +459,22 @@ const styles = StyleSheet.create({
   },
   upgradeButton: {
     marginTop: designTokens.spacing.md,
+  },
+  restoreButton: {
+    alignItems: 'center',
+    marginTop: designTokens.spacing.md,
+    padding: designTokens.spacing.sm,
+  },
+  restoreButtonText: {
+    fontSize: designTokens.typography.fontSize.sm,
+    color: designTokens.colors.primary[600],
+    textDecorationLine: 'underline',
+  },
+  errorText: {
+    fontSize: designTokens.typography.fontSize.sm,
+    color: designTokens.colors.error[500],
+    textAlign: 'center',
+    marginTop: designTokens.spacing.sm,
   },
   roiCard: {
     padding: designTokens.spacing.lg,
