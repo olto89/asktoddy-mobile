@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as FileSystem from 'expo-file-system';
 import designTokens from '../styles/designTokens';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
@@ -178,6 +179,71 @@ export default function TaskListScreen({ navigation, route }: any) {
     }
   };
 
+  // Helper function to convert image URIs to base64
+  const convertImagesToBase64 = async (
+    imageUris: string[]
+  ): Promise<{ base64: string; mimeType: string }[]> => {
+    const images: { base64: string; mimeType: string }[] = [];
+
+    for (const uri of imageUris) {
+      try {
+        // Read file as base64
+        const base64 = await FileSystem.readAsStringAsync(uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+
+        // Determine mime type from extension
+        const extension = uri.split('.').pop()?.toLowerCase() || 'jpg';
+        const mimeType = extension === 'png' ? 'image/png' : 'image/jpeg';
+
+        images.push({ base64, mimeType });
+        console.log(`📸 Converted image to base64: ${uri.substring(0, 50)}...`);
+      } catch (error) {
+        console.error(`Failed to convert image: ${uri}`, error);
+      }
+    }
+
+    return images;
+  };
+
+  // Helper function to convert audio recordings to base64
+  const convertAudioToBase64 = async (
+    recordings: { uri: string; duration: number }[]
+  ): Promise<{ base64: string; mimeType: string }[]> => {
+    const audioFiles: { base64: string; mimeType: string }[] = [];
+
+    for (const recording of recordings) {
+      try {
+        // Read file as base64
+        const base64 = await FileSystem.readAsStringAsync(recording.uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+
+        // Determine mime type from extension (expo-av records as .m4a on iOS, .3gp on Android)
+        const extension = recording.uri.split('.').pop()?.toLowerCase() || 'm4a';
+        let mimeType = 'audio/mp4'; // Default for m4a
+        if (extension === '3gp') {
+          mimeType = 'audio/3gpp';
+        } else if (extension === 'wav') {
+          mimeType = 'audio/wav';
+        } else if (extension === 'mp3') {
+          mimeType = 'audio/mp3';
+        } else if (extension === 'aac') {
+          mimeType = 'audio/aac';
+        }
+
+        audioFiles.push({ base64, mimeType });
+        console.log(
+          `🎤 Converted audio to base64: ${recording.uri.substring(0, 50)}... (${Math.round(recording.duration)}s)`
+        );
+      } catch (error) {
+        console.error(`Failed to convert audio: ${recording.uri}`, error);
+      }
+    }
+
+    return audioFiles;
+  };
+
   const generateTasksFromNotes = async () => {
     try {
       // Debug auth state
@@ -207,6 +273,49 @@ export default function TaskListScreen({ navigation, route }: any) {
 
       const aiService = AIService;
 
+      // Convert photos to base64 for AI analysis
+      let images: { base64: string; mimeType: string }[] = [];
+      if (siteNotes.photos && siteNotes.photos.length > 0) {
+        console.log(`📸 Converting ${siteNotes.photos.length} photos to base64...`);
+        images = await convertImagesToBase64(siteNotes.photos);
+        console.log(`✅ Converted ${images.length} photos successfully`);
+      }
+
+      // Convert voice recordings to base64 for AI analysis
+      let audioFiles: { base64: string; mimeType: string }[] = [];
+      if (siteNotes.voiceRecordings && siteNotes.voiceRecordings.length > 0) {
+        console.log(
+          `🎤 Converting ${siteNotes.voiceRecordings.length} voice recordings to base64...`
+        );
+        audioFiles = await convertAudioToBase64(siteNotes.voiceRecordings);
+        console.log(`✅ Converted ${audioFiles.length} audio files successfully`);
+      }
+
+      // Build construction method info string
+      const constructionMethodInfo = siteNotes.constructionMethod
+        ? `🔨 Construction Method: ${siteNotes.constructionMethodLabel || siteNotes.constructionMethod} (${siteNotes.constructionMethodMultiplier}x price factor)`
+        : '';
+
+      // Build photo analysis instruction
+      const photoInstruction =
+        images.length > 0
+          ? `📸 IMPORTANT: ${images.length} site photo(s) are attached. Analyze these images carefully to:
+• Identify the current state of the property/area
+• Assess the scope of work needed based on visual evidence
+• Note any potential complications or additional requirements visible
+• Use visual details to refine cost estimates`
+          : '';
+
+      // Build voice note instruction
+      const voiceInstruction =
+        audioFiles.length > 0
+          ? `🎤 IMPORTANT: ${audioFiles.length} voice recording(s) are attached. Listen carefully to these audio notes from the contractor/user:
+• Extract any specific requirements or preferences mentioned
+• Note measurements, materials, or specifications described verbally
+• Identify any concerns or special considerations mentioned
+• Factor verbal descriptions into your cost estimates`
+          : '';
+
       // Prepare comprehensive prompt with ALL user input
       const prompt = `You are a UK construction cost estimator. Analyze this project in detail and provide accurate quotes based on ALL the information provided.
 
@@ -215,15 +324,18 @@ PROJECT DETAILS:
 🏠 Property Type: ${siteNotes.propertyType || 'Not specified'}
 📐 Size/Dimensions: ${siteNotes.size || 'Not specified'}
 🔧 Job Type: ${siteNotes.jobType}
+${constructionMethodInfo}
 
 USER REQUIREMENTS:
 ✅ Selected Work Items: ${siteNotes.tasks && siteNotes.tasks.length > 0 ? siteNotes.tasks.join(', ') : 'None specified'}
 
 📝 DETAILED NOTES: ${siteNotes.notes || 'None provided'}
 
-🎤 VOICE NOTES: ${siteNotes.voiceNotes || 'None provided'}
+🎤 VOICE NOTES (text): ${siteNotes.voiceNotes || 'None provided'}
 
-${siteNotes.photos && siteNotes.photos.length > 0 ? `📸 Photos: ${siteNotes.photos.length} photo(s) provided for context` : ''}
+${photoInstruction}
+
+${voiceInstruction}
 
 ANALYSIS REQUIREMENTS:
 • Pay special attention to the dimensions/size - this heavily impacts material quantities and costs
@@ -232,11 +344,20 @@ ANALYSIS REQUIREMENTS:
 • Include all selected work items plus any obviously necessary additional tasks
 • Provide realistic UK construction costs for 2024/2025
 • Consider quality levels appropriate for the property type
+${images.length > 0 ? '• ANALYZE THE ATTACHED PHOTOS to assess the current condition and scope of work' : ''}
+${audioFiles.length > 0 ? '• LISTEN TO THE ATTACHED VOICE RECORDINGS for verbal descriptions and requirements' : ''}
+${siteNotes.constructionMethod ? `• IMPORTANT: Apply ${siteNotes.constructionMethodMultiplier}x price adjustment for ${siteNotes.constructionMethodLabel} construction method` : ''}
 
 Provide detailed cost breakdown with materials, labor, and realistic price ranges based on current UK market rates.`;
 
-      // Call AI service
-      const response = await aiService.processChat(prompt);
+      // Call AI service with images and audio if available
+      const hasMedia = images.length > 0 || audioFiles.length > 0;
+      const response = await aiService.analyzeImage({
+        message: prompt,
+        images: images.length > 0 ? images : undefined,
+        audio: audioFiles.length > 0 ? audioFiles : undefined,
+        analysisType: hasMedia ? 'image' : 'chat',
+      });
 
       console.log('🤖 AI Response received:', response);
       setAiAnalysis(response);

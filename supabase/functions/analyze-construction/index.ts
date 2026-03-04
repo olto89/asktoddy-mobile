@@ -101,6 +101,8 @@ interface ProjectAnalysis {
     location_multiplier?: number;
     size_multiplier?: number;
     spec_multiplier?: number;
+    construction_method_multiplier?: number;
+    construction_method?: string;
   };
 }
 
@@ -239,6 +241,8 @@ function createStructuredPrompt(message: string, projectType: string): string {
   const sizeMatch = message.match(/Size[\/\s]*Dimensions[:\s]+([^\n]+)/i);
   const locationMatch = message.match(/Location[:\s]+([^\n]+)/i);
   const tasksMatch = message.match(/Selected Work Items[:\s]+([^\n]+)/i);
+  // Extract construction method and its multiplier
+  const constructionMethodMatch = message.match(/Construction Method[:\s]+([^(]+)\(([0-9.]+)x/i);
   // Capture notes until VOICE NOTES section or end of relevant content
   const notesMatch = message.match(
     /DETAILED NOTES[:\s]+([\s\S]*?)(?=🎤 VOICE|ANALYSIS REQUIREMENTS|$)/i
@@ -258,11 +262,19 @@ function createStructuredPrompt(message: string, projectType: string): string {
   const userTasks = cleanValue(tasksMatch?.[1]) || '';
   const notes = cleanValue(notesMatch?.[1]) || '';
 
+  // Extract construction method info
+  const constructionMethod = constructionMethodMatch ? cleanValue(constructionMethodMatch[1]) : '';
+  const constructionMethodMultiplier = constructionMethodMatch
+    ? parseFloat(constructionMethodMatch[2]) || 1.0
+    : 1.0;
+
   console.log('📊 Extracted from prompt:', {
     size,
     location,
     userTasks: userTasks.substring(0, 50),
     notes: notes.substring(0, 100),
+    constructionMethod: constructionMethod || 'not specified',
+    constructionMethodMultiplier,
   });
 
   // Calculate multipliers
@@ -270,19 +282,22 @@ function createStructuredPrompt(message: string, projectType: string): string {
   const locationMultiplier = calculateRegionalMultiplier(location);
   const specInfo = calculateSpecMultiplier(notes);
 
-  // Combined multiplier
-  const totalMultiplier = sizeMultiplier * locationMultiplier * specInfo.multiplier;
+  // Combined multiplier (now includes construction method)
+  const totalMultiplier =
+    sizeMultiplier * locationMultiplier * specInfo.multiplier * constructionMethodMultiplier;
 
   console.log('📈 Multipliers:', {
     size: sizeMultiplier,
     location: locationMultiplier,
     spec: specInfo.multiplier,
+    constructionMethod: constructionMethodMultiplier,
     total: totalMultiplier.toFixed(2),
   });
 
   return `UK construction estimator. Return ONLY JSON, no extra text.
 
 ${projectType} project in ${location}, size: ${size}
+${constructionMethod ? `Construction method: ${constructionMethod}` : ''}
 Spec level: ${specInfo.level} (${notes ? `Customer notes: "${notes}"` : 'standard specification'})
 Tasks requested: ${userTasks}
 
@@ -290,8 +305,10 @@ IMPORTANT: Apply ${totalMultiplier.toFixed(2)}x price adjustment based on:
 - Location: ${locationMultiplier}x (${location})
 - Size: ${sizeMultiplier}x (${size})
 - Spec level: ${specInfo.multiplier}x (${specInfo.level})
+${constructionMethod ? `- Construction method: ${constructionMethodMultiplier}x (${constructionMethod})` : ''}
 ${specInfo.level === 'high-spec' ? '- Use PREMIUM materials and finishes in estimates' : ''}
 ${specInfo.level === 'budget' ? '- Use BUDGET materials and basic finishes' : ''}
+${constructionMethod ? `- Use materials and techniques appropriate for ${constructionMethod} construction` : ''}
 
 Provide 5-8 main construction tasks with COMBINED materials+labor costs.
 
@@ -315,17 +332,61 @@ JSON format:
     "confidence": 85,
     "location_multiplier": ${locationMultiplier},
     "size_multiplier": ${sizeMultiplier},
-    "spec_multiplier": ${specInfo.multiplier}
+    "spec_multiplier": ${specInfo.multiplier},
+    "construction_method_multiplier": ${constructionMethodMultiplier}${
+      constructionMethod
+        ? `,
+    "construction_method": "${constructionMethod}"`
+        : ''
+    }
   }
 }`;
 }
 
 // Intelligent Gemini API call with smart retry logic
-async function callGemini(prompt: string, apiKey: string): Promise<string> {
+async function callGemini(
+  prompt: string,
+  apiKey: string,
+  images?: { base64: string; mimeType: string }[],
+  audio?: { base64: string; mimeType: string }[]
+): Promise<string> {
   console.log('🤖 Calling Gemini API...');
   console.log('📝 Prompt length:', prompt.length, 'characters');
+  if (images && images.length > 0) {
+    console.log(`📸 Including ${images.length} image(s) in request`);
+  }
+  if (audio && audio.length > 0) {
+    console.log(`🎤 Including ${audio.length} audio file(s) in request`);
+  }
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+
+  // Build parts array - text first, then images
+  const parts: any[] = [{ text: prompt }];
+
+  // Add images if provided
+  if (images && images.length > 0) {
+    for (const image of images) {
+      parts.push({
+        inline_data: {
+          mime_type: image.mimeType,
+          data: image.base64,
+        },
+      });
+    }
+  }
+
+  // Add audio files if provided
+  if (audio && audio.length > 0) {
+    for (const audioFile of audio) {
+      parts.push({
+        inline_data: {
+          mime_type: audioFile.mimeType,
+          data: audioFile.base64,
+        },
+      });
+    }
+  }
 
   // Intelligent retry logic based on error types
   let retries = 1; // Only 1 retry for network/server errors
@@ -341,7 +402,7 @@ async function callGemini(prompt: string, apiKey: string): Promise<string> {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
+          contents: [{ parts }],
         }),
         signal: controller.signal,
       });
@@ -501,6 +562,8 @@ function processValidJson(parsed: any, projectType: string): ProjectAnalysis {
       location_multiplier: summary.location_multiplier,
       size_multiplier: summary.size_multiplier,
       spec_multiplier: summary.spec_multiplier,
+      construction_method_multiplier: summary.construction_method_multiplier,
+      construction_method: summary.construction_method,
     },
   };
 }
@@ -943,8 +1006,15 @@ Deno.serve(async req => {
 
   try {
     console.log('🚀 Edge function started, parsing request...');
-    const { message, sessionId, userId, analysisType, context, history } = await req.json();
+    const { message, sessionId, userId, analysisType, context, history, images, audio } =
+      await req.json();
     console.log('📩 Request parsed successfully, message length:', message?.length || 0);
+    if (images && images.length > 0) {
+      console.log(`📸 Received ${images.length} image(s) for analysis`);
+    }
+    if (audio && audio.length > 0) {
+      console.log(`🎤 Received ${audio.length} voice recording(s) for analysis`);
+    }
 
     if (!message) {
       return new Response(JSON.stringify({ error: 'Message is required' }), {
@@ -982,9 +1052,9 @@ Deno.serve(async req => {
     const structuredPrompt = createStructuredPrompt(message, projectType);
     console.log('📏 Prompt created, length:', structuredPrompt.length);
 
-    // Call AI API with structured prompt
+    // Call AI API with structured prompt, images, and audio
     console.log('📞 About to call Gemini...');
-    const aiResponse = await callGemini(structuredPrompt, geminiApiKey);
+    const aiResponse = await callGemini(structuredPrompt, geminiApiKey, images, audio);
     console.log('✅ Gemini responded, length:', aiResponse.length);
 
     // Parse JSON response with new parser

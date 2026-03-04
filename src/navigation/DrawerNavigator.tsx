@@ -222,7 +222,9 @@ function MenuModal({ visible, onClose, navigation }: any) {
                       <Text style={styles.quoteCost}>
                         {quote.pendingGeneration
                           ? '⏳ Pending generation'
-                          : `£${quote.totalCost?.min?.toLocaleString() || '0'} - £${quote.totalCost?.max?.toLocaleString() || '0'}`}
+                          : quote.finalCost
+                            ? `£${quote.finalCost.toLocaleString()}`
+                            : `£${quote.totalCost?.min?.toLocaleString() || '0'} - £${quote.totalCost?.max?.toLocaleString() || '0'}`}
                       </Text>
                     </View>
                     <Pressable

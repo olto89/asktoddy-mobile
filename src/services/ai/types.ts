@@ -134,6 +134,8 @@ export interface AIProviderConfig {
 
 export interface AnalysisRequest {
   imageUri?: string;
+  images?: { base64: string; mimeType: string }[]; // Multiple images for analysis
+  audio?: { base64: string; mimeType: string }[]; // Audio files for analysis
   message?: string;
   additionalContext?: {
     projectType?: string;

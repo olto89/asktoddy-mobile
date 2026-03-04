@@ -10,12 +10,14 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Image,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
-import * as Speech from 'expo-speech';
+import { Audio } from 'expo-av';
 import designTokens from '../styles/designTokens';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
@@ -34,6 +36,61 @@ const JOB_TYPES = [
 ];
 
 const PROPERTY_TYPES = ['Detached', 'Semi-Detached', 'Terraced', 'Flat', 'Bungalow'];
+
+// Construction methods with price multipliers per job type
+const CONSTRUCTION_METHODS: Record<string, { id: string; label: string; multiplier: number }[]> = {
+  extension: [
+    { id: 'brick', label: 'Brick/Block', multiplier: 1.0 },
+    { id: 'timber_frame', label: 'Timber Frame', multiplier: 0.9 },
+    { id: 'steel_frame', label: 'Steel Frame', multiplier: 1.3 },
+    { id: 'sips', label: 'SIPs Panel', multiplier: 1.15 },
+    { id: 'modular', label: 'Modular/Prefab', multiplier: 0.85 },
+  ],
+  bathroom: [
+    { id: 'standard', label: 'Standard', multiplier: 1.0 },
+    { id: 'wet_room', label: 'Wet Room', multiplier: 1.25 },
+    { id: 'accessible', label: 'Accessible/Mobility', multiplier: 1.35 },
+  ],
+  kitchen: [
+    { id: 'flat_pack', label: 'Flat Pack', multiplier: 0.7 },
+    { id: 'semi_custom', label: 'Semi-Custom', multiplier: 1.0 },
+    { id: 'bespoke', label: 'Bespoke/Handmade', multiplier: 1.6 },
+  ],
+  patio: [
+    { id: 'concrete_slabs', label: 'Concrete Slabs', multiplier: 0.8 },
+    { id: 'block_paving', label: 'Block Paving', multiplier: 1.0 },
+    { id: 'porcelain', label: 'Porcelain Tiles', multiplier: 1.3 },
+    { id: 'natural_stone', label: 'Natural Stone', multiplier: 1.5 },
+    { id: 'resin_bound', label: 'Resin Bound', multiplier: 1.2 },
+  ],
+  driveway: [
+    { id: 'gravel', label: 'Gravel', multiplier: 0.5 },
+    { id: 'tarmac', label: 'Tarmac', multiplier: 0.8 },
+    { id: 'block_paving', label: 'Block Paving', multiplier: 1.0 },
+    { id: 'resin_bound', label: 'Resin Bound', multiplier: 1.3 },
+    { id: 'concrete', label: 'Pattern Concrete', multiplier: 0.9 },
+  ],
+  conservatory: [
+    { id: 'upvc', label: 'uPVC', multiplier: 0.85 },
+    { id: 'aluminium', label: 'Aluminium', multiplier: 1.15 },
+    { id: 'timber', label: 'Hardwood Timber', multiplier: 1.4 },
+    { id: 'orangery', label: 'Orangery Style', multiplier: 1.5 },
+  ],
+  roofing: [
+    { id: 'concrete_tiles', label: 'Concrete Tiles', multiplier: 0.85 },
+    { id: 'clay_tiles', label: 'Clay Tiles', multiplier: 1.1 },
+    { id: 'slate', label: 'Natural Slate', multiplier: 1.4 },
+    { id: 'flat_epdm', label: 'Flat Roof (EPDM)', multiplier: 0.9 },
+    { id: 'flat_grp', label: 'Flat Roof (GRP)', multiplier: 1.0 },
+  ],
+  renovation: [
+    { id: 'cosmetic', label: 'Cosmetic Only', multiplier: 0.6 },
+    { id: 'standard', label: 'Standard Refurb', multiplier: 1.0 },
+    { id: 'structural', label: 'Structural Work', multiplier: 1.4 },
+    { id: 'full', label: 'Full Renovation', multiplier: 1.6 },
+  ],
+  other: [{ id: 'standard', label: 'Standard', multiplier: 1.0 }],
+};
 
 const COMMON_TASKS = {
   extension: [
@@ -128,17 +185,26 @@ const COMMON_TASKS = {
   ],
 };
 
+interface VoiceRecording {
+  uri: string;
+  duration: number; // in seconds
+  timestamp: number;
+}
+
 interface SiteNote {
   id: string;
   timestamp: number;
   address: string;
   jobType: string;
+  constructionMethod?: string; // e.g., 'brick', 'timber_frame', 'wet_room'
+  constructionMethodMultiplier?: number; // Price multiplier for the method
   propertyType: string;
   size: string;
   tasks: string[];
   notes: string;
   photos: string[];
-  voiceNotes: string;
+  voiceNotes: string; // Legacy: text transcript
+  voiceRecordings?: VoiceRecording[]; // New: actual audio recordings
   syncStatus: 'local' | 'syncing' | 'synced';
   status: 'draft' | 'generated' | 'completed'; // Track quote generation status
   lastModified: number;
@@ -154,6 +220,9 @@ export default function SiteNotesScreen({ navigation, route }: any) {
   const [currentQuoteId, setCurrentQuoteId] = useState<string | null>(quote?.id || null);
   const [address, setAddress] = useState(quote?.address || '');
   const [selectedJobType, setSelectedJobType] = useState(quote?.jobType || '');
+  const [selectedConstructionMethod, setSelectedConstructionMethod] = useState(
+    quote?.constructionMethod || ''
+  );
   const [selectedPropertyType, setSelectedPropertyType] = useState(quote?.propertyType || '');
   const [size, setSize] = useState(quote?.size || '');
   const [selectedTasks, setSelectedTasks] = useState<string[]>(quote?.tasks || []);
@@ -161,6 +230,13 @@ export default function SiteNotesScreen({ navigation, route }: any) {
   const [photos, setPhotos] = useState<string[]>(quote?.photos || []);
   const [isRecording, setIsRecording] = useState(false);
   const [voiceTranscript, setVoiceTranscript] = useState(quote?.voiceNotes || '');
+  const [voiceRecordings, setVoiceRecordings] = useState<VoiceRecording[]>(
+    quote?.voiceRecordings || []
+  );
+  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [playingUri, setPlayingUri] = useState<string | null>(null);
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
@@ -169,11 +245,13 @@ export default function SiteNotesScreen({ navigation, route }: any) {
     const hasAnyData =
       address.trim() ||
       selectedJobType ||
+      selectedConstructionMethod ||
       selectedPropertyType ||
       size.trim() ||
       selectedTasks.length > 0 ||
       additionalNotes.trim() ||
       voiceTranscript.trim() ||
+      voiceRecordings.length > 0 ||
       photos.length > 0;
 
     // Only auto-save if there's meaningful data AND it's not a fresh new assessment
@@ -189,11 +267,13 @@ export default function SiteNotesScreen({ navigation, route }: any) {
   }, [
     address,
     selectedJobType,
+    selectedConstructionMethod,
     selectedPropertyType,
     size,
     selectedTasks,
     additionalNotes,
     voiceTranscript,
+    voiceRecordings,
     photos,
   ]);
 
@@ -205,18 +285,26 @@ export default function SiteNotesScreen({ navigation, route }: any) {
       const quoteId =
         currentQuoteId || `draft_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+      // Get the construction method multiplier
+      const methodData = CONSTRUCTION_METHODS[selectedJobType]?.find(
+        m => m.id === selectedConstructionMethod
+      );
+
       const draftQuote: SiteNote = {
         id: quoteId,
         timestamp: currentQuoteId ? existingQuote?.timestamp || Date.now() : Date.now(),
         lastModified: Date.now(),
         address,
         jobType: selectedJobType,
+        constructionMethod: selectedConstructionMethod || undefined,
+        constructionMethodMultiplier: methodData?.multiplier || 1.0,
         propertyType: selectedPropertyType,
         size,
         tasks: selectedTasks,
         notes: additionalNotes,
         photos,
         voiceNotes: voiceTranscript,
+        voiceRecordings,
         syncStatus: 'local',
         status: 'draft',
       };
@@ -289,25 +377,240 @@ export default function SiteNotesScreen({ navigation, route }: any) {
     }
   };
 
-  // Mock voice recording (will implement real voice-to-text in next step)
+  // Setup audio recording
+  const startRecording = async () => {
+    try {
+      console.log('🎤 Requesting microphone permission...');
+      // Request permissions
+      const permissionResponse = await Audio.requestPermissionsAsync();
+      console.log('🎤 Permission response:', permissionResponse);
+
+      if (!permissionResponse.granted) {
+        Alert.alert(
+          'Microphone Permission Required',
+          'Please enable microphone access in Settings to record voice notes.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Open Settings', onPress: () => Linking.openSettings() },
+          ]
+        );
+        return;
+      }
+
+      console.log('🎤 Setting audio mode...');
+      // Set audio mode for recording - more complete configuration
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+        staysActiveInBackground: false,
+        shouldDuckAndroid: true,
+        playThroughEarpieceAndroid: false,
+      });
+
+      console.log('🎤 Creating recording...');
+      // Use a more compatible recording configuration
+      const recordingOptions: Audio.RecordingOptions = {
+        isMeteringEnabled: true,
+        android: {
+          extension: '.m4a',
+          outputFormat: Audio.AndroidOutputFormat.MPEG_4,
+          audioEncoder: Audio.AndroidAudioEncoder.AAC,
+          sampleRate: 44100,
+          numberOfChannels: 1,
+          bitRate: 128000,
+        },
+        ios: {
+          extension: '.m4a',
+          outputFormat: Audio.IOSOutputFormat.MPEG4AAC,
+          audioQuality: Audio.IOSAudioQuality.HIGH,
+          sampleRate: 44100,
+          numberOfChannels: 1,
+          bitRate: 128000,
+          linearPCMBitDepth: 16,
+          linearPCMIsBigEndian: false,
+          linearPCMIsFloat: false,
+        },
+        web: {
+          mimeType: 'audio/webm',
+          bitsPerSecond: 128000,
+        },
+      };
+
+      const { recording } = await Audio.Recording.createAsync(recordingOptions);
+      console.log('🎤 Recording started successfully');
+      setRecording(recording);
+      setIsRecording(true);
+      setRecordingDuration(0);
+
+      // Update duration every second
+      const interval = setInterval(() => {
+        setRecordingDuration(prev => prev + 1);
+      }, 1000);
+
+      // Store interval ID for cleanup
+      (recording as any)._durationInterval = interval;
+    } catch (error) {
+      console.error('Failed to start recording:', error);
+      Alert.alert('Error', 'Failed to start recording. Please try again.');
+    }
+  };
+
+  const stopRecording = async () => {
+    if (!recording) return;
+
+    try {
+      console.log('🎤 Stopping recording...');
+      // Clear duration interval
+      if ((recording as any)._durationInterval) {
+        clearInterval((recording as any)._durationInterval);
+      }
+
+      setIsRecording(false);
+      await recording.stopAndUnloadAsync();
+      console.log('🎤 Recording stopped and unloaded');
+
+      // Reset audio mode
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: false,
+      });
+
+      const uri = recording.getURI();
+      console.log('🎤 Recording URI:', uri);
+      if (uri) {
+        const newRecording: VoiceRecording = {
+          uri,
+          duration: recordingDuration,
+          timestamp: Date.now(),
+        };
+        setVoiceRecordings(prev => [...prev, newRecording]);
+        setHasUnsavedChanges(true);
+        Alert.alert(
+          'Voice Note Saved',
+          `Recording saved (${formatDuration(recordingDuration)}). It will be analyzed when generating your quote.`
+        );
+      }
+
+      setRecording(null);
+      setRecordingDuration(0);
+    } catch (error) {
+      console.error('Failed to stop recording:', error);
+      Alert.alert('Error', 'Failed to save recording. Please try again.');
+    }
+  };
+
   const handleVoiceRecording = () => {
     if (isRecording) {
-      // Stop recording
-      setIsRecording(false);
-      // Mock transcript for now
-      const mockTranscript =
-        'Need to remove existing conservatory roof, install new insulated roof system with anthracite grey windows and doors.';
-      setVoiceTranscript(prev => prev + ' ' + mockTranscript);
-      setHasUnsavedChanges(true);
-      Alert.alert(
-        'Voice Note Added',
-        'Your voice note has been transcribed and added to the notes.'
-      );
+      stopRecording();
     } else {
-      // Start recording
-      setIsRecording(true);
-      Alert.alert('Recording Started', 'Speak clearly about the work required...');
+      startRecording();
     }
+  };
+
+  // Format duration as mm:ss
+  const formatDuration = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Play voice recording
+  const playRecording = async (uri: string) => {
+    try {
+      // Stop any currently playing sound
+      if (sound) {
+        await sound.unloadAsync();
+      }
+
+      const { sound: newSound } = await Audio.Sound.createAsync({ uri });
+      setSound(newSound);
+      setPlayingUri(uri);
+
+      newSound.setOnPlaybackStatusUpdate(status => {
+        if (status.isLoaded && status.didJustFinish) {
+          setPlayingUri(null);
+        }
+      });
+
+      await newSound.playAsync();
+    } catch (error) {
+      console.error('Failed to play recording:', error);
+      Alert.alert('Error', 'Failed to play recording');
+    }
+  };
+
+  // Stop playback
+  const stopPlayback = async () => {
+    if (sound) {
+      await sound.stopAsync();
+      setPlayingUri(null);
+    }
+  };
+
+  // Remove voice recording
+  const removeRecording = (index: number) => {
+    Alert.alert('Delete Recording', 'Are you sure you want to delete this voice note?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => {
+          setVoiceRecordings(prev => prev.filter((_, i) => i !== index));
+          setHasUnsavedChanges(true);
+        },
+      },
+    ]);
+  };
+
+  // Cleanup sound on unmount
+  useEffect(() => {
+    return () => {
+      if (sound) {
+        sound.unloadAsync();
+      }
+    };
+  }, [sound]);
+
+  // Pick photo from gallery
+  const handlePickFromGallery = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Photo library permission is required to select photos');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.7,
+      allowsMultipleSelection: true,
+      selectionLimit: 5,
+    });
+
+    if (!result.canceled && result.assets) {
+      const newPhotos = result.assets.map(asset => asset.uri);
+      setPhotos(prev => [...prev, ...newPhotos]);
+      setHasUnsavedChanges(true);
+    }
+  };
+
+  // Remove a specific photo
+  const removePhoto = (index: number) => {
+    setPhotos(prev => prev.filter((_, i) => i !== index));
+    setHasUnsavedChanges(true);
+  };
+
+  // Clear voice transcript
+  const clearVoiceTranscript = () => {
+    Alert.alert('Clear Voice Notes', 'Are you sure you want to remove all voice notes?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Clear',
+        style: 'destructive',
+        onPress: () => {
+          setVoiceTranscript('');
+          setHasUnsavedChanges(true);
+        },
+      },
+    ]);
   };
 
   // Save notes locally
@@ -317,13 +620,17 @@ export default function SiteNotesScreen({ navigation, route }: any) {
       timestamp: Date.now(),
       address,
       jobType: selectedJobType,
+      constructionMethod: selectedConstructionMethod || undefined,
       propertyType: selectedPropertyType,
       size,
       tasks: selectedTasks,
       notes: additionalNotes,
       photos,
       voiceNotes: voiceTranscript,
+      voiceRecordings,
       syncStatus: 'local',
+      status: 'draft',
+      lastModified: Date.now(),
     };
 
     try {
@@ -440,16 +747,25 @@ export default function SiteNotesScreen({ navigation, route }: any) {
       }
     }
 
+    // Get the construction method data for quote generation
+    const selectedMethodData = CONSTRUCTION_METHODS[selectedJobType]?.find(
+      m => m.id === selectedConstructionMethod
+    );
+
     // Prepare notes data
     const siteNotes = {
       id: currentQuoteId,
       address,
       jobType: selectedJobType,
+      constructionMethod: selectedConstructionMethod || undefined,
+      constructionMethodLabel: selectedMethodData?.label || undefined,
+      constructionMethodMultiplier: selectedMethodData?.multiplier || 1.0,
       propertyType: selectedPropertyType,
       size,
       tasks: selectedTasks,
       notes: additionalNotes + '\n' + voiceTranscript,
       photos,
+      voiceRecordings,
       timestamp: existingQuote?.timestamp || Date.now(),
     };
 
@@ -517,9 +833,6 @@ export default function SiteNotesScreen({ navigation, route }: any) {
                 />
               </TouchableOpacity>
             </View>
-            {photos.length > 0 && (
-              <Text style={styles.photoCount}>{photos.length} photo(s) added</Text>
-            )}
           </Card>
 
           {/* Job Type Selection */}
@@ -535,6 +848,7 @@ export default function SiteNotesScreen({ navigation, route }: any) {
                   ]}
                   onPress={() => {
                     setSelectedJobType(job.id);
+                    setSelectedConstructionMethod(''); // Reset method when job type changes
                     setHasUnsavedChanges(true);
                   }}
                 >
@@ -559,6 +873,51 @@ export default function SiteNotesScreen({ navigation, route }: any) {
               ))}
             </View>
           </Card>
+
+          {/* Construction Method - Only show when job type is selected */}
+          {selectedJobType && CONSTRUCTION_METHODS[selectedJobType]?.length > 1 && (
+            <Card style={styles.section}>
+              <Text style={styles.sectionTitle}>🔧 Construction Method</Text>
+              <Text style={styles.methodHint}>
+                Select the construction approach (affects pricing)
+              </Text>
+              <View style={styles.methodGrid}>
+                {CONSTRUCTION_METHODS[selectedJobType].map(method => (
+                  <TouchableOpacity
+                    key={method.id}
+                    style={[
+                      styles.methodButton,
+                      selectedConstructionMethod === method.id && styles.methodButtonActive,
+                    ]}
+                    onPress={() => {
+                      setSelectedConstructionMethod(method.id);
+                      setHasUnsavedChanges(true);
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.methodLabel,
+                        selectedConstructionMethod === method.id && styles.methodLabelActive,
+                      ]}
+                    >
+                      {method.label}
+                    </Text>
+                    {method.multiplier !== 1.0 && (
+                      <Text
+                        style={[
+                          styles.methodMultiplier,
+                          selectedConstructionMethod === method.id && styles.methodMultiplierActive,
+                        ]}
+                      >
+                        {method.multiplier > 1 ? '+' : ''}
+                        {Math.round((method.multiplier - 1) * 100)}%
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </Card>
+          )}
 
           {/* Quick Details */}
           <Card style={styles.section}>
@@ -661,13 +1020,124 @@ export default function SiteNotesScreen({ navigation, route }: any) {
                   size={24}
                   color={designTokens.colors.primary[500]}
                 />
-                <Text style={styles.actionButtonText}>Photo</Text>
+                <Text style={styles.actionButtonText}>Camera</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.actionButton} onPress={handlePickFromGallery}>
+                <Ionicons
+                  name="images-outline"
+                  size={24}
+                  color={designTokens.colors.primary[500]}
+                />
+                <Text style={styles.actionButtonText}>Gallery</Text>
               </TouchableOpacity>
             </View>
 
+            {/* Photo Thumbnails */}
+            {photos.length > 0 && (
+              <View style={styles.photoSection}>
+                <Text style={styles.photoSectionTitle}>📸 Site Photos ({photos.length})</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.photoScrollView}
+                  contentContainerStyle={styles.photoScrollContent}
+                >
+                  {photos.map((uri, index) => (
+                    <View key={index} style={styles.photoThumbnailContainer}>
+                      <Image source={{ uri }} style={styles.photoThumbnail} />
+                      <TouchableOpacity
+                        style={styles.photoRemoveButton}
+                        onPress={() => removePhoto(index)}
+                      >
+                        <Ionicons
+                          name="close-circle"
+                          size={24}
+                          color={designTokens.colors.error[500]}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+
+            {/* Voice Recordings */}
+            {voiceRecordings.length > 0 && (
+              <View style={styles.voiceRecordingsSection}>
+                <Text style={styles.voiceRecordingsTitle}>
+                  🎤 Voice Notes ({voiceRecordings.length})
+                </Text>
+                {voiceRecordings.map((rec, index) => (
+                  <View key={rec.timestamp} style={styles.voiceRecordingItem}>
+                    <TouchableOpacity
+                      style={styles.playButton}
+                      onPress={() =>
+                        playingUri === rec.uri ? stopPlayback() : playRecording(rec.uri)
+                      }
+                    >
+                      <Ionicons
+                        name={playingUri === rec.uri ? 'stop-circle' : 'play-circle'}
+                        size={32}
+                        color={designTokens.colors.primary[500]}
+                      />
+                    </TouchableOpacity>
+                    <View style={styles.recordingInfo}>
+                      <Text style={styles.recordingLabel}>Recording {index + 1}</Text>
+                      <Text style={styles.recordingDuration}>{formatDuration(rec.duration)}</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.recordingDeleteButton}
+                      onPress={() => removeRecording(index)}
+                    >
+                      <Ionicons
+                        name="trash-outline"
+                        size={20}
+                        color={designTokens.colors.error[500]}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* Recording indicator */}
+            {isRecording && (
+              <View style={styles.recordingIndicator}>
+                <View style={styles.recordingDot} />
+                <Text style={styles.recordingText}>
+                  Recording... {formatDuration(recordingDuration)}
+                </Text>
+              </View>
+            )}
+
+            {/* Legacy Voice Transcript (for backwards compatibility) */}
+            {voiceTranscript !== '' && (
+              <View style={styles.voiceTranscriptBox}>
+                <View style={styles.voiceTranscriptHeader}>
+                  <View style={styles.voiceTranscriptTitleRow}>
+                    <Ionicons
+                      name="document-text"
+                      size={18}
+                      color={designTokens.colors.primary[600]}
+                    />
+                    <Text style={styles.voiceTranscriptLabel}>Transcribed Notes</Text>
+                  </View>
+                  <TouchableOpacity onPress={clearVoiceTranscript} style={styles.voiceClearButton}>
+                    <Ionicons
+                      name="trash-outline"
+                      size={18}
+                      color={designTokens.colors.error[500]}
+                    />
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.voiceTranscript}>{voiceTranscript}</Text>
+              </View>
+            )}
+
             <TextInput
               style={styles.notesInput}
-              placeholder="Type additional details here or use voice notes..."
+              placeholder="Type additional details here..."
               value={additionalNotes}
               onChangeText={text => {
                 setAdditionalNotes(text);
@@ -678,13 +1148,6 @@ export default function SiteNotesScreen({ navigation, route }: any) {
               textAlignVertical="top"
               placeholderTextColor={designTokens.colors.text.tertiary}
             />
-
-            {voiceTranscript !== '' && (
-              <View style={styles.voiceTranscriptBox}>
-                <Text style={styles.voiceTranscriptLabel}>Voice Notes:</Text>
-                <Text style={styles.voiceTranscript}>{voiceTranscript}</Text>
-              </View>
-            )}
           </Card>
 
           {/* Action Buttons */}
@@ -804,6 +1267,49 @@ const styles = StyleSheet.create({
   jobTypeLabelActive: {
     color: 'white',
   },
+  // Construction Method styles
+  methodHint: {
+    fontSize: designTokens.typography.fontSize.sm,
+    color: designTokens.colors.text.tertiary,
+    marginBottom: designTokens.spacing.sm,
+  },
+  methodGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: designTokens.spacing.sm,
+  },
+  methodButton: {
+    paddingHorizontal: designTokens.spacing.md,
+    paddingVertical: designTokens.spacing.sm,
+    borderWidth: 1,
+    borderColor: designTokens.colors.border.primary,
+    borderRadius: designTokens.borderRadius.lg,
+    backgroundColor: 'white',
+    minWidth: '45%',
+    flexGrow: 1,
+  },
+  methodButtonActive: {
+    backgroundColor: designTokens.colors.primary[500],
+    borderColor: designTokens.colors.primary[500],
+  },
+  methodLabel: {
+    fontSize: designTokens.typography.fontSize.sm,
+    color: designTokens.colors.text.primary,
+    textAlign: 'center',
+  },
+  methodLabelActive: {
+    color: 'white',
+    fontWeight: designTokens.typography.fontWeight.semibold as any,
+  },
+  methodMultiplier: {
+    fontSize: designTokens.typography.fontSize.xs,
+    color: designTokens.colors.text.tertiary,
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  methodMultiplierActive: {
+    color: 'rgba(255, 255, 255, 0.8)',
+  },
   fieldLabel: {
     fontSize: designTokens.typography.fontSize.sm,
     fontWeight: designTokens.typography.fontWeight.medium as any,
@@ -903,22 +1409,134 @@ const styles = StyleSheet.create({
     color: designTokens.colors.text.primary,
     minHeight: 100,
   },
+  // Photo Section Styles
+  photoSection: {
+    marginTop: designTokens.spacing.md,
+    marginBottom: designTokens.spacing.md,
+  },
+  photoSectionTitle: {
+    fontSize: designTokens.typography.fontSize.sm,
+    fontWeight: designTokens.typography.fontWeight.medium as any,
+    color: designTokens.colors.text.secondary,
+    marginBottom: designTokens.spacing.sm,
+  },
+  photoScrollView: {
+    flexGrow: 0,
+  },
+  photoScrollContent: {
+    gap: designTokens.spacing.sm,
+  },
+  photoThumbnailContainer: {
+    position: 'relative',
+  },
+  photoThumbnail: {
+    width: 80,
+    height: 80,
+    borderRadius: designTokens.borderRadius.md,
+    backgroundColor: designTokens.colors.background.secondary,
+  },
+  photoRemoveButton: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    backgroundColor: 'white',
+    borderRadius: 12,
+  },
+  // Voice Transcript Styles
   voiceTranscriptBox: {
     marginTop: designTokens.spacing.md,
-    padding: designTokens.spacing.sm,
+    marginBottom: designTokens.spacing.md,
+    padding: designTokens.spacing.md,
     backgroundColor: designTokens.colors.primary[50],
-    borderRadius: designTokens.borderRadius.md,
+    borderRadius: designTokens.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: designTokens.colors.primary[200],
+  },
+  voiceTranscriptHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: designTokens.spacing.sm,
+  },
+  voiceTranscriptTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: designTokens.spacing.xs,
   },
   voiceTranscriptLabel: {
     fontSize: designTokens.typography.fontSize.sm,
-    fontWeight: designTokens.typography.fontWeight.medium as any,
+    fontWeight: designTokens.typography.fontWeight.semibold as any,
     color: designTokens.colors.primary[600],
-    marginBottom: designTokens.spacing.xs,
+  },
+  voiceClearButton: {
+    padding: designTokens.spacing.xs,
   },
   voiceTranscript: {
     fontSize: designTokens.typography.fontSize.sm,
     color: designTokens.colors.text.primary,
     lineHeight: 20,
+  },
+  // Voice Recordings Styles
+  voiceRecordingsSection: {
+    marginTop: designTokens.spacing.md,
+    marginBottom: designTokens.spacing.md,
+  },
+  voiceRecordingsTitle: {
+    fontSize: designTokens.typography.fontSize.sm,
+    fontWeight: designTokens.typography.fontWeight.medium as any,
+    color: designTokens.colors.text.secondary,
+    marginBottom: designTokens.spacing.sm,
+  },
+  voiceRecordingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: designTokens.colors.primary[50],
+    borderRadius: designTokens.borderRadius.lg,
+    padding: designTokens.spacing.sm,
+    marginBottom: designTokens.spacing.xs,
+    borderWidth: 1,
+    borderColor: designTokens.colors.primary[200],
+  },
+  playButton: {
+    marginRight: designTokens.spacing.sm,
+  },
+  recordingInfo: {
+    flex: 1,
+  },
+  recordingLabel: {
+    fontSize: designTokens.typography.fontSize.sm,
+    fontWeight: designTokens.typography.fontWeight.medium as any,
+    color: designTokens.colors.text.primary,
+  },
+  recordingDuration: {
+    fontSize: designTokens.typography.fontSize.xs,
+    color: designTokens.colors.text.secondary,
+  },
+  recordingDeleteButton: {
+    padding: designTokens.spacing.xs,
+  },
+  recordingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: designTokens.colors.error[50],
+    borderRadius: designTokens.borderRadius.lg,
+    padding: designTokens.spacing.md,
+    marginTop: designTokens.spacing.md,
+    marginBottom: designTokens.spacing.md,
+    borderWidth: 1,
+    borderColor: designTokens.colors.error[200],
+  },
+  recordingDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: designTokens.colors.error[500],
+    marginRight: designTokens.spacing.sm,
+  },
+  recordingText: {
+    fontSize: designTokens.typography.fontSize.sm,
+    fontWeight: designTokens.typography.fontWeight.medium as any,
+    color: designTokens.colors.error[700],
   },
   actions: {
     flexDirection: 'row',

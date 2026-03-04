@@ -1,10 +1,10 @@
 {
-  "sessionId": "ai-quote-engine-milestone-2026-01-14",
-  "timestamp": "2026-01-14T10:30:00Z",
-  "phase": "MVP Development - AI Engine Complete",
+  "sessionId": "revenuecat-integration-2026-01-14",
+  "timestamp": "2026-01-14T22:00:00Z",
+  "phase": "MVP Development - Payment Integration In Progress",
   "targetDate": "2026-01-31",
   "investorMeeting": "2026-06-01",
-  "currentStatus": "AI Quote Engine Fully Working - Payment Integration Next",
+  "currentStatus": "RevenueCat Integration Complete - Dashboard Setup Required",
   "architecture": {
     "primary": "Single-provider AI architecture",
     "providers": {
@@ -14,7 +14,8 @@
     },
     "navigation": "Stack-based with modal menu (Expo Go compatible)",
     "authentication": "Supabase Auth with email verification",
-    "storage": "AsyncStorage + Supabase integration"
+    "storage": "AsyncStorage + Supabase integration",
+    "payments": "RevenueCat (react-native-purchases)"
   },
   "mvp_flow": {
     "screens": [
@@ -30,23 +31,32 @@
       "Professional quote sharing",
       "Offline-capable design",
       "Auto-save draft quotes with 1-second debounce",
-      "Smart navigation based on quote status (draft/generated)"
+      "Smart navigation based on quote status (draft/generated)",
+      "Spec level detection (high-spec/budget multipliers)",
+      "Your Price editing per line item",
+      "Auto-calculating quote totals",
+      "RevenueCat SDK integration (code complete)"
     ],
     "demo_ready": true
   },
   "milestone_jan14": {
-    "name": "AI Quote Engine Complete",
-    "fixes": [
+    "name": "RevenueCat Payment Integration",
+    "completed": [
       "Gemini model upgraded from 1.5-flash to 2.5-flash",
       "Timeout increased from 15s to 45s",
       "Tasks array pass-through to frontend",
-      "Two-priority project type detection (explicit + keyword)"
-    ],
-    "new_features": [
+      "Two-priority project type detection (explicit + keyword)",
       "Patio job type with 8 tasks",
       "Driveway job type with 8 tasks",
       "Conservatory job type with 9 tasks",
-      "Text truncation fix with adjustsFontSizeToFit"
+      "Spec level detection from notes (high-spec 1.5x, budget 0.75x)",
+      "Your Price field per line item",
+      "Auto-calculating quote totals",
+      "Git staging/main branch structure",
+      "RevenueCat service created",
+      "useSubscription hook created",
+      "AuthContext premium status sync",
+      "UpgradePromptModal with real purchases"
     ],
     "ai_performance": {
       "success_rate": "~95% (up from ~30%)",
@@ -69,10 +79,10 @@
     "core_functionality": "100% complete",
     "ai_quote_engine": "100% complete",
     "freemium_infrastructure": "100% complete",
-    "payment_integration": "0% - Starting next",
+    "payment_integration": "50% - Code complete, dashboard setup needed",
     "premium_features": "10% - Voice-to-text mocked",
     "analytics": "0% - Not started",
-    "overall_progress": "65% complete"
+    "overall_progress": "70% complete"
   },
   "june_investor_goals": {
     "target_users": "5000+ active users",
@@ -81,9 +91,23 @@
     "target_conversion": "15% free-to-paid",
     "data_collection_months": "4 months (Feb-May)"
   },
+  "revenuecat_setup_status": {
+    "step1": "✅ DONE - Created RevenueCat account",
+    "step2": "✅ DONE - Created project 'AskToddy'",
+    "step3": "✅ DONE - Added iOS app (com.asktoddy.staging) with In-App Purchase key",
+    "step4": "✅ DONE - iOS API key added to .env.local (appl_fzMpeIdnKZEhSbuJxHucxfSlVwx)",
+    "step5": "⏳ BLOCKED - Need to accept Paid Applications agreement in App Store Connect",
+    "step5_blocker": "Account Holder (partner) needs to accept agreement, or complete Tax/Banking info",
+    "step6": "PENDING - Create subscription product: asktoddy_pro_monthly (£9.99/month)",
+    "step7": "PENDING - Create 'premium' entitlement in RevenueCat",
+    "step8": "PENDING - Create sandbox tester account",
+    "step9": "PENDING - Build development client and test purchases"
+  },
   "next_priorities": [
-    "RevenueCat payment integration",
-    "Usage limit enforcement (5 quotes/month)",
+    "Set up RevenueCat dashboard and API keys",
+    "Create products in App Store Connect",
+    "Build development client (expo-dev-client)",
+    "Test purchase flow in sandbox",
     "Voice-to-text implementation",
     "PDF export functionality",
     "Analytics setup (Mixpanel/Amplitude)"
@@ -97,21 +121,26 @@
     "status": "TestFlight Available"
   },
   "edge_function_version": "107",
-  "lastUpdated": "2026-01-14T14:18:11.158Z",
+  "lastUpdated": "2026-01-16T09:00:00.000Z",
   "project": {
     "name": "asktoddy-mobile",
     "version": "1.2.0",
     "dependencies": {
       "expo": "~54.0.30",
       "react-native": "0.81.5",
-      "@google/generative-ai": "^0.24.1"
+      "@google/generative-ai": "^0.24.1",
+      "react-native-purchases": "^8.10.9",
+      "expo-dev-client": "~5.0.24"
     }
   },
   "git": {
-    "branch": "mvp-site-notes-jan15",
-    "lastCommit": "07a5a78 feat: Add login/signup flow to menu navigation",
-    "hasUncommittedChanges": true,
-    "changedFiles": 10
+    "branch": "staging",
+    "lastCommit": "c02c766 feat: Add RevenueCat payment integration",
+    "hasUncommittedChanges": false,
+    "branches": {
+      "main": "Production releases",
+      "staging": "TestFlight builds"
+    }
   },
   "environment": {
     "nodeVersion": "v24.3.0",
@@ -126,9 +155,15 @@
     }
   ],
   "recentFiles": [
-    "src/screens/SiteNotesScreen.tsx",
-    "src/screens/ShareQuoteScreen.tsx",
+    "src/services/RevenueCatService.ts",
+    "src/hooks/useSubscription.ts",
+    "src/contexts/AuthContext.tsx",
+    "src/components/modals/UpgradePromptModal.tsx",
+    "App.tsx",
     "src/screens/EditQuoteScreen.tsx",
-    "src/screens/TaskListScreen.tsx"
+    "src/screens/TaskListScreen.tsx",
+    "src/screens/ShareQuoteScreen.tsx",
+    "src/screens/SiteNotesScreen.tsx",
+    "supabase/functions/analyze-construction/index.ts"
   ]
 }

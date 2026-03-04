@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.asktoddy.staging",
-      "buildNumber": "31",
+      "buildNumber": "33",
       "splash": {
         "backgroundColor": "#FF7A3B",
         "image": "./assets/splash-icon.png",
@@ -26,6 +26,7 @@
       "infoPlist": {
         "NSCameraUsageDescription": "AskToddy needs camera access to photograph construction projects for instant quotes.",
         "NSPhotoLibraryUsageDescription": "AskToddy needs photo library access to select construction project images.",
+        "NSMicrophoneUsageDescription": "AskToddy needs microphone access to record voice notes describing your construction project.",
         "NSLocationWhenInUseUsageDescription": "AskToddy uses your location to find local suppliers and provide accurate regional pricing.",
         "ITSAppUsesNonExemptEncryption": false,
         "LSApplicationQueriesSchemes": ["mailto", "tel"]
@@ -69,6 +70,12 @@
         "expo-location",
         {
           "locationAlwaysAndWhenInUsePermission": "AskToddy uses your location to find local suppliers and provide accurate regional pricing for construction materials and labour."
+        }
+      ],
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Allow AskToddy to record voice notes describing your construction project for AI analysis."
         }
       ]
     ],

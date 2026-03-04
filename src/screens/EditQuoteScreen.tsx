@@ -75,8 +75,29 @@ export default function EditQuoteScreen({ navigation, route }: any) {
     setEditedTasks(prev => prev.map(task => (task.id === taskId ? { ...task, materials } : task)));
   };
 
+  const updateTaskCategory = (taskId: string, category: string) => {
+    setEditedTasks(prev => prev.map(task => (task.id === taskId ? { ...task, category } : task)));
+  };
+
   const removeTask = (taskId: string) => {
     setEditedTasks(prev => prev.filter(task => task.id !== taskId));
+  };
+
+  const addNewTask = () => {
+    const newTask: Task = {
+      id: `custom_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      description: '',
+      category: 'Custom',
+      estimatedCost: {
+        min: 0,
+        max: 0,
+      },
+      finalPrice: 0,
+      materials: [],
+      laborDays: 1,
+      selected: true,
+    };
+    setEditedTasks(prev => [...prev, newTask]);
   };
 
   const calculateFinalTotal = () => {
@@ -219,7 +240,13 @@ export default function EditQuoteScreen({ navigation, route }: any) {
               <Card key={task.id} style={styles.taskCard}>
                 <View style={styles.taskHeader}>
                   <Text style={styles.taskNumber}>{index + 1}.</Text>
-                  <Text style={styles.taskCategory}>{task.category}</Text>
+                  <TextInput
+                    style={styles.taskCategoryInput}
+                    value={task.category}
+                    onChangeText={text => updateTaskCategory(task.id, text)}
+                    placeholder="Category..."
+                    placeholderTextColor={designTokens.colors.text.tertiary}
+                  />
                   <TouchableOpacity onPress={() => removeTask(task.id)}>
                     <Ionicons
                       name="trash-outline"
@@ -273,6 +300,16 @@ export default function EditQuoteScreen({ navigation, route }: any) {
               </Card>
             ))
           )}
+
+          {/* Add New Item Button */}
+          <TouchableOpacity style={styles.addItemButton} onPress={addNewTask}>
+            <Ionicons
+              name="add-circle-outline"
+              size={24}
+              color={designTokens.colors.primary[500]}
+            />
+            <Text style={styles.addItemText}>Add New Item</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Cost Summary */}
@@ -379,6 +416,20 @@ const styles = StyleSheet.create({
     color: designTokens.colors.text.secondary,
     fontStyle: 'italic',
   },
+  taskCategoryInput: {
+    flex: 1,
+    fontSize: designTokens.typography.fontSize.sm,
+    color: designTokens.colors.primary[600],
+    fontWeight: designTokens.typography.fontWeight.semibold as any,
+    paddingVertical: designTokens.spacing.xs,
+    paddingHorizontal: designTokens.spacing.sm,
+    borderWidth: 1,
+    borderColor: designTokens.colors.border.primary,
+    borderRadius: designTokens.borderRadius.md,
+    backgroundColor: 'white',
+    marginRight: designTokens.spacing.sm,
+    textTransform: 'uppercase',
+  },
   taskDescriptionInput: {
     borderWidth: 1,
     borderColor: designTokens.colors.border.primary,
@@ -452,6 +503,25 @@ const styles = StyleSheet.create({
     color: designTokens.colors.text.primary,
     backgroundColor: 'white',
     minHeight: 40,
+  },
+  addItemButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: designTokens.spacing.md,
+    paddingHorizontal: designTokens.spacing.lg,
+    borderWidth: 2,
+    borderColor: designTokens.colors.primary[300],
+    borderStyle: 'dashed',
+    borderRadius: designTokens.borderRadius.lg,
+    backgroundColor: designTokens.colors.primary[50],
+    marginTop: designTokens.spacing.sm,
+  },
+  addItemText: {
+    marginLeft: designTokens.spacing.sm,
+    fontSize: designTokens.typography.fontSize.base,
+    fontWeight: designTokens.typography.fontWeight.semibold as any,
+    color: designTokens.colors.primary[600],
   },
   totalCard: {
     marginHorizontal: designTokens.spacing.md,
