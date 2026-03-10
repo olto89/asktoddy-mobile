@@ -2,17 +2,63 @@
  * AccountScreen - User account management and logout functionality
  */
 
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  ScrollView,
+  TextInput,
+  ActivityIndicator,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../services/supabase';
 import { useNavigation } from '@react-navigation/native';
 import designTokens from '../styles/designTokens';
 
 export default function AccountScreen() {
   const { user, signOut } = useAuth();
   const navigation = useNavigation();
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+
+  const handleChangePassword = async () => {
+    if (!newPassword || !confirmPassword) {
+      Alert.alert('Missing Fields', 'Please fill in both password fields.');
+      return;
+    }
+    if (newPassword.length < 6) {
+      Alert.alert('Weak Password', 'Password must be at least 6 characters.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      Alert.alert('Mismatch', 'Passwords do not match.');
+      return;
+    }
+
+    try {
+      setChangingPassword(true);
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) {
+        Alert.alert('Error', error.message || 'Failed to update password.');
+      } else {
+        Alert.alert('Success', 'Your password has been updated.');
+        setShowChangePassword(false);
+        setNewPassword('');
+        setConfirmPassword('');
+      }
+    } catch (err) {
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+    } finally {
+      setChangingPassword(false);
+    }
+  };
 
   const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to log out?', [
@@ -96,7 +142,7 @@ export default function AccountScreen() {
 
           <TouchableOpacity
             style={styles.menuItem}
-            onPress={() => Alert.alert('Coming Soon', 'Password change coming in next update!')}
+            onPress={() => setShowChangePassword(!showChangePassword)}
           >
             <View style={styles.menuItemLeft}>
               <Ionicons
@@ -106,8 +152,49 @@ export default function AccountScreen() {
               />
               <Text style={styles.menuItemText}>Change Password</Text>
             </View>
-            <Ionicons name="chevron-forward" size={16} color={designTokens.colors.text.tertiary} />
+            <Ionicons
+              name={showChangePassword ? 'chevron-down' : 'chevron-forward'}
+              size={16}
+              color={designTokens.colors.text.tertiary}
+            />
           </TouchableOpacity>
+
+          {showChangePassword && (
+            <View style={styles.changePasswordForm}>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="New password (min 6 characters)"
+                placeholderTextColor={designTokens.colors.text.tertiary}
+                value={newPassword}
+                onChangeText={setNewPassword}
+                secureTextEntry
+                autoComplete="new-password"
+              />
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="Confirm new password"
+                placeholderTextColor={designTokens.colors.text.tertiary}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry
+                autoComplete="new-password"
+              />
+              <TouchableOpacity
+                style={[
+                  styles.changePasswordButton,
+                  changingPassword && styles.changePasswordButtonDisabled,
+                ]}
+                onPress={handleChangePassword}
+                disabled={changingPassword}
+              >
+                {changingPassword ? (
+                  <ActivityIndicator size="small" color={designTokens.colors.text.inverse} />
+                ) : (
+                  <Text style={styles.changePasswordButtonText}>Update Password</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
 
           <TouchableOpacity
             style={styles.menuItem}
@@ -278,6 +365,36 @@ const styles = StyleSheet.create({
     fontSize: designTokens.typography.fontSize.md,
     color: designTokens.colors.text.primary,
     marginLeft: designTokens.spacing.md,
+  },
+  changePasswordForm: {
+    paddingTop: designTokens.spacing.sm,
+    paddingBottom: designTokens.spacing.xs,
+  },
+  passwordInput: {
+    backgroundColor: designTokens.colors.background.primary,
+    borderWidth: 1,
+    borderColor: designTokens.colors.border.primary,
+    borderRadius: designTokens.borderRadius.md,
+    paddingHorizontal: designTokens.spacing.md,
+    paddingVertical: designTokens.spacing.sm,
+    fontSize: designTokens.typography.fontSize.md,
+    color: designTokens.colors.text.primary,
+    marginBottom: designTokens.spacing.sm,
+  },
+  changePasswordButton: {
+    backgroundColor: designTokens.colors.primary[500],
+    paddingVertical: designTokens.spacing.sm,
+    borderRadius: designTokens.borderRadius.md,
+    alignItems: 'center',
+    marginTop: designTokens.spacing.xs,
+  },
+  changePasswordButtonDisabled: {
+    opacity: 0.6,
+  },
+  changePasswordButtonText: {
+    fontSize: designTokens.typography.fontSize.md,
+    fontWeight: designTokens.typography.fontWeight.medium as any,
+    color: designTokens.colors.text.inverse,
   },
   logoutButton: {
     flexDirection: 'row',

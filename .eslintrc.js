@@ -49,4 +49,15 @@ module.exports = {
     node: true,
     'react-native/react-native': true,
   },
+  overrides: [
+    {
+      files: ['**/__tests__/**', '**/*.test.*', '**/*.spec.*', 'jest/**'],
+      env: { jest: true },
+      rules: {
+        'max-lines-per-function': 'off',
+        'max-lines': 'off',
+        '@typescript-eslint/no-explicit-any': 'off',
+      },
+    },
+  ],
 };

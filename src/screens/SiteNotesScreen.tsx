@@ -11,14 +11,14 @@ import {
   Alert,
   ActivityIndicator,
   Image,
-  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
-import { Audio } from 'expo-av';
 import designTokens from '../styles/designTokens';
+import { useVoiceRecording } from '../hooks/useVoiceRecording';
+import type { VoiceRecording } from '../hooks/useVoiceRecording';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 
@@ -185,12 +185,6 @@ const COMMON_TASKS = {
   ],
 };
 
-interface VoiceRecording {
-  uri: string;
-  duration: number; // in seconds
-  timestamp: number;
-}
-
 interface SiteNote {
   id: string;
   timestamp: number;
@@ -228,17 +222,26 @@ export default function SiteNotesScreen({ navigation, route }: any) {
   const [selectedTasks, setSelectedTasks] = useState<string[]>(quote?.tasks || []);
   const [additionalNotes, setAdditionalNotes] = useState(quote?.notes || '');
   const [photos, setPhotos] = useState<string[]>(quote?.photos || []);
-  const [isRecording, setIsRecording] = useState(false);
   const [voiceTranscript, setVoiceTranscript] = useState(quote?.voiceNotes || '');
-  const [voiceRecordings, setVoiceRecordings] = useState<VoiceRecording[]>(
-    quote?.voiceRecordings || []
-  );
-  const [recording, setRecording] = useState<Audio.Recording | null>(null);
-  const [recordingDuration, setRecordingDuration] = useState(0);
-  const [playingUri, setPlayingUri] = useState<string | null>(null);
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  const {
+    isRecording,
+    recordingDuration,
+    voiceRecordings,
+    playingUri,
+    startRecording,
+    stopRecording,
+    playRecording,
+    stopPlayback,
+    removeRecording,
+    formatDuration,
+    setVoiceRecordings,
+  } = useVoiceRecording(quote?.voiceRecordings || [], {
+    onRecordingSaved: () => setHasUnsavedChanges(true),
+    onRecordingRemoved: () => setHasUnsavedChanges(true),
+  });
 
   // Auto-save draft whenever form data changes
   useEffect(() => {
@@ -377,127 +380,6 @@ export default function SiteNotesScreen({ navigation, route }: any) {
     }
   };
 
-  // Setup audio recording
-  const startRecording = async () => {
-    try {
-      console.log('🎤 Requesting microphone permission...');
-      // Request permissions
-      const permissionResponse = await Audio.requestPermissionsAsync();
-      console.log('🎤 Permission response:', permissionResponse);
-
-      if (!permissionResponse.granted) {
-        Alert.alert(
-          'Microphone Permission Required',
-          'Please enable microphone access in Settings to record voice notes.',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Open Settings', onPress: () => Linking.openSettings() },
-          ]
-        );
-        return;
-      }
-
-      console.log('🎤 Setting audio mode...');
-      // Set audio mode for recording - more complete configuration
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: false,
-        shouldDuckAndroid: true,
-        playThroughEarpieceAndroid: false,
-      });
-
-      console.log('🎤 Creating recording...');
-      // Use a more compatible recording configuration
-      const recordingOptions: Audio.RecordingOptions = {
-        isMeteringEnabled: true,
-        android: {
-          extension: '.m4a',
-          outputFormat: Audio.AndroidOutputFormat.MPEG_4,
-          audioEncoder: Audio.AndroidAudioEncoder.AAC,
-          sampleRate: 44100,
-          numberOfChannels: 1,
-          bitRate: 128000,
-        },
-        ios: {
-          extension: '.m4a',
-          outputFormat: Audio.IOSOutputFormat.MPEG4AAC,
-          audioQuality: Audio.IOSAudioQuality.HIGH,
-          sampleRate: 44100,
-          numberOfChannels: 1,
-          bitRate: 128000,
-          linearPCMBitDepth: 16,
-          linearPCMIsBigEndian: false,
-          linearPCMIsFloat: false,
-        },
-        web: {
-          mimeType: 'audio/webm',
-          bitsPerSecond: 128000,
-        },
-      };
-
-      const { recording } = await Audio.Recording.createAsync(recordingOptions);
-      console.log('🎤 Recording started successfully');
-      setRecording(recording);
-      setIsRecording(true);
-      setRecordingDuration(0);
-
-      // Update duration every second
-      const interval = setInterval(() => {
-        setRecordingDuration(prev => prev + 1);
-      }, 1000);
-
-      // Store interval ID for cleanup
-      (recording as any)._durationInterval = interval;
-    } catch (error) {
-      console.error('Failed to start recording:', error);
-      Alert.alert('Error', 'Failed to start recording. Please try again.');
-    }
-  };
-
-  const stopRecording = async () => {
-    if (!recording) return;
-
-    try {
-      console.log('🎤 Stopping recording...');
-      // Clear duration interval
-      if ((recording as any)._durationInterval) {
-        clearInterval((recording as any)._durationInterval);
-      }
-
-      setIsRecording(false);
-      await recording.stopAndUnloadAsync();
-      console.log('🎤 Recording stopped and unloaded');
-
-      // Reset audio mode
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-      });
-
-      const uri = recording.getURI();
-      console.log('🎤 Recording URI:', uri);
-      if (uri) {
-        const newRecording: VoiceRecording = {
-          uri,
-          duration: recordingDuration,
-          timestamp: Date.now(),
-        };
-        setVoiceRecordings(prev => [...prev, newRecording]);
-        setHasUnsavedChanges(true);
-        Alert.alert(
-          'Voice Note Saved',
-          `Recording saved (${formatDuration(recordingDuration)}). It will be analyzed when generating your quote.`
-        );
-      }
-
-      setRecording(null);
-      setRecordingDuration(0);
-    } catch (error) {
-      console.error('Failed to stop recording:', error);
-      Alert.alert('Error', 'Failed to save recording. Please try again.');
-    }
-  };
-
   const handleVoiceRecording = () => {
     if (isRecording) {
       stopRecording();
@@ -505,70 +387,6 @@ export default function SiteNotesScreen({ navigation, route }: any) {
       startRecording();
     }
   };
-
-  // Format duration as mm:ss
-  const formatDuration = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  // Play voice recording
-  const playRecording = async (uri: string) => {
-    try {
-      // Stop any currently playing sound
-      if (sound) {
-        await sound.unloadAsync();
-      }
-
-      const { sound: newSound } = await Audio.Sound.createAsync({ uri });
-      setSound(newSound);
-      setPlayingUri(uri);
-
-      newSound.setOnPlaybackStatusUpdate(status => {
-        if (status.isLoaded && status.didJustFinish) {
-          setPlayingUri(null);
-        }
-      });
-
-      await newSound.playAsync();
-    } catch (error) {
-      console.error('Failed to play recording:', error);
-      Alert.alert('Error', 'Failed to play recording');
-    }
-  };
-
-  // Stop playback
-  const stopPlayback = async () => {
-    if (sound) {
-      await sound.stopAsync();
-      setPlayingUri(null);
-    }
-  };
-
-  // Remove voice recording
-  const removeRecording = (index: number) => {
-    Alert.alert('Delete Recording', 'Are you sure you want to delete this voice note?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => {
-          setVoiceRecordings(prev => prev.filter((_, i) => i !== index));
-          setHasUnsavedChanges(true);
-        },
-      },
-    ]);
-  };
-
-  // Cleanup sound on unmount
-  useEffect(() => {
-    return () => {
-      if (sound) {
-        sound.unloadAsync();
-      }
-    };
-  }, [sound]);
 
   // Pick photo from gallery
   const handlePickFromGallery = async () => {

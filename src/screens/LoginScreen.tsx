@@ -11,6 +11,7 @@ import {
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
 import { useAuth } from '../contexts/AuthContext';
+import { authHelpers } from '../services/supabase';
 import designTokens from '../styles/designTokens';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
@@ -174,13 +175,48 @@ export default function LoginScreen({ navigation }: Props) {
     setError(null); // Clear errors when switching modes
   };
 
+  const handleForgotPassword = async () => {
+    const resetEmail = email.trim();
+    if (!resetEmail) {
+      Alert.alert(
+        'Enter Email',
+        'Please enter your email address above, then tap Forgot Password.'
+      );
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(resetEmail)) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address above.');
+      return;
+    }
+
+    try {
+      setLocalLoading(true);
+      const { error: resetError } = await authHelpers.resetPassword(resetEmail);
+      if (resetError) {
+        Alert.alert('Error', resetError.message || 'Failed to send reset email. Please try again.');
+      } else {
+        Alert.alert(
+          'Check Your Email',
+          `We've sent a password reset link to ${resetEmail}. Please check your inbox and spam folder.`,
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (err) {
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+    } finally {
+      setLocalLoading(false);
+    }
+  };
+
   const handleErrorAction = () => {
     if (!error?.action) return;
 
     switch (error.action) {
       case 'forgot_password':
-        // TODO: Implement forgot password functionality
-        Alert.alert('Forgot Password', 'This feature will be available soon!');
+        setError(null);
+        handleForgotPassword();
         break;
       case 'signup':
         setIsLogin(false);
@@ -274,7 +310,7 @@ export default function LoginScreen({ navigation }: Props) {
           />
 
           {isLogin && (
-            <TouchableOpacity style={styles.forgotPassword}>
+            <TouchableOpacity style={styles.forgotPassword} onPress={handleForgotPassword}>
               <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
             </TouchableOpacity>
           )}

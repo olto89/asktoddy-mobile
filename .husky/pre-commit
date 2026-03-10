@@ -4,8 +4,11 @@
 # Run lint-staged for automatic formatting and linting
 npx lint-staged
 
-# Temporarily disable TypeScript check for character integration
+# Type-check (disabled: pre-existing errors in scripts/supabase files)
 # npm run type-check
+
+# Run tests on changed files (fast, bail on first failure)
+npx jest --onlyChanged --passWithNoTests --bail
 
 # Save context before commit
 npm run context:save
