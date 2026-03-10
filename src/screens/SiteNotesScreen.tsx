@@ -816,21 +816,7 @@ export default function SiteNotesScreen({ navigation, route }: any) {
           <Card style={styles.section}>
             <Text style={styles.sectionTitle}>📝 Additional Notes</Text>
             <View style={styles.notesActions}>
-              <TouchableOpacity
-                style={[styles.actionButton, isRecording && styles.actionButtonActive]}
-                onPress={handleVoiceRecording}
-              >
-                <Ionicons
-                  name={isRecording ? 'stop-circle' : 'mic-outline'}
-                  size={24}
-                  color={isRecording ? 'white' : designTokens.colors.primary[500]}
-                />
-                <Text
-                  style={[styles.actionButtonText, isRecording && styles.actionButtonTextActive]}
-                >
-                  {isRecording ? 'Stop' : 'Voice'}
-                </Text>
-              </TouchableOpacity>
+              {/* Voice recording temporarily disabled — investigating TestFlight issue */}
 
               <TouchableOpacity style={styles.actionButton} onPress={handleTakePhoto}>
                 <Ionicons
@@ -880,78 +866,7 @@ export default function SiteNotesScreen({ navigation, route }: any) {
               </View>
             )}
 
-            {/* Voice Recordings */}
-            {voiceRecordings.length > 0 && (
-              <View style={styles.voiceRecordingsSection}>
-                <Text style={styles.voiceRecordingsTitle}>
-                  🎤 Voice Notes ({voiceRecordings.length})
-                </Text>
-                {voiceRecordings.map((rec, index) => (
-                  <View key={rec.timestamp} style={styles.voiceRecordingItem}>
-                    <TouchableOpacity
-                      style={styles.playButton}
-                      onPress={() =>
-                        playingUri === rec.uri ? stopPlayback() : playRecording(rec.uri)
-                      }
-                    >
-                      <Ionicons
-                        name={playingUri === rec.uri ? 'stop-circle' : 'play-circle'}
-                        size={32}
-                        color={designTokens.colors.primary[500]}
-                      />
-                    </TouchableOpacity>
-                    <View style={styles.recordingInfo}>
-                      <Text style={styles.recordingLabel}>Recording {index + 1}</Text>
-                      <Text style={styles.recordingDuration}>{formatDuration(rec.duration)}</Text>
-                    </View>
-                    <TouchableOpacity
-                      style={styles.recordingDeleteButton}
-                      onPress={() => removeRecording(index)}
-                    >
-                      <Ionicons
-                        name="trash-outline"
-                        size={20}
-                        color={designTokens.colors.error[500]}
-                      />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </View>
-            )}
-
-            {/* Recording indicator */}
-            {isRecording && (
-              <View style={styles.recordingIndicator}>
-                <View style={styles.recordingDot} />
-                <Text style={styles.recordingText}>
-                  Recording... {formatDuration(recordingDuration)}
-                </Text>
-              </View>
-            )}
-
-            {/* Legacy Voice Transcript (for backwards compatibility) */}
-            {voiceTranscript !== '' && (
-              <View style={styles.voiceTranscriptBox}>
-                <View style={styles.voiceTranscriptHeader}>
-                  <View style={styles.voiceTranscriptTitleRow}>
-                    <Ionicons
-                      name="document-text"
-                      size={18}
-                      color={designTokens.colors.primary[600]}
-                    />
-                    <Text style={styles.voiceTranscriptLabel}>Transcribed Notes</Text>
-                  </View>
-                  <TouchableOpacity onPress={clearVoiceTranscript} style={styles.voiceClearButton}>
-                    <Ionicons
-                      name="trash-outline"
-                      size={18}
-                      color={designTokens.colors.error[500]}
-                    />
-                  </TouchableOpacity>
-                </View>
-                <Text style={styles.voiceTranscript}>{voiceTranscript}</Text>
-              </View>
-            )}
+            {/* Voice recordings UI temporarily disabled — investigating TestFlight issue */}
 
             <TextInput
               style={styles.notesInput}
