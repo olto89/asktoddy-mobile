@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,16 +11,22 @@ import {
   Alert,
   ActivityIndicator,
   Image,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import designTokens from '../styles/designTokens';
+import { AppIcons, IconSize } from '../styles/iconRegistry';
+import { useAuth } from '../contexts/AuthContext';
 import { useVoiceRecording } from '../hooks/useVoiceRecording';
 import type { VoiceRecording } from '../hooks/useVoiceRecording';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import { quoteStorage } from '../services/QuoteStorageService';
+import type { SiteNote, DraftFormData } from '../types/Quote';
 
 // Job type templates for guided capture
 const JOB_TYPES = [
@@ -185,26 +191,40 @@ const COMMON_TASKS = {
   ],
 };
 
-interface SiteNote {
-  id: string;
-  timestamp: number;
-  address: string;
-  jobType: string;
-  constructionMethod?: string; // e.g., 'brick', 'timber_frame', 'wet_room'
-  constructionMethodMultiplier?: number; // Price multiplier for the method
-  propertyType: string;
-  size: string;
-  tasks: string[];
-  notes: string;
-  photos: string[];
-  voiceNotes: string; // Legacy: text transcript
-  voiceRecordings?: VoiceRecording[]; // New: actual audio recordings
-  syncStatus: 'local' | 'syncing' | 'synced';
-  status: 'draft' | 'generated' | 'completed'; // Track quote generation status
-  lastModified: number;
+// Standalone save function so unmount cleanup can call it without stale closures
+async function saveDraftToStorage(formData: DraftFormData): Promise<string> {
+  const quoteId =
+    formData.currentQuoteId || `draft_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+  const methodData = CONSTRUCTION_METHODS[formData.selectedJobType]?.find(
+    m => m.id === formData.selectedConstructionMethod
+  );
+
+  const draftQuote: SiteNote = {
+    id: quoteId,
+    timestamp: formData.currentQuoteId ? formData.existingTimestamp || Date.now() : Date.now(),
+    lastModified: Date.now(),
+    address: formData.address,
+    jobType: formData.selectedJobType,
+    constructionMethod: formData.selectedConstructionMethod || undefined,
+    constructionMethodMultiplier: methodData?.multiplier || 1.0,
+    propertyType: formData.selectedPropertyType,
+    size: formData.size,
+    tasks: formData.selectedTasks,
+    notes: formData.additionalNotes,
+    photos: formData.photos,
+    voiceNotes: formData.voiceTranscript,
+    voiceRecordings: formData.voiceRecordings,
+    syncStatus: 'local',
+    status: formData.existingStatus || 'draft',
+  };
+
+  await quoteStorage.save(draftQuote);
+  return quoteId;
 }
 
 export default function SiteNotesScreen({ navigation, route }: any) {
+  const { isAnonymous } = useAuth();
   const { existingQuote } = route.params || {}; // For editing existing drafts
 
   // If existingQuote is explicitly null, start fresh (New Assessment button)
@@ -224,7 +244,9 @@ export default function SiteNotesScreen({ navigation, route }: any) {
   const [photos, setPhotos] = useState<string[]>(quote?.photos || []);
   const [voiceTranscript, setVoiceTranscript] = useState(quote?.voiceNotes || '');
   const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const { isOnline } = useNetworkStatus();
 
   const {
     isRecording,
@@ -243,6 +265,96 @@ export default function SiteNotesScreen({ navigation, route }: any) {
     onRecordingRemoved: () => setHasUnsavedChanges(true),
   });
 
+  // Track all form data in a ref so unmount cleanup can read current values
+  const formDataRef = useRef<DraftFormData>({
+    currentQuoteId,
+    address,
+    selectedJobType,
+    selectedConstructionMethod,
+    selectedPropertyType,
+    size,
+    selectedTasks,
+    additionalNotes,
+    photos,
+    voiceTranscript,
+    voiceRecordings,
+    existingTimestamp: quote?.timestamp,
+    existingStatus: quote?.status,
+  });
+
+  useEffect(() => {
+    formDataRef.current = {
+      currentQuoteId,
+      address,
+      selectedJobType,
+      selectedConstructionMethod,
+      selectedPropertyType,
+      size,
+      selectedTasks,
+      additionalNotes,
+      photos,
+      voiceTranscript,
+      voiceRecordings,
+      existingTimestamp: quote?.timestamp,
+      existingStatus: quote?.status,
+    };
+  }, [
+    currentQuoteId,
+    address,
+    selectedJobType,
+    selectedConstructionMethod,
+    selectedPropertyType,
+    size,
+    selectedTasks,
+    additionalNotes,
+    photos,
+    voiceTranscript,
+    voiceRecordings,
+    quote?.timestamp,
+    quote?.status,
+  ]);
+
+  // Track isAnonymous in a ref so unmount cleanup can read it
+  const isAnonymousRef = useRef(isAnonymous);
+  useEffect(() => {
+    isAnonymousRef.current = isAnonymous;
+  }, [isAnonymous]);
+
+  // Save draft on unmount so navigating away preserves work
+  useEffect(() => {
+    return () => {
+      if (isAnonymousRef.current) return;
+
+      const data = formDataRef.current;
+      const hasAnyData =
+        data.address.trim() ||
+        data.selectedJobType ||
+        data.selectedConstructionMethod ||
+        data.selectedPropertyType ||
+        data.size.trim() ||
+        data.selectedTasks.length > 0 ||
+        data.additionalNotes.trim() ||
+        data.voiceTranscript.trim() ||
+        data.voiceRecordings.length > 0 ||
+        data.photos.length > 0;
+
+      if (hasAnyData) {
+        // Fire-and-forget — component is unmounting
+        saveDraftToStorage(data).catch(() => {});
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Ref for the auto-save debounce timer so handleGenerateQuote can cancel it
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Rate-limit ref: track the last time a quote was generated
+  const lastGenerationRef = useRef<number>(0);
+
+  // Guard ref to prevent overlapping auto-saves
+  const isSavingRef = useRef(false);
+
   // Auto-save draft whenever form data changes
   useEffect(() => {
     const hasAnyData =
@@ -257,17 +369,27 @@ export default function SiteNotesScreen({ navigation, route }: any) {
       voiceRecordings.length > 0 ||
       photos.length > 0;
 
-    // Only auto-save if there's meaningful data AND it's not a fresh new assessment
-    const shouldAutoSave = hasAnyData && !isSaving && (!isNewAssessment || currentQuoteId);
+    // Only auto-save if authenticated and has meaningful data
+    const shouldAutoSave = !isAnonymous && hasAnyData;
 
     if (shouldAutoSave) {
-      const timeoutId = setTimeout(() => {
-        autoSaveDraft();
+      autoSaveTimerRef.current = setTimeout(() => {
+        autoSaveTimerRef.current = null;
+        if (!isSavingRef.current) {
+          autoSaveDraft();
+        }
       }, 1000); // Auto-save after 1 second of no changes
 
-      return () => clearTimeout(timeoutId);
+      return () => {
+        if (autoSaveTimerRef.current) {
+          clearTimeout(autoSaveTimerRef.current);
+          autoSaveTimerRef.current = null;
+        }
+      };
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
+    isAnonymous,
     address,
     selectedJobType,
     selectedConstructionMethod,
@@ -280,52 +402,17 @@ export default function SiteNotesScreen({ navigation, route }: any) {
     photos,
   ]);
 
-  // Auto-save draft function
+  // Auto-save draft function — reads from formDataRef to avoid stale closures
   const autoSaveDraft = async () => {
+    if (isSavingRef.current) return; // Already saving
     try {
-      setIsSaving(true);
+      isSavingRef.current = true;
+      setSaveStatus('saving');
 
-      const quoteId =
-        currentQuoteId || `draft_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const data = formDataRef.current;
+      const quoteId = await saveDraftToStorage(data);
 
-      // Get the construction method multiplier
-      const methodData = CONSTRUCTION_METHODS[selectedJobType]?.find(
-        m => m.id === selectedConstructionMethod
-      );
-
-      const draftQuote: SiteNote = {
-        id: quoteId,
-        timestamp: currentQuoteId ? existingQuote?.timestamp || Date.now() : Date.now(),
-        lastModified: Date.now(),
-        address,
-        jobType: selectedJobType,
-        constructionMethod: selectedConstructionMethod || undefined,
-        constructionMethodMultiplier: methodData?.multiplier || 1.0,
-        propertyType: selectedPropertyType,
-        size,
-        tasks: selectedTasks,
-        notes: additionalNotes,
-        photos,
-        voiceNotes: voiceTranscript,
-        voiceRecordings,
-        syncStatus: 'local',
-        status: 'draft',
-      };
-
-      // Get existing saved quotes
-      const existingQuotesJson = await AsyncStorage.getItem('saved_quotes');
-      const existingQuotes = existingQuotesJson ? JSON.parse(existingQuotesJson) : [];
-
-      // Update or add the draft
-      const updatedQuotes = existingQuotes.filter((q: any) => q.id !== quoteId);
-      updatedQuotes.push(draftQuote);
-
-      // Sort by last modified (most recent first)
-      updatedQuotes.sort((a: any, b: any) => b.lastModified - a.lastModified);
-
-      await AsyncStorage.setItem('saved_quotes', JSON.stringify(updatedQuotes));
-
-      if (!currentQuoteId) {
+      if (!data.currentQuoteId) {
         setCurrentQuoteId(quoteId);
         console.log('📝 Created new draft quote:', quoteId);
       } else {
@@ -333,10 +420,17 @@ export default function SiteNotesScreen({ navigation, route }: any) {
       }
 
       setHasUnsavedChanges(false);
+      setSaveStatus('saved');
+
+      // Auto-hide "Saved" after 2 seconds
+      setTimeout(() => {
+        setSaveStatus(prev => (prev === 'saved' ? 'idle' : prev));
+      }, 2000);
     } catch (error) {
       console.error('Error auto-saving draft:', error);
+      setSaveStatus('idle');
     } finally {
-      setIsSaving(false);
+      isSavingRef.current = false;
     }
   };
 
@@ -362,9 +456,20 @@ export default function SiteNotesScreen({ navigation, route }: any) {
 
   // Handle photo capture
   const handleTakePhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Camera permission is required to take photos');
+    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permissionResult.granted) {
+      if (!permissionResult.canAskAgain) {
+        Alert.alert(
+          'Camera Access',
+          'AskToddy needs camera access to photograph your project. Please enable it in Settings.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Open Settings', onPress: () => Linking.openSettings() },
+          ]
+        );
+      } else {
+        Alert.alert('Permission needed', 'Camera permission is required to take photos');
+      }
       return;
     }
 
@@ -390,9 +495,20 @@ export default function SiteNotesScreen({ navigation, route }: any) {
 
   // Pick photo from gallery
   const handlePickFromGallery = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Photo library permission is required to select photos');
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permissionResult.granted) {
+      if (!permissionResult.canAskAgain) {
+        Alert.alert(
+          'Photo Library Access',
+          'AskToddy needs access to your photo library to select project images. Please enable it in Settings.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Open Settings', onPress: () => Linking.openSettings() },
+          ]
+        );
+      } else {
+        Alert.alert('Permission needed', 'Photo library permission is required to select photos');
+      }
       return;
     }
 
@@ -484,12 +600,26 @@ export default function SiteNotesScreen({ navigation, route }: any) {
 
   // Generate quote (navigate to AI processing)
   const handleGenerateQuote = async () => {
+    // Rate limit: prevent rapid-fire taps (10-second cooldown)
+    const now = Date.now();
+    if (now - lastGenerationRef.current < 10000) {
+      Alert.alert('Please Wait', 'Please wait before generating another quote.');
+      return;
+    }
+    lastGenerationRef.current = now;
+
     if (!canGenerateQuote()) {
       Alert.alert(
         'More Information Needed',
         'Please provide address, job type, and describe the work required.'
       );
       return;
+    }
+
+    // Cancel any pending auto-save to prevent racing with the generate flow
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
     }
 
     setIsSaving(true);
@@ -517,19 +647,12 @@ export default function SiteNotesScreen({ navigation, route }: any) {
       };
 
       try {
-        const existingQuotesJson = await AsyncStorage.getItem('saved_quotes');
-        const existingQuotes = existingQuotesJson ? JSON.parse(existingQuotesJson) : [];
-
-        const updatedQuotes = existingQuotes.filter((q: any) => q.id !== offlineQuote.id);
-        updatedQuotes.push(offlineQuote);
-        updatedQuotes.sort((a: any, b: any) => b.lastModified - a.lastModified);
-
-        await AsyncStorage.setItem('saved_quotes', JSON.stringify(updatedQuotes));
+        await quoteStorage.save(offlineQuote as SiteNote);
 
         setIsSaving(false);
 
         Alert.alert(
-          '📱 Saved for Later',
+          'Saved for Later',
           "No internet connection detected. I've saved all your quote details safely! You can try generating the quote again when you have connectivity.",
           [
             {
@@ -550,16 +673,10 @@ export default function SiteNotesScreen({ navigation, route }: any) {
     // Online - proceed with normal flow
     if (currentQuoteId) {
       try {
-        const existingQuotesJson = await AsyncStorage.getItem('saved_quotes');
-        const existingQuotes = existingQuotesJson ? JSON.parse(existingQuotesJson) : [];
-
-        const updatedQuotes = existingQuotes.map((quote: any) =>
-          quote.id === currentQuoteId
-            ? { ...quote, status: 'generated', lastModified: Date.now() }
-            : quote
-        );
-
-        await AsyncStorage.setItem('saved_quotes', JSON.stringify(updatedQuotes));
+        const existing = await quoteStorage.getById(currentQuoteId);
+        if (existing) {
+          await quoteStorage.save({ ...existing, status: 'generated', lastModified: Date.now() });
+        }
       } catch (error) {
         console.error('Error updating quote status:', error);
       }
@@ -607,12 +724,32 @@ export default function SiteNotesScreen({ navigation, route }: any) {
         >
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>🏗️ Site Assessment</Text>
+            <View style={styles.titleRow}>
+              <Ionicons
+                name={AppIcons.siteAssessment}
+                size={IconSize.large}
+                color={designTokens.colors.text.primary}
+              />
+              <Text style={styles.title}>Site Assessment</Text>
+            </View>
             <View style={styles.headerRight}>
-              {isSaving && (
+              {saveStatus === 'saving' && (
                 <View style={styles.autoSaveIndicator}>
                   <ActivityIndicator size="small" color={designTokens.colors.primary[500]} />
-                  <Text style={styles.autoSaveText}>Auto-saving...</Text>
+                  <Text style={styles.autoSaveText}>Saving...</Text>
+                </View>
+              )}
+              {saveStatus === 'saved' && (
+                <View style={styles.autoSaveIndicator}>
+                  <Ionicons name="checkmark-circle" size={16} color={designTokens.colors.success} />
+                  <Text
+                    style={[
+                      styles.autoSaveText,
+                      { color: designTokens.colors.success, fontStyle: 'normal' },
+                    ]}
+                  >
+                    Saved
+                  </Text>
                 </View>
               )}
               <TouchableOpacity
@@ -629,9 +766,24 @@ export default function SiteNotesScreen({ navigation, route }: any) {
             </View>
           </View>
 
+          {/* Offline Banner */}
+          {isOnline === false && (
+            <View style={styles.offlineBanner}>
+              <Ionicons name={AppIcons.needsConnection} size={16} color="#92400e" />
+              <Text style={styles.offlineBannerText}>Offline — your work is saved locally</Text>
+            </View>
+          )}
+
           {/* Address Input */}
           <Card style={styles.section}>
-            <Text style={styles.sectionTitle}>📍 Property Address</Text>
+            <View style={styles.sectionTitleRow}>
+              <Ionicons
+                name={AppIcons.propertyAddress}
+                size={IconSize.medium}
+                color={designTokens.colors.text.primary}
+              />
+              <Text style={styles.sectionTitle}>Property Address</Text>
+            </View>
             <View style={styles.addressRow}>
               <TextInput
                 style={styles.addressInput}
@@ -655,7 +807,14 @@ export default function SiteNotesScreen({ navigation, route }: any) {
 
           {/* Job Type Selection */}
           <Card style={styles.section}>
-            <Text style={styles.sectionTitle}>📋 Job Type</Text>
+            <View style={styles.sectionTitleRow}>
+              <Ionicons
+                name={AppIcons.jobType}
+                size={IconSize.medium}
+                color={designTokens.colors.text.primary}
+              />
+              <Text style={styles.sectionTitle}>Job Type</Text>
+            </View>
             <View style={styles.jobTypeGrid}>
               {JOB_TYPES.map(job => (
                 <TouchableOpacity
@@ -695,7 +854,14 @@ export default function SiteNotesScreen({ navigation, route }: any) {
           {/* Construction Method - Only show when job type is selected */}
           {selectedJobType && CONSTRUCTION_METHODS[selectedJobType]?.length > 1 && (
             <Card style={styles.section}>
-              <Text style={styles.sectionTitle}>🔧 Construction Method</Text>
+              <View style={styles.sectionTitleRow}>
+                <Ionicons
+                  name={AppIcons.constructionMethod}
+                  size={IconSize.medium}
+                  color={designTokens.colors.text.primary}
+                />
+                <Text style={styles.sectionTitle}>Construction Method</Text>
+              </View>
               <Text style={styles.methodHint}>
                 Select the construction approach (affects pricing)
               </Text>
@@ -739,7 +905,14 @@ export default function SiteNotesScreen({ navigation, route }: any) {
 
           {/* Quick Details */}
           <Card style={styles.section}>
-            <Text style={styles.sectionTitle}>🏠 Quick Details</Text>
+            <View style={styles.sectionTitleRow}>
+              <Ionicons
+                name={AppIcons.quickDetails}
+                size={IconSize.medium}
+                color={designTokens.colors.text.primary}
+              />
+              <Text style={styles.sectionTitle}>Quick Details</Text>
+            </View>
 
             {/* Property Type */}
             <Text style={styles.fieldLabel}>Property Type</Text>
@@ -785,7 +958,14 @@ export default function SiteNotesScreen({ navigation, route }: any) {
           {/* Common Tasks */}
           {selectedJobType && (
             <Card style={styles.section}>
-              <Text style={styles.sectionTitle}>🔧 What needs doing?</Text>
+              <View style={styles.sectionTitleRow}>
+                <Ionicons
+                  name={AppIcons.whatNeedsDoing}
+                  size={IconSize.medium}
+                  color={designTokens.colors.text.primary}
+                />
+                <Text style={styles.sectionTitle}>What needs doing?</Text>
+              </View>
               <View style={styles.tasksGrid}>
                 {COMMON_TASKS[selectedJobType as keyof typeof COMMON_TASKS].map(task => (
                   <TouchableOpacity
@@ -814,7 +994,14 @@ export default function SiteNotesScreen({ navigation, route }: any) {
 
           {/* Additional Notes */}
           <Card style={styles.section}>
-            <Text style={styles.sectionTitle}>📝 Additional Notes</Text>
+            <View style={styles.sectionTitleRow}>
+              <Ionicons
+                name={AppIcons.additionalNotes}
+                size={IconSize.medium}
+                color={designTokens.colors.text.primary}
+              />
+              <Text style={styles.sectionTitle}>Additional Notes</Text>
+            </View>
             <View style={styles.notesActions}>
               {/* Voice recording temporarily disabled — investigating TestFlight issue */}
 
@@ -840,7 +1027,14 @@ export default function SiteNotesScreen({ navigation, route }: any) {
             {/* Photo Thumbnails */}
             {photos.length > 0 && (
               <View style={styles.photoSection}>
-                <Text style={styles.photoSectionTitle}>📸 Site Photos ({photos.length})</Text>
+                <View style={styles.sectionTitleRow}>
+                  <Ionicons
+                    name={AppIcons.sitePhotos}
+                    size={IconSize.medium}
+                    color={designTokens.colors.text.primary}
+                  />
+                  <Text style={styles.photoSectionTitle}>Site Photos ({photos.length})</Text>
+                </View>
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
@@ -934,6 +1128,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: designTokens.spacing.lg,
     paddingVertical: designTokens.spacing.md,
   },
+  titleRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: designTokens.spacing.sm,
+  },
   title: {
     fontSize: designTokens.typography.fontSize['2xl'],
     fontWeight: designTokens.typography.fontWeight.bold as any,
@@ -944,11 +1143,16 @@ const styles = StyleSheet.create({
     marginBottom: designTokens.spacing.md,
     padding: designTokens.spacing.md,
   },
+  sectionTitleRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: designTokens.spacing.sm,
+    marginBottom: designTokens.spacing.md,
+  },
   sectionTitle: {
     fontSize: designTokens.typography.fontSize.lg,
     fontWeight: designTokens.typography.fontWeight.semibold as any,
     color: designTokens.colors.text.primary,
-    marginBottom: designTokens.spacing.md,
   },
   addressRow: {
     flexDirection: 'row',
@@ -1297,5 +1501,23 @@ const styles = StyleSheet.create({
     fontSize: designTokens.typography.fontSize.xs,
     color: designTokens.colors.text.secondary,
     fontStyle: 'italic',
+  },
+  offlineBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: designTokens.spacing.xs,
+    marginHorizontal: designTokens.spacing.md,
+    marginBottom: designTokens.spacing.sm,
+    paddingHorizontal: designTokens.spacing.md,
+    paddingVertical: designTokens.spacing.sm,
+    backgroundColor: '#fef3c7',
+    borderRadius: designTokens.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: '#fde68a',
+  },
+  offlineBannerText: {
+    fontSize: designTokens.typography.fontSize.sm,
+    color: '#92400e',
+    fontWeight: designTokens.typography.fontWeight.medium as any,
   },
 });

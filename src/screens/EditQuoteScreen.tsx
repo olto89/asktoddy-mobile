@@ -10,8 +10,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import designTokens from '../styles/designTokens';
+import { quoteStorage } from '../services/QuoteStorageService';
+import { AppIcons, IconSize } from '../styles/iconRegistry';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 
@@ -127,17 +128,11 @@ export default function EditQuoteScreen({ navigation, route }: any) {
         finalCost: finalTotal, // Auto-calculated from line items
         projectNotes,
         lastModified: Date.now(),
-        status: 'generated', // Keep as generated quote
+        status: route.params.savedQuote?.status === 'completed' ? 'completed' : 'generated',
       };
 
-      // Update the existing quote in AsyncStorage
-      const existingQuotes = await AsyncStorage.getItem('saved_quotes');
-      const quotes = existingQuotes ? JSON.parse(existingQuotes) : [];
-
-      // Find and update the existing quote
-      const updatedQuotes = quotes.map((q: any) => (q.id === updatedQuote.id ? updatedQuote : q));
-
-      await AsyncStorage.setItem('saved_quotes', JSON.stringify(updatedQuotes));
+      // Update the existing quote via QuoteStorageService
+      await quoteStorage.save(updatedQuote);
 
       // Navigate back with updated data so the previous screen can refresh
       Alert.alert('Quote Updated', 'Your changes have been saved.', [
@@ -167,7 +162,14 @@ export default function EditQuoteScreen({ navigation, route }: any) {
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={24} color={designTokens.colors.text.primary} />
           </TouchableOpacity>
-          <Text style={styles.title}>✏️ Edit Quote</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Ionicons
+              name={AppIcons.editQuote}
+              size={IconSize.medium}
+              color={designTokens.colors.text.primary}
+            />
+            <Text style={styles.title}>Edit Quote</Text>
+          </View>
           <View style={{ width: 24 }} />
         </View>
 
