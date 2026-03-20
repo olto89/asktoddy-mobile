@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.asktoddy.staging",
-      "buildNumber": "41",
+      "buildNumber": "42",
       "splash": {
         "backgroundColor": "#FF7A3B",
         "image": "./assets/splash-icon.png",
