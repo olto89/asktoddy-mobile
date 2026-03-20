@@ -3,7 +3,7 @@
  * Returns fully structured ProjectAnalysis - NO frontend parsing required
  */
 
-console.log('🏗️ STRUCTURED Analyze Construction Edge Function - v3 (Gemini 2.5 Pro)');
+console.log('🏗️ STRUCTURED Analyze Construction Edge Function - v3 (improved prompts)');
 
 // Type definitions matching frontend interfaces
 interface MaterialItem {
@@ -357,7 +357,7 @@ async function callGemini(
     console.log(`🎤 Including ${audio.length} audio file(s) in request`);
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
   // Build parts array - text first, then images
   const parts: any[] = [{ text: prompt }];
