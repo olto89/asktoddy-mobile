@@ -3,7 +3,7 @@
  * Returns fully structured ProjectAnalysis - NO frontend parsing required
  */
 
-console.log('🏗️ STRUCTURED Analyze Construction Edge Function - v2');
+console.log('🏗️ STRUCTURED Analyze Construction Edge Function - v3 (Gemini 2.5 Pro)');
 
 // Type definitions matching frontend interfaces
 interface MaterialItem {
@@ -230,28 +230,29 @@ function calculateSpecMultiplier(notes: string): { multiplier: number; level: st
 }
 
 // Create a structured prompt for JSON output
-function createStructuredPrompt(message: string, projectType: string): string {
+// Preserves the full frontend context (voice notes, property type, photos, audio)
+// and appends JSON output format instructions
+function createStructuredPrompt(
+  message: string,
+  projectType: string,
+  imageCount: number = 0,
+  audioCount: number = 0
+): string {
   if (!message || typeof message !== 'string') {
     console.warn('Invalid message provided to createStructuredPrompt:', message);
     message = 'General construction project';
   }
 
-  // Extract key information from the message
-  // Use more flexible patterns that capture multi-line content until the next section
+  // Extract key values for multiplier calculations
   const sizeMatch = message.match(/Size[\/\s]*Dimensions[:\s]+([^\n]+)/i);
   const locationMatch = message.match(/Location[:\s]+([^\n]+)/i);
-  const tasksMatch = message.match(/Selected Work Items[:\s]+([^\n]+)/i);
-  // Extract construction method and its multiplier
   const constructionMethodMatch = message.match(/Construction Method[:\s]+([^(]+)\(([0-9.]+)x/i);
-  // Capture notes until VOICE NOTES section or end of relevant content
   const notesMatch = message.match(
     /DETAILED NOTES[:\s]+([\s\S]*?)(?=🎤 VOICE|ANALYSIS REQUIREMENTS|$)/i
   );
 
-  // Clean up extracted values - remove trailing punctuation and labels
   const cleanValue = (val: string | undefined): string => {
     if (!val) return '';
-    // Remove trailing "Property Type:", "Job Type:", etc. and trim
     return val
       .replace(/\s*(Property Type|Job Type|Size|Location|Selected|DETAILED|VOICE)[:\s]*$/i, '')
       .trim();
@@ -259,60 +260,57 @@ function createStructuredPrompt(message: string, projectType: string): string {
 
   const size = cleanValue(sizeMatch?.[1]) || 'standard';
   const location = cleanValue(locationMatch?.[1]) || 'UK';
-  const userTasks = cleanValue(tasksMatch?.[1]) || '';
   const notes = cleanValue(notesMatch?.[1]) || '';
-
-  // Extract construction method info
   const constructionMethod = constructionMethodMatch ? cleanValue(constructionMethodMatch[1]) : '';
   const constructionMethodMultiplier = constructionMethodMatch
     ? parseFloat(constructionMethodMatch[2]) || 1.0
     : 1.0;
 
-  console.log('📊 Extracted from prompt:', {
-    size,
-    location,
-    userTasks: userTasks.substring(0, 50),
-    notes: notes.substring(0, 100),
-    constructionMethod: constructionMethod || 'not specified',
-    constructionMethodMultiplier,
-  });
-
   // Calculate multipliers
   const sizeMultiplier = calculateSizeMultiplier(size);
   const locationMultiplier = calculateRegionalMultiplier(location);
   const specInfo = calculateSpecMultiplier(notes);
-
-  // Combined multiplier (now includes construction method)
   const totalMultiplier =
     sizeMultiplier * locationMultiplier * specInfo.multiplier * constructionMethodMultiplier;
 
-  console.log('📈 Multipliers:', {
-    size: sizeMultiplier,
-    location: locationMultiplier,
-    spec: specInfo.multiplier,
-    constructionMethod: constructionMethodMultiplier,
-    total: totalMultiplier.toFixed(2),
+  console.log('📊 Prompt context:', {
+    size,
+    location,
+    constructionMethod: constructionMethod || 'not specified',
+    specLevel: specInfo.level,
+    totalMultiplier: totalMultiplier.toFixed(2),
+    imageCount,
+    audioCount,
   });
 
-  return `UK construction estimator. Return ONLY JSON, no extra text.
+  // Build the prompt: preserve the FULL frontend message as context,
+  // then append pricing adjustment instructions and JSON output format
+  return `You are an expert UK construction cost estimator powered by Gemini 2.5 Pro.
+Analyze ALL the information below — including text notes, voice note transcripts, ${imageCount > 0 ? `the ${imageCount} attached site photo(s),` : ''} ${audioCount > 0 ? `the ${audioCount} attached voice recording(s),` : ''} and any other details — to produce accurate, realistic UK construction quotes.
 
-${projectType} project in ${location}, size: ${size}
-${constructionMethod ? `Construction method: ${constructionMethod}` : ''}
-Spec level: ${specInfo.level} (${notes ? `Customer notes: "${notes}"` : 'standard specification'})
-Tasks requested: ${userTasks}
+Return ONLY valid JSON, no extra text or markdown.
 
-IMPORTANT: Apply ${totalMultiplier.toFixed(2)}x price adjustment based on:
+=== FULL PROJECT BRIEF (from user) ===
+${message}
+
+=== PRICING ADJUSTMENTS ===
+Apply a combined ${totalMultiplier.toFixed(2)}x price adjustment:
 - Location: ${locationMultiplier}x (${location})
 - Size: ${sizeMultiplier}x (${size})
 - Spec level: ${specInfo.multiplier}x (${specInfo.level})
 ${constructionMethod ? `- Construction method: ${constructionMethodMultiplier}x (${constructionMethod})` : ''}
 ${specInfo.level === 'high-spec' ? '- Use PREMIUM materials and finishes in estimates' : ''}
 ${specInfo.level === 'budget' ? '- Use BUDGET materials and basic finishes' : ''}
-${constructionMethod ? `- Use materials and techniques appropriate for ${constructionMethod} construction` : ''}
 
-Provide 5-8 main construction tasks with COMBINED materials+labor costs.
+=== CRITICAL INSTRUCTIONS ===
+• Provide 5-8 main construction tasks with COMBINED materials+labor costs
+• Base ALL costs on current UK market rates (2025/2026)
+• Consider property type, dimensions, and location for realistic pricing
+• Factor in voice note descriptions and any details visible in site photos
+• If photos show existing damage, poor condition, or complications, adjust costs upward accordingly
+• Each task cost should reflect the TOTAL (materials + labor) — do not split them
 
-JSON format:
+=== REQUIRED JSON FORMAT ===
 {
   "tasks": [
     {
@@ -359,7 +357,7 @@ async function callGemini(
     console.log(`🎤 Including ${audio.length} audio file(s) in request`);
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
 
   // Build parts array - text first, then images
   const parts: any[] = [{ text: prompt }];
@@ -1047,18 +1045,41 @@ Deno.serve(async req => {
     const projectType = extractProjectType(message);
     console.log('🏗️ Project type:', projectType);
 
-    // Create structured prompt for JSON output
+    // Create structured prompt for JSON output (preserves full user context)
     console.log('🎯 Creating structured prompt...');
-    const structuredPrompt = createStructuredPrompt(message, projectType);
+    const structuredPrompt = createStructuredPrompt(
+      message,
+      projectType,
+      images?.length || 0,
+      audio?.length || 0
+    );
     console.log('📏 Prompt created, length:', structuredPrompt.length);
 
     // Call AI API with structured prompt, images, and audio
     console.log('📞 About to call Gemini...');
     const aiResponse = await callGemini(structuredPrompt, geminiApiKey, images, audio);
     console.log('✅ Gemini responded, length:', aiResponse.length);
+    console.log(
+      '📊 Gemini diagnostics:',
+      JSON.stringify({
+        responseLength: aiResponse.length,
+        hasJsonBrace: aiResponse.includes('{'),
+        timestamp: new Date().toISOString(),
+      })
+    );
 
     // Parse JSON response with new parser
     const structuredAnalysis = parseJsonResponse(aiResponse, projectType);
+    console.log(
+      '📊 Parse result:',
+      JSON.stringify({
+        provider: structuredAnalysis.provider || 'gemini-json',
+        confidence: structuredAnalysis.confidence,
+        hasTasks: Array.isArray(structuredAnalysis.tasks) && structuredAnalysis.tasks.length > 0,
+        totalMin: structuredAnalysis.costBreakdown?.total?.min,
+        totalMax: structuredAnalysis.costBreakdown?.total?.max,
+      })
+    );
     structuredAnalysis.sessionId = sessionId || `session_${Date.now()}`;
 
     console.log(
@@ -1077,11 +1098,19 @@ Deno.serve(async req => {
     console.error('❌ Edge Function critical error:', error);
     console.error('Error stack:', error.stack);
     console.error('Error message:', error.message);
+    console.log(
+      '📊 Failure diagnostics:',
+      JSON.stringify({
+        errorType: error.constructor?.name,
+        errorMessage: error.message,
+        timestamp: new Date().toISOString(),
+      })
+    );
 
-    // Return fallback structured response with error details for debugging
-    const fallbackAnalysis: ProjectAnalysis = {
+    // Build fallback data so the client can still display something
+    const fallbackData: ProjectAnalysis = {
       projectType: 'general',
-      description: `Fallback: ${error.message || 'Unknown error'}`,
+      description: `Estimated costs based on typical UK projects`,
       difficultyLevel: 'Preliminary Estimate',
       responseType: 'quote',
 
@@ -1139,17 +1168,17 @@ Deno.serve(async req => {
       provider: 'fallback-template',
     };
 
-    // Return fallback with same success wrapper format
-    const fallbackResponse = {
-      success: true,
-      data: fallbackAnalysis,
-      processingTimeMs: 0,
+    // Return 503 with fallback data — client can still use it but knows AI failed
+    const errorResponse = {
+      success: false,
+      error: {
+        message: error.message || 'AI analysis temporarily unavailable',
+        code: 'AI_UNAVAILABLE',
+      },
+      fallbackData,
       aiProvider: 'fallback-template',
     };
-    return new Response(
-      JSON.stringify(fallbackResponse),
-      { status: 200, headers } // Return 200 with fallback data
-    );
+    return new Response(JSON.stringify(errorResponse), { status: 503, headers });
   }
 });
 
