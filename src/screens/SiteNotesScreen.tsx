@@ -200,7 +200,32 @@ async function saveDraftToStorage(formData: DraftFormData): Promise<string> {
     m => m.id === formData.selectedConstructionMethod
   );
 
+  // If the quote already exists, preserve any generated data (tasks, costs, AI analysis)
+  // that was saved by TaskListScreen — our form-only save must not overwrite those fields
+  let existingGeneratedData: Partial<SiteNote> = {};
+  if (formData.currentQuoteId) {
+    try {
+      const existing = await quoteStorage.getById(formData.currentQuoteId);
+      if (existing) {
+        existingGeneratedData = {
+          generatedTasks: existing.generatedTasks,
+          totalCost: existing.totalCost,
+          finalCost: existing.finalCost,
+          aiAnalysis: existing.aiAnalysis,
+          siteNotes: existing.siteNotes,
+          pendingGeneration: existing.pendingGeneration,
+          quoteName: existing.quoteName,
+          customerName: existing.customerName,
+          projectNotes: existing.projectNotes,
+        };
+      }
+    } catch (error) {
+      console.error('Failed to read existing quote for merge:', error);
+    }
+  }
+
   const draftQuote: SiteNote = {
+    ...existingGeneratedData,
     id: quoteId,
     timestamp: formData.currentQuoteId ? formData.existingTimestamp || Date.now() : Date.now(),
     lastModified: Date.now(),
