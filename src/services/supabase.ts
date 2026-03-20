@@ -1,5 +1,7 @@
 import { createClient, AuthSession } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as FileSystem from 'expo-file-system';
+import { decode } from 'base64-arraybuffer';
 
 // Get environment variables directly from process.env for Expo
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -79,54 +81,25 @@ export const authHelpers = {
     const { data, error } = await supabase.auth.resetPasswordForEmail(email);
     return { data, error };
   },
-
-  // Test signup without email confirmation (for development)
-  signUpTest: async (email: string, password: string) => {
-    // Try to sign up user
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          subscription_tier: 'free',
-          created_via: 'mobile_app',
-          skip_confirmation: true,
-        },
-      },
-    });
-
-    if (error) {
-      return { data, error };
-    }
-
-    // If user was created but not confirmed, try to sign them in anyway
-    if (data.user && !data.session) {
-      console.log('User created but not confirmed, attempting direct sign in...');
-      const signInResult = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      return signInResult;
-    }
-
-    return { data, error };
-  },
 };
 
 // Database helper functions
 export const dbHelpers = {
-  // Upload image to storage
+  // Upload image to storage (React Native compatible via base64)
   uploadImage: async (uri: string, filename: string, bucket: string = 'project-images') => {
     try {
-      // Convert URI to blob for upload
-      const response = await fetch(uri);
-      const blob = await response.blob();
+      // Read file as base64 — reliable on React Native unlike fetch → blob
+      const base64 = await FileSystem.readAsStringAsync(uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
 
-      // Create unique filename with timestamp
-      const fileExt = filename.split('.').pop();
+      // Detect content type from extension
+      const fileExt = filename.split('.').pop()?.toLowerCase() || 'jpg';
+      const contentType = fileExt === 'png' ? 'image/png' : 'image/jpeg';
       const fileName = `${Date.now()}.${fileExt}`;
 
-      const { data, error } = await supabase.storage.from(bucket).upload(fileName, blob, {
+      const { data, error } = await supabase.storage.from(bucket).upload(fileName, decode(base64), {
+        contentType,
         cacheControl: '3600',
         upsert: false,
       });
@@ -147,6 +120,7 @@ export const dbHelpers = {
         error: null,
       };
     } catch (error) {
+      console.error('uploadImage failed:', error);
       return { data: null, error };
     }
   },
