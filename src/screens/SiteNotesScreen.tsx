@@ -671,16 +671,27 @@ export default function SiteNotesScreen({ navigation, route }: any) {
     }
 
     // Online - proceed with normal flow
-    if (currentQuoteId) {
-      try {
-        const existing = await quoteStorage.getById(currentQuoteId);
-        if (existing) {
-          await quoteStorage.save({ ...existing, status: 'generated', lastModified: Date.now() });
-        }
-      } catch (error) {
-        console.error('Error updating quote status:', error);
-      }
+    // Ensure we have a quote ID before navigating (prevents duplicate quotes)
+    let quoteId = currentQuoteId;
+    if (!quoteId) {
+      quoteId = await saveDraftToStorage(formDataRef.current);
+      setCurrentQuoteId(quoteId);
+      // Update formDataRef so unmount cleanup uses the same ID
+      formDataRef.current.currentQuoteId = quoteId;
     }
+
+    // Mark as generated in storage
+    try {
+      const existing = await quoteStorage.getById(quoteId);
+      if (existing) {
+        await quoteStorage.save({ ...existing, status: 'generated', lastModified: Date.now() });
+      }
+    } catch (error) {
+      console.error('Error updating quote status:', error);
+    }
+
+    // Update formDataRef so unmount cleanup preserves 'generated' status
+    formDataRef.current.existingStatus = 'generated';
 
     // Get the construction method data for quote generation
     const selectedMethodData = CONSTRUCTION_METHODS[selectedJobType]?.find(
@@ -689,7 +700,7 @@ export default function SiteNotesScreen({ navigation, route }: any) {
 
     // Prepare notes data
     const siteNotes = {
-      id: currentQuoteId,
+      id: quoteId,
       address,
       jobType: selectedJobType,
       constructionMethod: selectedConstructionMethod || undefined,
