@@ -388,3 +388,27 @@ import_map = "./functions/update-ons-cache/deno.json"
 entrypoint = "./functions/update-ons-cache/index.ts"
 # Daily cron job at 2 AM to update ONS pricing data
 # schedule = "0 2 * * *"
+
+[functions.sync-quotes]
+enabled = true
+verify_jwt = true
+import_map = "./functions/sync-quotes/deno.json"
+entrypoint = "./functions/sync-quotes/index.ts"
+
+[functions.delete-account]
+enabled = true
+verify_jwt = true
+import_map = "./functions/delete-account/deno.json"
+entrypoint = "./functions/delete-account/index.ts"
+
+[functions.get-session-quote]
+enabled = true
+verify_jwt = true
+import_map = "./functions/get-session-quote/deno.json"
+entrypoint = "./functions/get-session-quote/index.ts"
+
+[functions.scheduled-tasks]
+enabled = true
+verify_jwt = false
+import_map = "./functions/scheduled-tasks/deno.json"
+entrypoint = "./functions/scheduled-tasks/index.ts"
