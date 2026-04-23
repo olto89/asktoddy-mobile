@@ -96,12 +96,11 @@ export const dbHelpers = {
       // Detect content type from extension
       const fileExt = filename.split('.').pop()?.toLowerCase() || 'jpg';
       const contentType = fileExt === 'png' ? 'image/png' : 'image/jpeg';
-      const fileName = `${Date.now()}.${fileExt}`;
 
-      const { data, error } = await supabase.storage.from(bucket).upload(fileName, decode(base64), {
+      const { data, error } = await supabase.storage.from(bucket).upload(filename, decode(base64), {
         contentType,
         cacheControl: '3600',
-        upsert: false,
+        upsert: true,
       });
 
       if (error) {
@@ -109,7 +108,7 @@ export const dbHelpers = {
       }
 
       // Get public URL
-      const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(fileName);
+      const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(filename);
 
       return {
         data: {
@@ -123,6 +122,12 @@ export const dbHelpers = {
       console.error('uploadImage failed:', error);
       return { data: null, error };
     }
+  },
+
+  // Delete a file from storage
+  deleteStorageFile: async (bucket: string, filePath: string) => {
+    const { error } = await supabase.storage.from(bucket).remove([filePath]);
+    return { error };
   },
 
   // Save analysis request

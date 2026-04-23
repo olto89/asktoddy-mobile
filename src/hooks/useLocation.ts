@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { LocationService, LocationData, UKRegion } from '../services/location/LocationService';
+import { logger } from '../services/Logger';
 
 export interface UseLocationState {
   loading: boolean;
@@ -52,7 +53,7 @@ export const useLocation = (autoFetch: boolean = true): UseLocationState => {
       const hasPermission = await locationService.requestPermissions();
 
       if (!hasPermission) {
-        console.log('📍 Location permission denied, using default location');
+        logger.debug('📍 Location permission denied, using default location');
       }
 
       // Get location (will use default if no permission)
@@ -69,7 +70,7 @@ export const useLocation = (autoFetch: boolean = true): UseLocationState => {
         const context = await locationService.getPricingContext();
         setPricingContext(context);
 
-        console.log('📍 Location updated:', {
+        logger.debug('📍 Location updated:', {
           city: locationData.city,
           region: ukRegion.name,
           multiplier: ukRegion.pricingMultiplier,
@@ -96,7 +97,7 @@ export const useLocation = (autoFetch: boolean = true): UseLocationState => {
    * Refresh location
    */
   const refreshLocation = useCallback(async () => {
-    console.log('🔄 Refreshing location...');
+    logger.debug('🔄 Refreshing location...');
     await getCurrentLocation();
   }, [getCurrentLocation]);
 
@@ -132,7 +133,7 @@ export const useLocation = (autoFetch: boolean = true): UseLocationState => {
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
       if (nextAppState === 'active' && location) {
         // Refresh location when app becomes active
-        console.log('📱 App active, checking location...');
+        logger.debug('📱 App active, checking location...');
         getCurrentLocation();
       }
     };

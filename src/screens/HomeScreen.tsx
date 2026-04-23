@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
-import { useAuth } from '../contexts/AuthContext';
+import { Ionicons } from '@expo/vector-icons';
 import designTokens from '../styles/designTokens';
+import { AppIcons, IconSize } from '../styles/iconRegistry';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 
@@ -14,13 +15,6 @@ interface Props {
 }
 
 export default function HomeScreen({ navigation }: Props) {
-  const { user, signOut } = useAuth();
-
-  const handleLogout = async () => {
-    await signOut();
-    // Navigation will be handled by auth state change
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -31,21 +25,42 @@ export default function HomeScreen({ navigation }: Props) {
 
         <View style={styles.features}>
           <Card variant="elevated" style={styles.featureCard}>
-            <Text style={styles.featureTitle}>💬 Chat & Quote</Text>
+            <View style={styles.featureTitleRow}>
+              <Ionicons
+                name={AppIcons.chatAndQuote}
+                size={IconSize.medium}
+                color={designTokens.colors.primary[500]}
+              />
+              <Text style={styles.featureTitle}>Chat & Quote</Text>
+            </View>
             <Text style={styles.featureText}>
               Chat with Toddy, share photos, and get instant cost estimates with AI-powered analysis
             </Text>
           </Card>
 
           <Card variant="elevated" style={styles.featureCard}>
-            <Text style={styles.featureTitle}>📋 Detailed Analysis</Text>
+            <View style={styles.featureTitleRow}>
+              <Ionicons
+                name={AppIcons.detailedAnalysis}
+                size={IconSize.medium}
+                color={designTokens.colors.primary[500]}
+              />
+              <Text style={styles.featureTitle}>Detailed Analysis</Text>
+            </View>
             <Text style={styles.featureText}>
               Get comprehensive breakdown of materials, labor costs, timeline, and tool requirements
             </Text>
           </Card>
 
           <Card variant="elevated" style={styles.featureCard}>
-            <Text style={styles.featureTitle}>🔧 Smart Recommendations</Text>
+            <View style={styles.featureTitleRow}>
+              <Ionicons
+                name={AppIcons.smartRecommendations}
+                size={IconSize.medium}
+                color={designTokens.colors.primary[500]}
+              />
+              <Text style={styles.featureTitle}>Smart Recommendations</Text>
+            </View>
             <Text style={styles.featureText}>
               Find the right tools, materials, and contractors based on your location and project
               needs
@@ -53,7 +68,14 @@ export default function HomeScreen({ navigation }: Props) {
           </Card>
 
           <Card variant="elevated" style={styles.featureCard}>
-            <Text style={styles.featureTitle}>💡 Custom Pricing</Text>
+            <View style={styles.featureTitleRow}>
+              <Ionicons
+                name={AppIcons.customPricing}
+                size={IconSize.medium}
+                color={designTokens.colors.primary[500]}
+              />
+              <Text style={styles.featureTitle}>Custom Pricing</Text>
+            </View>
             <Text style={styles.featureText}>
               Adjust quotes with your preferred suppliers and provide feedback to improve accuracy
             </Text>
@@ -71,11 +93,6 @@ export default function HomeScreen({ navigation }: Props) {
         <Text style={styles.bottomText}>
           Chat with Toddy about your construction project and get professional advice instantly
         </Text>
-
-        {/* Temporary logout for testing */}
-        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-          <Text style={styles.logoutText}>Logout (Dev)</Text>
-        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -115,11 +132,16 @@ const styles = StyleSheet.create({
   featureCard: {
     marginBottom: designTokens.spacing.lg,
   },
+  featureTitleRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: designTokens.spacing.sm,
+    marginBottom: designTokens.spacing.sm,
+  },
   featureTitle: {
     fontSize: designTokens.typography.fontSize.lg,
     fontWeight: designTokens.typography.fontWeight.semibold,
     color: designTokens.colors.text.primary,
-    marginBottom: designTokens.spacing.sm,
   },
   featureText: {
     fontSize: designTokens.typography.fontSize.sm,
@@ -135,13 +157,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: designTokens.typography.lineHeight.lg,
     marginBottom: designTokens.spacing.lg,
-  },
-  logoutButton: {
-    alignItems: 'center',
-    padding: designTokens.spacing.sm,
-  },
-  logoutText: {
-    fontSize: designTokens.typography.fontSize.xs,
-    color: designTokens.colors.neutral[400],
   },
 });

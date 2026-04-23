@@ -4,6 +4,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { logger } from './Logger';
 
 export interface ChatSession {
   id: string;
@@ -71,7 +72,7 @@ class ChatHistoryService {
       // Set as current session
       await AsyncStorage.setItem(STORAGE_KEYS.CURRENT_SESSION, newSession.id);
 
-      console.log('📝 New chat session created:', newSession.id);
+      logger.debug('📝 New chat session created:', newSession.id);
       return newSession;
     } catch (error) {
       console.error('Failed to create new session:', error);
@@ -88,7 +89,7 @@ class ChatHistoryService {
       const sessionIndex = sessions.findIndex(s => s.id === sessionId);
 
       if (sessionIndex === -1) {
-        console.warn('Session not found for update:', sessionId);
+        logger.warn('Session not found for update:', sessionId);
         return;
       }
 
@@ -135,7 +136,7 @@ class ChatHistoryService {
       // Remove session messages
       await AsyncStorage.removeItem(`${STORAGE_KEYS.MESSAGES}_${sessionId}`);
 
-      console.log('🗑️ Session deleted:', sessionId);
+      logger.debug('🗑️ Session deleted:', sessionId);
     } catch (error) {
       console.error('Failed to delete session:', error);
     }
@@ -232,7 +233,7 @@ class ChatHistoryService {
       await AsyncStorage.removeItem(STORAGE_KEYS.SESSIONS);
       await AsyncStorage.removeItem(STORAGE_KEYS.CURRENT_SESSION);
 
-      console.log('🗑️ All chat history cleared');
+      logger.debug('🗑️ All chat history cleared');
     } catch (error) {
       console.error('Failed to clear chat history:', error);
     }

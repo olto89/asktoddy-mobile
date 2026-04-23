@@ -3,6 +3,11 @@
  * Adapted from src/services/ai/providers/GeminiProvider.ts for Deno environment
  */
 
+const IS_DEBUG = Deno.env.get('DEBUG') === 'true' || Deno.env.get('APP_ENV') === 'development';
+const debug = (...args: unknown[]) => {
+  if (IS_DEBUG) console.log(...args);
+};
+
 import { AIProvider, AnalysisRequest, ProjectAnalysis, QuoteBreakdown } from '../types.ts';
 import type { ContextualAnalysisRequest, ContextualProjectAnalysis } from '../context/types.ts';
 import { ContextManager } from '../context/ContextManager.ts';
@@ -189,7 +194,7 @@ export class GeminiProvider implements AIProvider {
         } else if (response.status >= 500 && response.status < 600) {
           // Server errors - RETRY ONCE (might be temporary)
           if (attempt < retries) {
-            console.log(`⚠️ Server error ${response.status}, retrying once...`);
+            debug(`⚠️ Server error ${response.status}, retrying once...`);
             attempt++;
             await new Promise(resolve => setTimeout(resolve, 1000)); // 1s delay
             continue;
@@ -207,7 +212,7 @@ export class GeminiProvider implements AIProvider {
         // Network errors - RETRY ONCE
         if (error.message?.includes('fetch') || error.message?.includes('network')) {
           if (attempt < retries) {
-            console.log('🌐 Network error, retrying once...');
+            debug('🌐 Network error, retrying once...');
             attempt++;
             await new Promise(resolve => setTimeout(resolve, 1000));
             continue;
@@ -266,7 +271,7 @@ export class GeminiProvider implements AIProvider {
         } else if (response.status >= 500 && response.status < 600) {
           // Server errors - RETRY ONCE
           if (attempt < retries) {
-            console.log(`⚠️ Server error ${response.status} on media, retrying once...`);
+            debug(`⚠️ Server error ${response.status} on media, retrying once...`);
             attempt++;
             await new Promise(resolve => setTimeout(resolve, 1000));
             continue;
@@ -284,7 +289,7 @@ export class GeminiProvider implements AIProvider {
         // Network errors - RETRY ONCE
         if (error.message?.includes('fetch') || error.message?.includes('network')) {
           if (attempt < retries) {
-            console.log('🌐 Network error on media, retrying once...');
+            debug('🌐 Network error on media, retrying once...');
             attempt++;
             await new Promise(resolve => setTimeout(resolve, 1000));
             continue;
@@ -392,7 +397,7 @@ IMPORTANT: Provide detailed analysis of the provided ${this.getMediaTypeName(mim
         );
       }
 
-      console.log(`📎 Processing ${mimeType} media for Gemini analysis`);
+      debug(`📎 Processing ${mimeType} media for Gemini analysis`);
 
       return {
         inlineData: {
@@ -817,7 +822,7 @@ Analyze the above input and respond accordingly.`;
         confidence: analysis.confidence || 70,
       };
     } catch (error) {
-      console.warn('Failed to extract media info:', error);
+      debug('Failed to extract media info:', error);
       return {
         type: 'image',
         mimeType: 'image/jpeg',

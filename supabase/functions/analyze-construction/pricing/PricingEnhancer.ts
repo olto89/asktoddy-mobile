@@ -240,35 +240,7 @@ export class PricingEnhancer {
 
         this.log(`✅ Materials enhanced - ${formattedItems.length} items set`);
       } else {
-        // TEMPORARY: Force some test materials to see if UI works
-        this.log('🧪 TEMP: Adding test materials to debug UI');
-        enhanced.costBreakdown.materials = {
-          ...enhanced.costBreakdown.materials,
-          items: [
-            {
-              name: 'Test Kitchen Units',
-              description: 'Kitchen cabinet units',
-              quantity: 8,
-              unitPrice: 250,
-              totalPrice: 2000,
-              total: 2000,
-              unit: 'unit',
-            },
-            {
-              name: 'Test Worktop',
-              description: 'Granite worktop',
-              quantity: 3,
-              unitPrice: 400,
-              totalPrice: 1200,
-              total: 1200,
-              unit: 'm',
-            },
-          ],
-        };
-        this.log('⚠️ Materials enhancement used test data (no market data available)', {
-          materialsEnabled: options.materials,
-          materialsCount: marketData.materials?.length || 0,
-        });
+        this.log('⚠️ No market material data available, keeping AI estimates');
       }
     }
 

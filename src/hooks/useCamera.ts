@@ -9,6 +9,7 @@ import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../services/supabase';
 import { PermissionService } from '../services/PermissionService';
+import { logger } from '../services/Logger';
 
 export interface CameraOptions {
   quality?: number;
@@ -71,7 +72,7 @@ export const useCamera = (options: UseCameraOptions = {}): CameraState => {
     // Check camera permission first with improved UX
     const cameraPermissionStatus = await permissionService.requestCameraPermission();
     if (!cameraPermissionStatus.granted) {
-      console.log('Camera permission denied');
+      logger.debug('Camera permission denied');
       return null;
     }
 
@@ -91,7 +92,7 @@ export const useCamera = (options: UseCameraOptions = {}): CameraState => {
         // Optionally analyze image with Edge Function
         if (analyzeImage) {
           try {
-            console.log('🤖 Auto-analyzing captured image...');
+            logger.debug('🤖 Auto-analyzing captured image...');
             await analyzeImageWithEdgeFunction(photo.uri);
           } catch (analysisError) {
             console.error('Auto-analysis failed:', analysisError);
@@ -123,7 +124,7 @@ export const useCamera = (options: UseCameraOptions = {}): CameraState => {
     // Check photo library permission first with improved UX
     const photoPermissionStatus = await permissionService.requestPhotoLibraryPermission();
     if (!photoPermissionStatus.granted) {
-      console.log('Photo library permission denied');
+      logger.debug('Photo library permission denied');
       return null;
     }
 
@@ -142,7 +143,7 @@ export const useCamera = (options: UseCameraOptions = {}): CameraState => {
         // Optionally analyze image with Edge Function
         if (analyzeImage) {
           try {
-            console.log('🤖 Auto-analyzing library image...');
+            logger.debug('🤖 Auto-analyzing library image...');
             await analyzeImageWithEdgeFunction(asset.uri);
           } catch (analysisError) {
             console.error('Auto-analysis failed:', analysisError);
@@ -183,7 +184,6 @@ export const useCamera = (options: UseCameraOptions = {}): CameraState => {
       body: {
         imageUri,
         context: {
-          location: 'London', // TODO: Get from user settings
           projectType: 'General Construction',
           preferredProvider: 'auto',
         },

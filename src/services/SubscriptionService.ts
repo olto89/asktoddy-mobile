@@ -86,7 +86,7 @@ class SubscriptionService {
       };
 
       this.initialized = true;
-      console.log('🔐 SubscriptionService initialized');
+      logger.debug('🔐 SubscriptionService initialized');
     } catch (error) {
       console.error('Failed to initialize SubscriptionService:', error);
     }
@@ -97,7 +97,7 @@ class SubscriptionService {
    */
   hasFeatureAccess(feature: PremiumFeature): boolean {
     if (!this.initialized) {
-      console.warn('SubscriptionService not initialized');
+      logger.warn('SubscriptionService not initialized');
       return false;
     }
 
@@ -161,7 +161,7 @@ class SubscriptionService {
       };
 
       // TODO: Save to AsyncStorage and sync with backend
-      console.log('🆓 Free trial started:', trialEnd);
+      logger.debug('🆓 Free trial started:', trialEnd);
       return true;
     } catch (error) {
       console.error('Failed to start trial:', error);
@@ -190,7 +190,7 @@ class SubscriptionService {
       };
 
       // TODO: Process payment and sync with backend
-      console.log('💎 Subscription activated:', plan.name);
+      logger.debug('💎 Subscription activated:', plan.name);
       return true;
     } catch (error) {
       console.error('Failed to activate subscription:', error);

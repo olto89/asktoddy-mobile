@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
 import { AIProvider, AnalysisRequest, ProjectAnalysis, QuoteBreakdown } from '../types';
+import { logger } from '../../Logger';
 
 export class GeminiProvider implements AIProvider {
   name = 'gemini';
@@ -14,7 +15,7 @@ export class GeminiProvider implements AIProvider {
 
   private initialize(): void {
     if (!this.apiKey || this.apiKey === 'your_api_key_here') {
-      console.warn('❌ Gemini: Invalid API key provided');
+      logger.warn('❌ Gemini: Invalid API key provided');
       return;
     }
 
@@ -22,7 +23,7 @@ export class GeminiProvider implements AIProvider {
       this.genAI = new GoogleGenerativeAI(this.apiKey);
       // Use stable Gemini 2.0 Flash model
       this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
-      console.log('✅ Gemini provider initialized with gemini-2.0-flash-exp');
+      logger.debug('✅ Gemini provider initialized with gemini-2.0-flash-exp');
     } catch (error) {
       console.error('❌ Failed to initialize Gemini provider:', error);
     }

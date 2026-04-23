@@ -8,13 +8,18 @@ import {
   Alert,
   Modal,
   Pressable,
+  BackHandler,
+  Platform,
 } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
+import { CommonActions, useNavigationState } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../contexts/AuthContext';
+import { quoteStorage } from '../services/QuoteStorageService';
+import { useSyncQuotes } from '../hooks/useSyncQuotes';
 import designTokens from '../styles/designTokens';
+import { AppIcons, IconSize } from '../styles/iconRegistry';
 
 // Import screens
 import SiteNotesScreen from '../screens/SiteNotesScreen';
@@ -23,9 +28,12 @@ import EditQuoteScreen from '../screens/EditQuoteScreen';
 import ShareQuoteScreen from '../screens/ShareQuoteScreen';
 import AccountScreen from '../screens/AccountScreen';
 import PricingScreen from '../screens/PricingScreen';
+import PrivacyPolicyScreen from '../screens/PrivacyPolicyScreen';
+import TermsScreen from '../screens/TermsScreen';
 
 // Import modals
 import LoginSignupModal from '../components/modals/LoginSignupModal';
+import { logger } from '../services/Logger';
 
 const Stack = createStackNavigator();
 
@@ -44,11 +52,15 @@ function MenuModal({ visible, onClose, navigation }: any) {
 
   const loadSavedQuotes = async () => {
     try {
-      const quotesJson = await AsyncStorage.getItem('saved_quotes');
-      if (quotesJson) {
-        const quotes = JSON.parse(quotesJson);
-        setSavedQuotes(quotes.slice(0, 10));
-      }
+      const quotes = await quoteStorage.getAll();
+      // Sort: generated/completed first, then drafts
+      const sorted = [...quotes].sort((a, b) => {
+        const statusOrder = (s: string) => (s === 'draft' || !s ? 1 : 0);
+        const orderDiff = statusOrder(a.status) - statusOrder(b.status);
+        if (orderDiff !== 0) return orderDiff;
+        return b.lastModified - a.lastModified;
+      });
+      setSavedQuotes(sorted.slice(0, 10));
     } catch (error) {
       console.error('Error loading saved quotes:', error);
     }
@@ -59,32 +71,53 @@ function MenuModal({ visible, onClose, navigation }: any) {
   };
 
   const handleQuotePress = (quote: any) => {
-    console.log('📱 Quote pressed:', quote.id, 'Status:', quote.status);
+    logger.debug('📱 Quote pressed:', quote.id, 'Status:', quote.status);
     onClose();
 
-    // Smart navigation based on quote status
+    // Smart navigation based on quote status — always reset stack to prevent back-button loops
     if (quote.status === 'draft' || !quote.status) {
       // Draft quotes (or quotes without status) go to SiteNotesScreen for completion
-      console.log('📝 Navigating to SiteNotes for draft/incomplete quote');
-      navigation.navigate('SiteNotes', {
-        existingQuote: quote,
-      });
+      logger.debug('📝 Navigating to SiteNotes for draft/incomplete quote');
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'SiteNotes', params: { existingQuote: quote } }],
+        })
+      );
     } else if (quote.status === 'generated') {
       // Generated quotes go to TaskList (QuoteView) screen to view with Edit/Share options
-      console.log('📋 Navigating to TaskList (QuoteView) for generated quote');
-
-      // Navigate to TaskList which now shows the quote with Edit/Share buttons
-      navigation.navigate('TaskList', {
-        siteNotes: quote.siteNotes || quote,
-        savedQuote: quote,
-        isViewingGenerated: true, // Flag to indicate we're viewing a saved quote
-      });
+      logger.debug('📋 Navigating to TaskList (QuoteView) for generated quote');
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [
+            {
+              name: 'TaskList',
+              params: {
+                siteNotes: quote.siteNotes || quote,
+                savedQuote: quote,
+                isViewingGenerated: true,
+              },
+            },
+          ],
+        })
+      );
     } else {
       // Legacy quotes or unknown status - default to TaskList
-      navigation.navigate('TaskList', {
-        siteNotes: quote.siteNotes || quote,
-        savedQuote: quote,
-      });
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [
+            {
+              name: 'TaskList',
+              params: {
+                siteNotes: quote.siteNotes || quote,
+                savedQuote: quote,
+              },
+            },
+          ],
+        })
+      );
     }
   };
 
@@ -96,13 +129,9 @@ function MenuModal({ visible, onClose, navigation }: any) {
         style: 'destructive',
         onPress: async () => {
           try {
-            const quotesJson = await AsyncStorage.getItem('saved_quotes');
-            if (quotesJson) {
-              const quotes = JSON.parse(quotesJson);
-              const updatedQuotes = quotes.filter((q: any) => q.id !== quoteId);
-              await AsyncStorage.setItem('saved_quotes', JSON.stringify(updatedQuotes));
-              setSavedQuotes(updatedQuotes.slice(0, 10));
-            }
+            await quoteStorage.delete(quoteId);
+            // Reload with same sorting as loadSavedQuotes
+            loadSavedQuotes();
           } catch (error) {
             console.error('Error deleting quote:', error);
             Alert.alert('Error', 'Failed to delete quote. Please try again.');
@@ -139,9 +168,11 @@ function MenuModal({ visible, onClose, navigation }: any) {
           <View style={styles.modalHeader}>
             <View style={styles.userInfo}>
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
-                  {isAnonymous ? '🚀' : user?.email?.[0]?.toUpperCase() || 'U'}
-                </Text>
+                {isAnonymous ? (
+                  <Ionicons name={AppIcons.anonymousAvatar} size={IconSize.medium} color="white" />
+                ) : (
+                  <Text style={styles.avatarText}>{user?.email?.[0]?.toUpperCase() || 'U'}</Text>
+                )}
               </View>
               <View style={styles.userDetails}>
                 <Text style={styles.userName}>
@@ -169,8 +200,13 @@ function MenuModal({ visible, onClose, navigation }: any) {
             style={styles.newQuoteButton}
             onPress={() => {
               onClose();
-              // Always navigate to blank form for new assessment
-              navigation.navigate('SiteNotes', { existingQuote: null });
+              // Reset the stack so SiteNotesScreen fully remounts with blank state
+              navigation.dispatch(
+                CommonActions.reset({
+                  index: 0,
+                  routes: [{ name: 'SiteNotes', params: { existingQuote: null } }],
+                })
+              );
             }}
           >
             <Ionicons name="add-circle" size={24} color="white" />
@@ -207,36 +243,63 @@ function MenuModal({ visible, onClose, navigation }: any) {
                 savedQuotes.map(quote => (
                   <Pressable
                     key={quote.id}
-                    style={styles.quoteItem}
+                    style={[styles.quoteItem, quote.pendingGeneration && styles.quoteItemPending]}
                     onPress={() => handleQuotePress(quote)}
                   >
+                    {quote.pendingGeneration && (
+                      <Ionicons
+                        name={AppIcons.needsConnection}
+                        size={18}
+                        color="#92400e"
+                        style={{ marginRight: designTokens.spacing.sm }}
+                      />
+                    )}
                     <View style={styles.quoteInfo}>
-                      <Text style={styles.quoteAddress} numberOfLines={1}>
-                        {quote.address || quote.siteNotes?.address || 'Untitled Quote'}
-                      </Text>
+                      <View style={styles.quoteTopRow}>
+                        <Text style={styles.quoteAddress} numberOfLines={1}>
+                          {quote.address || quote.siteNotes?.address || 'Untitled Quote'}
+                        </Text>
+                        <View
+                          style={[
+                            styles.statusBadge,
+                            quote.status === 'draft' || !quote.status
+                              ? styles.statusBadgeDraft
+                              : styles.statusBadgeGenerated,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.statusBadgeText,
+                              quote.status === 'draft' || !quote.status
+                                ? styles.statusBadgeTextDraft
+                                : styles.statusBadgeTextGenerated,
+                            ]}
+                          >
+                            {quote.status === 'draft' || !quote.status ? 'Draft' : 'Completed'}
+                          </Text>
+                        </View>
+                      </View>
                       <Text style={styles.quoteDetails}>
                         {quote.jobType || quote.siteNotes?.jobType || 'General'} •{' '}
                         {new Date(quote.timestamp).toLocaleDateString()}
-                        {quote.pendingGeneration && ' • 📶 Needs connection'}
+                        {quote.pendingGeneration && ' • Needs connection'}
                       </Text>
-                      <Text style={styles.quoteCost}>
-                        {quote.pendingGeneration
-                          ? '⏳ Pending generation'
-                          : quote.finalCost
-                            ? `£${quote.finalCost.toLocaleString()}`
-                            : `£${quote.totalCost?.min?.toLocaleString() || '0'} - £${quote.totalCost?.max?.toLocaleString() || '0'}`}
-                      </Text>
+                      {quote.status !== 'draft' && quote.status && (
+                        <Text style={styles.quoteCost}>
+                          {quote.pendingGeneration
+                            ? 'Pending generation'
+                            : quote.finalCost
+                              ? `£${quote.finalCost.toLocaleString()}`
+                              : `£${quote.totalCost?.min?.toLocaleString() || '0'} - £${quote.totalCost?.max?.toLocaleString() || '0'}`}
+                        </Text>
+                      )}
                     </View>
                     <Pressable
                       style={styles.deleteButton}
                       onPress={() => handleDeleteQuote(quote.id)}
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
-                      <Ionicons
-                        name="close-circle"
-                        size={24}
-                        color={designTokens.colors.error[500]}
-                      />
+                      <Ionicons name="close-circle" size={24} color={designTokens.colors.error} />
                     </Pressable>
                   </Pressable>
                 ))
@@ -272,21 +335,6 @@ function MenuModal({ visible, onClose, navigation }: any) {
               <Text style={[styles.menuItemText, { color: designTokens.colors.primary[600] }]}>
                 Pricing & Upgrade
               </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => {
-                onClose();
-                Alert.alert('Settings', 'Settings screen coming soon');
-              }}
-            >
-              <Ionicons
-                name="settings-outline"
-                size={20}
-                color={designTokens.colors.text.secondary}
-              />
-              <Text style={styles.menuItemText}>Settings</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -351,6 +399,27 @@ function SimpleNavigator() {
   const [menuVisible, setMenuVisible] = React.useState(false);
   const [currentNavigation, setCurrentNavigation] = React.useState<any>(null);
 
+  // Background sync — triggers on foreground, online transition, and initial mount
+  useSyncQuotes();
+
+  // Intercept Android hardware back button on top-level screens
+  const navigationState = useNavigationState(state => state);
+  React.useEffect(() => {
+    if (Platform.OS !== 'android') return;
+
+    const onBackPress = () => {
+      const currentRoute = navigationState?.routes?.[navigationState.index]?.name;
+      // Block back on top-level screens — menu is the only way to navigate
+      if (currentRoute === 'SiteNotes' || currentRoute === 'TaskList') {
+        return true; // Consume the event, prevent default back
+      }
+      return false; // Allow default back for EditQuote, ShareQuote, Account, Pricing
+    };
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => subscription.remove();
+  }, [navigationState]);
+
   return (
     <>
       <Stack.Navigator
@@ -379,17 +448,32 @@ function SimpleNavigator() {
           name="SiteNotes"
           component={SiteNotesScreen}
           options={{
-            title: '🏗️ AskToddy',
+            headerTitle: () => (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name={AppIcons.brand} size={IconSize.medium} color="white" />
+                <Text style={{ color: 'white', fontWeight: '700', fontSize: 18 }}>AskToddy</Text>
+              </View>
+            ),
             headerShown: true,
+            headerLeft: () => null,
+            gestureEnabled: false,
           }}
         />
         <Stack.Screen
           name="TaskList"
           component={TaskListScreen}
           options={({ navigation }) => ({
-            title: '✅ Quote Generated',
+            headerTitle: () => (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name={AppIcons.quoteComplete} size={IconSize.medium} color="white" />
+                <Text style={{ color: 'white', fontWeight: '700', fontSize: 18 }}>
+                  Quote Generated
+                </Text>
+              </View>
+            ),
             headerShown: true,
-            headerLeft: () => null, // This removes ONLY the back button
+            headerLeft: () => null,
+            gestureEnabled: false,
             headerRight: () => (
               <TouchableOpacity
                 onPress={() => {
@@ -423,8 +507,7 @@ function SimpleNavigator() {
           name="Account"
           component={AccountScreen}
           options={{
-            title: 'My Account',
-            headerShown: true,
+            headerShown: false,
           }}
         />
         <Stack.Screen
@@ -433,6 +516,20 @@ function SimpleNavigator() {
           options={{
             title: 'Pricing',
             headerShown: true,
+          }}
+        />
+        <Stack.Screen
+          name="PrivacyPolicy"
+          component={PrivacyPolicyScreen}
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="Terms"
+          component={TermsScreen}
+          options={{
+            headerShown: false,
           }}
         />
       </Stack.Navigator>
@@ -568,6 +665,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: designTokens.colors.border.secondary,
   },
+  quoteItemPending: {
+    backgroundColor: '#fffbeb',
+  },
   quoteInfo: {
     flex: 1,
   },
@@ -575,10 +675,37 @@ const styles = StyleSheet.create({
     paddingLeft: designTokens.spacing.md,
     paddingVertical: designTokens.spacing.sm,
   },
+  quoteTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: designTokens.spacing.sm,
+  },
   quoteAddress: {
     fontSize: designTokens.typography.fontSize.base,
     fontWeight: designTokens.typography.fontWeight.medium as any,
     color: designTokens.colors.text.primary,
+    flex: 1,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  statusBadgeDraft: {
+    backgroundColor: designTokens.colors.neutral[100],
+  },
+  statusBadgeGenerated: {
+    backgroundColor: '#dcfce7',
+  },
+  statusBadgeText: {
+    fontSize: designTokens.typography.fontSize.xs,
+    fontWeight: designTokens.typography.fontWeight.semibold as any,
+  },
+  statusBadgeTextDraft: {
+    color: designTokens.colors.text.secondary,
+  },
+  statusBadgeTextGenerated: {
+    color: '#16a34a',
   },
   quoteDetails: {
     fontSize: designTokens.typography.fontSize.sm,

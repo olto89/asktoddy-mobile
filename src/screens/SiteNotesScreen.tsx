@@ -27,6 +27,7 @@ import Card from '../components/ui/Card';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { quoteStorage } from '../services/QuoteStorageService';
 import type { SiteNote, DraftFormData } from '../types/Quote';
+import { logger } from '../services/Logger';
 
 // Job type templates for guided capture
 const JOB_TYPES = [
@@ -235,6 +236,11 @@ async function saveDraftToStorage(formData: DraftFormData): Promise<string> {
     constructionMethodMultiplier: methodData?.multiplier || 1.0,
     propertyType: formData.selectedPropertyType,
     size: formData.size,
+    sizeLength: formData.sizeLength,
+    sizeWidth: formData.sizeWidth,
+    specLevel: formData.specLevel,
+    numberOfRooms: formData.numberOfRooms,
+    numberOfFloors: formData.numberOfFloors,
     tasks: formData.selectedTasks,
     notes: formData.additionalNotes,
     photos: formData.photos,
@@ -264,6 +270,14 @@ export default function SiteNotesScreen({ navigation, route }: any) {
   );
   const [selectedPropertyType, setSelectedPropertyType] = useState(quote?.propertyType || '');
   const [size, setSize] = useState(quote?.size || '');
+  const [sizeLength, setSizeLength] = useState(quote?.sizeLength || '');
+  const [sizeWidth, setSizeWidth] = useState(quote?.sizeWidth || '');
+  const [sizeMode, setSizeMode] = useState<'structured' | 'freetext'>(
+    quote?.sizeLength ? 'structured' : 'structured'
+  );
+  const [specLevel, setSpecLevel] = useState(quote?.specLevel || '');
+  const [numberOfRooms, setNumberOfRooms] = useState(quote?.numberOfRooms || '');
+  const [numberOfFloors, setNumberOfFloors] = useState(quote?.numberOfFloors || '');
   const [selectedTasks, setSelectedTasks] = useState<string[]>(quote?.tasks || []);
   const [additionalNotes, setAdditionalNotes] = useState(quote?.notes || '');
   const [photos, setPhotos] = useState<string[]>(quote?.photos || []);
@@ -298,6 +312,11 @@ export default function SiteNotesScreen({ navigation, route }: any) {
     selectedConstructionMethod,
     selectedPropertyType,
     size,
+    sizeLength,
+    sizeWidth,
+    specLevel,
+    numberOfRooms,
+    numberOfFloors,
     selectedTasks,
     additionalNotes,
     photos,
@@ -315,6 +334,11 @@ export default function SiteNotesScreen({ navigation, route }: any) {
       selectedConstructionMethod,
       selectedPropertyType,
       size,
+      sizeLength,
+      sizeWidth,
+      specLevel,
+      numberOfRooms,
+      numberOfFloors,
       selectedTasks,
       additionalNotes,
       photos,
@@ -330,6 +354,11 @@ export default function SiteNotesScreen({ navigation, route }: any) {
     selectedConstructionMethod,
     selectedPropertyType,
     size,
+    sizeLength,
+    sizeWidth,
+    specLevel,
+    numberOfRooms,
+    numberOfFloors,
     selectedTasks,
     additionalNotes,
     photos,
@@ -338,6 +367,14 @@ export default function SiteNotesScreen({ navigation, route }: any) {
     quote?.timestamp,
     quote?.status,
   ]);
+
+  // Sync structured size fields → size string for downstream consumers
+  useEffect(() => {
+    if (sizeMode === 'structured' && sizeLength && sizeWidth) {
+      const area = (parseFloat(sizeLength) * parseFloat(sizeWidth)).toFixed(1);
+      setSize(`${sizeLength}m x ${sizeWidth}m (${area}m²)`);
+    }
+  }, [sizeLength, sizeWidth, sizeMode]);
 
   // Track isAnonymous in a ref so unmount cleanup can read it
   const isAnonymousRef = useRef(isAnonymous);
@@ -439,9 +476,9 @@ export default function SiteNotesScreen({ navigation, route }: any) {
 
       if (!data.currentQuoteId) {
         setCurrentQuoteId(quoteId);
-        console.log('📝 Created new draft quote:', quoteId);
+        logger.debug('📝 Created new draft quote:', quoteId);
       } else {
-        console.log('💾 Auto-saved draft quote:', quoteId);
+        logger.debug('💾 Auto-saved draft quote:', quoteId);
       }
 
       setHasUnsavedChanges(false);
@@ -733,6 +770,11 @@ export default function SiteNotesScreen({ navigation, route }: any) {
       constructionMethodMultiplier: selectedMethodData?.multiplier || 1.0,
       propertyType: selectedPropertyType,
       size,
+      sizeLength: sizeLength || undefined,
+      sizeWidth: sizeWidth || undefined,
+      specLevel: specLevel || undefined,
+      numberOfRooms: numberOfRooms || undefined,
+      numberOfFloors: numberOfFloors || undefined,
       tasks: selectedTasks,
       notes: additionalNotes + '\n' + voiceTranscript,
       photos,
@@ -978,17 +1020,167 @@ export default function SiteNotesScreen({ navigation, route }: any) {
             </View>
 
             {/* Size Input */}
-            <Text style={styles.fieldLabel}>Approximate Size</Text>
-            <TextInput
-              style={styles.sizeInput}
-              placeholder="e.g., 45m² or describe as small/medium/large"
-              value={size}
-              onChangeText={text => {
-                setSize(text);
-                setHasUnsavedChanges(true);
-              }}
-              placeholderTextColor={designTokens.colors.text.tertiary}
-            />
+            <View style={styles.sizeLabelRow}>
+              <Text style={styles.fieldLabel}>Approximate Size</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setSizeMode(sizeMode === 'structured' ? 'freetext' : 'structured');
+                  setHasUnsavedChanges(true);
+                }}
+              >
+                <Text style={styles.sizeModeToggle}>
+                  {sizeMode === 'structured' ? 'Irregular shape?' : 'Use dimensions'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            {sizeMode === 'structured' ? (
+              <View>
+                <View style={styles.sizeDimensionsRow}>
+                  <View style={styles.sizeDimensionField}>
+                    <Text style={styles.sizeDimensionLabel}>Length</Text>
+                    <View style={styles.sizeDimensionInputRow}>
+                      <TextInput
+                        style={styles.sizeDimensionInput}
+                        placeholder="0"
+                        value={sizeLength}
+                        onChangeText={text => {
+                          setSizeLength(text.replace(/[^0-9.]/g, ''));
+                          setHasUnsavedChanges(true);
+                        }}
+                        keyboardType="decimal-pad"
+                        placeholderTextColor={designTokens.colors.text.tertiary}
+                      />
+                      <Text style={styles.sizeDimensionUnit}>m</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.sizeDimensionX}>×</Text>
+                  <View style={styles.sizeDimensionField}>
+                    <Text style={styles.sizeDimensionLabel}>Width</Text>
+                    <View style={styles.sizeDimensionInputRow}>
+                      <TextInput
+                        style={styles.sizeDimensionInput}
+                        placeholder="0"
+                        value={sizeWidth}
+                        onChangeText={text => {
+                          setSizeWidth(text.replace(/[^0-9.]/g, ''));
+                          setHasUnsavedChanges(true);
+                        }}
+                        keyboardType="decimal-pad"
+                        placeholderTextColor={designTokens.colors.text.tertiary}
+                      />
+                      <Text style={styles.sizeDimensionUnit}>m</Text>
+                    </View>
+                  </View>
+                </View>
+                {sizeLength && sizeWidth && (
+                  <Text style={styles.sizeAreaDisplay}>
+                    = {(parseFloat(sizeLength || '0') * parseFloat(sizeWidth || '0')).toFixed(1)}m²
+                  </Text>
+                )}
+              </View>
+            ) : (
+              <TextInput
+                style={styles.sizeInput}
+                placeholder="e.g., 45m², L-shaped approx 6x4m + 3x2m"
+                value={size}
+                onChangeText={text => {
+                  setSize(text);
+                  setHasUnsavedChanges(true);
+                }}
+                placeholderTextColor={designTokens.colors.text.tertiary}
+              />
+            )}
+
+            {/* Spec Level */}
+            <Text style={styles.fieldLabel}>Finish Level</Text>
+            <View style={styles.specLevelRow}>
+              {[
+                { id: 'budget', label: 'Budget' },
+                { id: 'standard', label: 'Standard' },
+                { id: 'premium', label: 'Premium' },
+                { id: 'luxury', label: 'Luxury' },
+              ].map(spec => (
+                <TouchableOpacity
+                  key={spec.id}
+                  style={[
+                    styles.specLevelButton,
+                    specLevel === spec.id && styles.specLevelButtonActive,
+                  ]}
+                  onPress={() => {
+                    setSpecLevel(spec.id);
+                    setHasUnsavedChanges(true);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.specLevelText,
+                      specLevel === spec.id && styles.specLevelTextActive,
+                    ]}
+                  >
+                    {spec.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Number of Rooms - conditional */}
+            {['extension', 'renovation', 'conservatory'].includes(selectedJobType) && (
+              <View>
+                <Text style={styles.fieldLabel}>Number of Rooms</Text>
+                <View style={styles.stepperRow}>
+                  <TouchableOpacity
+                    style={styles.stepperButton}
+                    onPress={() => {
+                      const val = Math.max(0, parseInt(numberOfRooms || '0') - 1);
+                      setNumberOfRooms(val > 0 ? String(val) : '');
+                      setHasUnsavedChanges(true);
+                    }}
+                  >
+                    <Ionicons name="remove" size={20} color={designTokens.colors.text.primary} />
+                  </TouchableOpacity>
+                  <Text style={styles.stepperValue}>{numberOfRooms || '—'}</Text>
+                  <TouchableOpacity
+                    style={styles.stepperButton}
+                    onPress={() => {
+                      const val = parseInt(numberOfRooms || '0') + 1;
+                      setNumberOfRooms(String(val));
+                      setHasUnsavedChanges(true);
+                    }}
+                  >
+                    <Ionicons name="add" size={20} color={designTokens.colors.text.primary} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+            {selectedJobType === 'extension' && (
+              <View>
+                <Text style={styles.fieldLabel}>Number of Floors</Text>
+                <View style={styles.specLevelRow}>
+                  {['1', '2', '3'].map(f => (
+                    <TouchableOpacity
+                      key={f}
+                      style={[
+                        styles.specLevelButton,
+                        numberOfFloors === f && styles.specLevelButtonActive,
+                      ]}
+                      onPress={() => {
+                        setNumberOfFloors(f);
+                        setHasUnsavedChanges(true);
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.specLevelText,
+                          numberOfFloors === f && styles.specLevelTextActive,
+                        ]}
+                      >
+                        {f}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            )}
           </Card>
 
           {/* Common Tasks */}
@@ -1322,6 +1514,112 @@ const styles = StyleSheet.create({
     paddingVertical: designTokens.spacing.sm,
     fontSize: designTokens.typography.fontSize.base,
     color: designTokens.colors.text.primary,
+  },
+  sizeLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: designTokens.spacing.xs,
+    marginTop: designTokens.spacing.sm,
+  },
+  sizeModeToggle: {
+    fontSize: designTokens.typography.fontSize.xs,
+    color: designTokens.colors.primary[500],
+    fontWeight: designTokens.typography.fontWeight.medium as any,
+  },
+  sizeDimensionsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: designTokens.spacing.sm,
+  },
+  sizeDimensionField: {
+    flex: 1,
+  },
+  sizeDimensionLabel: {
+    fontSize: designTokens.typography.fontSize.xs,
+    color: designTokens.colors.text.tertiary,
+    marginBottom: 4,
+  },
+  sizeDimensionInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: designTokens.colors.border.primary,
+    borderRadius: designTokens.borderRadius.lg,
+    paddingHorizontal: designTokens.spacing.md,
+    paddingVertical: designTokens.spacing.sm,
+    backgroundColor: 'white',
+  },
+  sizeDimensionInput: {
+    flex: 1,
+    fontSize: designTokens.typography.fontSize.lg,
+    fontWeight: designTokens.typography.fontWeight.semibold as any,
+    color: designTokens.colors.text.primary,
+    padding: 0,
+  },
+  sizeDimensionUnit: {
+    fontSize: designTokens.typography.fontSize.sm,
+    color: designTokens.colors.text.tertiary,
+    marginLeft: designTokens.spacing.xs,
+  },
+  sizeDimensionX: {
+    fontSize: designTokens.typography.fontSize.lg,
+    color: designTokens.colors.text.tertiary,
+    paddingBottom: designTokens.spacing.sm,
+  },
+  sizeAreaDisplay: {
+    fontSize: designTokens.typography.fontSize.sm,
+    color: designTokens.colors.primary[600],
+    fontWeight: designTokens.typography.fontWeight.medium as any,
+    marginTop: designTokens.spacing.xs,
+    textAlign: 'center',
+  },
+  specLevelRow: {
+    flexDirection: 'row',
+    gap: designTokens.spacing.xs,
+  },
+  specLevelButton: {
+    flex: 1,
+    paddingVertical: designTokens.spacing.sm,
+    borderWidth: 1,
+    borderColor: designTokens.colors.border.primary,
+    borderRadius: designTokens.borderRadius.lg,
+    alignItems: 'center',
+    backgroundColor: 'white',
+  },
+  specLevelButtonActive: {
+    backgroundColor: designTokens.colors.primary[500],
+    borderColor: designTokens.colors.primary[500],
+  },
+  specLevelText: {
+    fontSize: designTokens.typography.fontSize.sm,
+    color: designTokens.colors.text.secondary,
+  },
+  specLevelTextActive: {
+    color: 'white',
+    fontWeight: designTokens.typography.fontWeight.semibold as any,
+  },
+  stepperRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: designTokens.spacing.md,
+  },
+  stepperButton: {
+    width: 40,
+    height: 40,
+    borderWidth: 1,
+    borderColor: designTokens.colors.border.primary,
+    borderRadius: designTokens.borderRadius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'white',
+  },
+  stepperValue: {
+    fontSize: designTokens.typography.fontSize.xl,
+    fontWeight: designTokens.typography.fontWeight.semibold as any,
+    color: designTokens.colors.text.primary,
+    minWidth: 30,
+    textAlign: 'center',
   },
   tasksGrid: {
     flexDirection: 'column',

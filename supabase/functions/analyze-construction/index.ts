@@ -3,7 +3,10 @@
  * Returns fully structured ProjectAnalysis - NO frontend parsing required
  */
 
-console.log('🏗️ STRUCTURED Analyze Construction Edge Function - v3 (improved prompts)');
+const IS_DEBUG = Deno.env.get('DEBUG') === 'true' || Deno.env.get('APP_ENV') === 'development';
+const debug = (...args: unknown[]) => {
+  if (IS_DEBUG) console.log(...args);
+};
 
 // Type definitions matching frontend interfaces
 interface MaterialItem {
@@ -109,7 +112,7 @@ interface ProjectAnalysis {
 // Calculate size multiplier based on property dimensions
 function calculateSizeMultiplier(sizeStr: string): number {
   if (!sizeStr || typeof sizeStr !== 'string') {
-    console.warn('Invalid sizeStr provided to calculateSizeMultiplier:', sizeStr);
+    debug('Invalid sizeStr provided to calculateSizeMultiplier:', sizeStr);
     return 1.0;
   }
 
@@ -155,7 +158,7 @@ function calculateSizeMultiplier(sizeStr: string): number {
 // Calculate regional multiplier based on UK location
 function calculateRegionalMultiplier(location: string): number {
   if (!location || typeof location !== 'string') {
-    console.warn('Invalid location provided to calculateRegionalMultiplier:', location);
+    debug('Invalid location provided to calculateRegionalMultiplier:', location);
     return 1.0;
   }
 
@@ -187,7 +190,22 @@ function calculateRegionalMultiplier(location: string): number {
 }
 
 // Calculate spec level multiplier from notes
-function calculateSpecMultiplier(notes: string): { multiplier: number; level: string } {
+function calculateSpecMultiplier(
+  notes: string,
+  explicitSpecLevel?: string
+): { multiplier: number; level: string } {
+  // Use explicit spec level from structured input if available
+  if (explicitSpecLevel) {
+    const specMap: Record<string, { multiplier: number; level: string }> = {
+      budget: { multiplier: 0.75, level: 'budget' },
+      standard: { multiplier: 1.0, level: 'standard' },
+      premium: { multiplier: 1.35, level: 'premium' },
+      luxury: { multiplier: 1.6, level: 'luxury' },
+    };
+    const match = specMap[explicitSpecLevel.toLowerCase()];
+    if (match) return match;
+  }
+
   if (!notes || typeof notes !== 'string') {
     return { multiplier: 1.0, level: 'standard' };
   }
@@ -239,7 +257,7 @@ function createStructuredPrompt(
   audioCount: number = 0
 ): string {
   if (!message || typeof message !== 'string') {
-    console.warn('Invalid message provided to createStructuredPrompt:', message);
+    debug('Invalid message provided to createStructuredPrompt:', message);
     message = 'General construction project';
   }
 
@@ -266,14 +284,18 @@ function createStructuredPrompt(
     ? parseFloat(constructionMethodMatch[2]) || 1.0
     : 1.0;
 
+  // Extract explicit spec level if provided by structured input
+  const specLevelMatch = message.match(/Finish Level[:\s]+(\w+)/i);
+  const explicitSpecLevel = specLevelMatch ? specLevelMatch[1].toLowerCase() : undefined;
+
   // Calculate multipliers
   const sizeMultiplier = calculateSizeMultiplier(size);
   const locationMultiplier = calculateRegionalMultiplier(location);
-  const specInfo = calculateSpecMultiplier(notes);
+  const specInfo = calculateSpecMultiplier(notes, explicitSpecLevel);
   const totalMultiplier =
     sizeMultiplier * locationMultiplier * specInfo.multiplier * constructionMethodMultiplier;
 
-  console.log('📊 Prompt context:', {
+  debug('📊 Prompt context:', {
     size,
     location,
     constructionMethod: constructionMethod || 'not specified',
@@ -348,13 +370,13 @@ async function callGemini(
   images?: { base64: string; mimeType: string }[],
   audio?: { base64: string; mimeType: string }[]
 ): Promise<string> {
-  console.log('🤖 Calling Gemini API...');
-  console.log('📝 Prompt length:', prompt.length, 'characters');
+  debug('🤖 Calling Gemini API...');
+  debug('📝 Prompt length:', prompt.length, 'characters');
   if (images && images.length > 0) {
-    console.log(`📸 Including ${images.length} image(s) in request`);
+    debug(`📸 Including ${images.length} image(s) in request`);
   }
   if (audio && audio.length > 0) {
-    console.log(`🎤 Including ${audio.length} audio file(s) in request`);
+    debug(`🎤 Including ${audio.length} audio file(s) in request`);
   }
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
@@ -426,7 +448,7 @@ async function callGemini(
       } else if (response.status >= 500 && response.status < 600) {
         // Server errors - RETRY ONCE (might be temporary)
         if (attempt < retries) {
-          console.log(`⚠️ Server error ${response.status}, retrying once...`);
+          debug(`⚠️ Server error ${response.status}, retrying once...`);
           attempt++;
           await new Promise(resolve => setTimeout(resolve, 1000)); // 1s delay
           continue;
@@ -449,9 +471,9 @@ async function callGemini(
 
       // Network/timeout errors - RETRY ONCE (might be transient)
       if (error.name === 'AbortError') {
-        console.log('⏰ API timeout, retrying with shorter prompt...');
+        debug('⏰ API timeout, retrying with shorter prompt...');
       } else {
-        console.log('🔄 Network error, retrying once...');
+        debug('🔄 Network error, retrying once...');
       }
       attempt++;
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -575,8 +597,8 @@ function parseJsonResponse(aiText: string, projectType: string): ProjectAnalysis
     }
 
     // Try to extract and parse JSON from response
-    console.log('🔍 Raw AI response (first 500 chars):', aiText.substring(0, 500));
-    console.log(
+    debug('🔍 Raw AI response (first 500 chars):', aiText.substring(0, 500));
+    debug(
       '🔍 Raw AI response (last 200 chars):',
       aiText.substring(Math.max(0, aiText.length - 200))
     );
@@ -584,8 +606,8 @@ function parseJsonResponse(aiText: string, projectType: string): ProjectAnalysis
     const jsonMatch = aiText.match(/\{[\s\S]*\}/);
     if (jsonMatch && jsonMatch[0]) {
       const jsonStr = jsonMatch[0];
-      console.log('📝 Extracted JSON string length:', jsonStr.length);
-      console.log('📝 JSON preview (first 300 chars):', jsonStr.substring(0, 300));
+      debug('📝 Extracted JSON string length:', jsonStr.length);
+      debug('📝 JSON preview (first 300 chars):', jsonStr.substring(0, 300));
 
       try {
         const parsed = JSON.parse(jsonStr);
@@ -595,14 +617,14 @@ function parseJsonResponse(aiText: string, projectType: string): ProjectAnalysis
           throw new Error('Parsed JSON is not a valid object');
         }
 
-        console.log('✅ Successfully parsed JSON from Gemini');
-        console.log(
+        debug('✅ Successfully parsed JSON from Gemini');
+        debug(
           '📊 Tasks count:',
           Array.isArray(parsed.tasks) ? parsed.tasks.length : 'No tasks array'
         );
 
         if (!Array.isArray(parsed.tasks) || parsed.tasks.length === 0) {
-          console.warn('⚠️ No valid tasks array found in parsed JSON, will use fallback parsing');
+          debug('⚠️ No valid tasks array found in parsed JSON, will use fallback parsing');
           throw new Error('No tasks in JSON'); // This will trigger fallback parsing
         }
 
@@ -610,7 +632,7 @@ function parseJsonResponse(aiText: string, projectType: string): ProjectAnalysis
         return processValidJson(parsed, projectType);
       } catch (parseError) {
         console.error('❌ JSON parse error:', parseError.message);
-        console.log('🔍 Failed JSON string:', jsonStr.substring(0, 200) + '...');
+        debug('🔍 Failed JSON string:', jsonStr.substring(0, 200) + '...');
         // Fall through to template parser below
       }
     }
@@ -619,7 +641,7 @@ function parseJsonResponse(aiText: string, projectType: string): ProjectAnalysis
   }
 
   // Fallback to template parsing if JSON fails
-  console.log('⚠️ JSON parsing failed, using fallback template parser');
+  debug('⚠️ JSON parsing failed, using fallback template parser');
   return parseStructuredResponse(aiText, projectType);
 }
 
@@ -673,7 +695,7 @@ function generatePhasesFromTasks(
 
 // Original template-based parser (fallback)
 function parseStructuredResponse(aiText: string, projectType: string): ProjectAnalysis {
-  console.log('🔍 Using template-based parsing (fallback)...');
+  debug('🔍 Using template-based parsing (fallback)...');
 
   // Extract cost ranges
   const costMatches = aiText.match(/£([\d,]+)(?:\s*[-–]\s*£([\d,]+))?/g) || [];
@@ -1003,15 +1025,15 @@ Deno.serve(async req => {
   }
 
   try {
-    console.log('🚀 Edge function started, parsing request...');
+    debug('🚀 Edge function started, parsing request...');
     const { message, sessionId, userId, analysisType, context, history, images, audio } =
       await req.json();
-    console.log('📩 Request parsed successfully, message length:', message?.length || 0);
+    debug('📩 Request parsed successfully, message length:', message?.length || 0);
     if (images && images.length > 0) {
-      console.log(`📸 Received ${images.length} image(s) for analysis`);
+      debug(`📸 Received ${images.length} image(s) for analysis`);
     }
     if (audio && audio.length > 0) {
-      console.log(`🎤 Received ${audio.length} voice recording(s) for analysis`);
+      debug(`🎤 Received ${audio.length} voice recording(s) for analysis`);
     }
 
     if (!message) {
@@ -1022,44 +1044,44 @@ Deno.serve(async req => {
     }
 
     // Log session continuity for debugging
-    console.log(`🔐 Session: ${sessionId || 'no-session'}, User: ${userId || 'anonymous'}`);
+    debug(`🔐 Session: ${sessionId || 'no-session'}, User: ${userId || 'anonymous'}`);
     if (context) {
-      console.log(`📍 Location: ${context.city || 'Unknown'}, Region: ${context.region || 'UK'}`);
+      debug(`📍 Location: ${context.city || 'Unknown'}, Region: ${context.region || 'UK'}`);
     }
 
-    console.log('🔑 Checking API key...');
+    debug('🔑 Checking API key...');
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
     if (!geminiApiKey) {
-      console.log('❌ No GEMINI_API_KEY found!');
+      debug('❌ No GEMINI_API_KEY found!');
       return new Response(JSON.stringify({ error: 'GEMINI_API_KEY not configured' }), {
         status: 500,
         headers,
       });
     }
-    console.log('✅ API key found');
+    debug('✅ API key found');
 
-    console.log(`📝 Processing: ${message.substring(0, 100)}...`);
+    debug(`📝 Processing: ${message.substring(0, 100)}...`);
 
     // Extract project type from message
-    console.log('📋 Extracting project type...');
+    debug('📋 Extracting project type...');
     const projectType = extractProjectType(message);
-    console.log('🏗️ Project type:', projectType);
+    debug('🏗️ Project type:', projectType);
 
     // Create structured prompt for JSON output (preserves full user context)
-    console.log('🎯 Creating structured prompt...');
+    debug('🎯 Creating structured prompt...');
     const structuredPrompt = createStructuredPrompt(
       message,
       projectType,
       images?.length || 0,
       audio?.length || 0
     );
-    console.log('📏 Prompt created, length:', structuredPrompt.length);
+    debug('📏 Prompt created, length:', structuredPrompt.length);
 
     // Call AI API with structured prompt, images, and audio
-    console.log('📞 About to call Gemini...');
+    debug('📞 About to call Gemini...');
     const aiResponse = await callGemini(structuredPrompt, geminiApiKey, images, audio);
-    console.log('✅ Gemini responded, length:', aiResponse.length);
-    console.log(
+    debug('✅ Gemini responded, length:', aiResponse.length);
+    debug(
       '📊 Gemini diagnostics:',
       JSON.stringify({
         responseLength: aiResponse.length,
@@ -1070,7 +1092,7 @@ Deno.serve(async req => {
 
     // Parse JSON response with new parser
     const structuredAnalysis = parseJsonResponse(aiResponse, projectType);
-    console.log(
+    debug(
       '📊 Parse result:',
       JSON.stringify({
         provider: structuredAnalysis.provider || 'gemini-json',
@@ -1082,7 +1104,7 @@ Deno.serve(async req => {
     );
     structuredAnalysis.sessionId = sessionId || `session_${Date.now()}`;
 
-    console.log(
+    debug(
       `✅ Analysis complete: £${structuredAnalysis.costBreakdown.total.min.toLocaleString()}-£${structuredAnalysis.costBreakdown.total.max.toLocaleString()}, Session: ${structuredAnalysis.sessionId}`
     );
 
@@ -1098,7 +1120,7 @@ Deno.serve(async req => {
     console.error('❌ Edge Function critical error:', error);
     console.error('Error stack:', error.stack);
     console.error('Error message:', error.message);
-    console.log(
+    debug(
       '📊 Failure diagnostics:',
       JSON.stringify({
         errorType: error.constructor?.name,

@@ -2,7 +2,10 @@ import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
+import { useAuth } from '../contexts/AuthContext';
+import { Ionicons } from '@expo/vector-icons';
 import designTokens from '../styles/designTokens';
+import { AppIcons, IconSize } from '../styles/iconRegistry';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 
@@ -16,8 +19,16 @@ interface Props {
 }
 
 export default function VerificationSuccessScreen({ navigation }: Props) {
+  const { isAuthenticated } = useAuth();
+
   const handleContinue = () => {
-    navigation.navigate('Login');
+    if (isAuthenticated) {
+      // User is already logged in via deep link session - go to main app
+      navigation.navigate('Main');
+    } else {
+      // Session not set - user needs to sign in manually
+      navigation.navigate('Login');
+    }
   };
 
   return (
@@ -26,7 +37,11 @@ export default function VerificationSuccessScreen({ navigation }: Props) {
         {/* Success Icon */}
         <View style={styles.iconContainer}>
           <View style={styles.successIcon}>
-            <Text style={styles.iconText}>✅</Text>
+            <Ionicons
+              name={AppIcons.verificationSuccess}
+              size={60}
+              color={designTokens.colors.success}
+            />
           </View>
         </View>
 
@@ -39,8 +54,21 @@ export default function VerificationSuccessScreen({ navigation }: Props) {
 
         {/* Success Card */}
         <Card variant="outlined" style={styles.successCard}>
-          <Text style={styles.successTitle}>🎉 You're all set!</Text>
-          <Text style={styles.successText}>Your AskToddy account is ready to use. Sign in to:</Text>
+          <View
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+          >
+            <Ionicons
+              name={AppIcons.celebration}
+              size={IconSize.medium}
+              color={designTokens.colors.success}
+            />
+            <Text style={styles.successTitle}>You're all set!</Text>
+          </View>
+          <Text style={styles.successText}>
+            {isAuthenticated
+              ? 'Your AskToddy account is ready! You can now:'
+              : 'Your AskToddy account is ready to use. Sign in to:'}
+          </Text>
           <Text style={styles.featureList}>
             • Analyze construction projects{'\n'}• Get instant cost estimates{'\n'}• Find local
             suppliers{'\n'}• Generate professional quotes
@@ -50,7 +78,7 @@ export default function VerificationSuccessScreen({ navigation }: Props) {
         {/* Continue Button */}
         <View style={styles.buttonContainer}>
           <Button
-            title="Continue to Sign In"
+            title={isAuthenticated ? 'Continue to App' : 'Continue to Sign In'}
             onPress={handleContinue}
             variant="primary"
             fullWidth

@@ -12,7 +12,9 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../App';
 import { useAuth } from '../contexts/AuthContext';
+import { Ionicons } from '@expo/vector-icons';
 import designTokens from '../styles/designTokens';
+import { AppIcons } from '../styles/iconRegistry';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 
@@ -76,7 +78,11 @@ export default function EmailVerificationScreen({ navigation, route }: Props) {
         {/* Success Icon */}
         <View style={styles.iconContainer}>
           <View style={styles.successIcon}>
-            <Text style={styles.iconText}>📧</Text>
+            <Ionicons
+              name={AppIcons.emailVerification}
+              size={48}
+              color={designTokens.colors.success}
+            />
           </View>
         </View>
 

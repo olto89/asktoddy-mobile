@@ -38,6 +38,7 @@ import ToddyHeader from '../components/ToddyHeader';
 import QuoteRefinementUI from '../components/QuoteRefinementUI';
 import InteractiveQuoteTable from '../components/InteractiveQuoteTable';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { logger } from '../services/Logger';
 
 // Get device dimensions for responsive design
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -83,12 +84,12 @@ export default function ChatScreen() {
         const existingSessionId = await AsyncStorage.getItem('conversation_session_id');
         if (existingSessionId) {
           setSessionId(existingSessionId);
-          console.log('📱 Loaded existing conversation session:', existingSessionId);
+          logger.debug('📱 Loaded existing conversation session:', existingSessionId);
         } else {
           const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
           await AsyncStorage.setItem('conversation_session_id', newSessionId);
           setSessionId(newSessionId);
-          console.log('🆕 Created new conversation session:', newSessionId);
+          logger.debug('🆕 Created new conversation session:', newSessionId);
         }
       } catch (error) {
         console.error('Failed to initialize session:', error);
@@ -140,7 +141,7 @@ export default function ChatScreen() {
   // Use image picker hook
   const { selectedImage, showImagePicker, clearImage } = useImagePicker({
     onImageSelected: uri => {
-      console.log('Image selected:', uri);
+      logger.debug('Image selected:', uri);
     },
   });
 
@@ -166,7 +167,7 @@ export default function ChatScreen() {
         },
       ]);
 
-      console.log('🔄 Started new conversation session:', newSessionId);
+      logger.debug('🔄 Started new conversation session:', newSessionId);
     } catch (error) {
       console.error('Failed to start new conversation:', error);
     }
@@ -190,7 +191,7 @@ export default function ChatScreen() {
   const handleSend = async () => {
     if (!inputText.trim() && !selectedImage) return;
 
-    console.log('📱 [FRONTEND] handleSend called with:', {
+    logger.debug('📱 [FRONTEND] handleSend called with:', {
       inputText: inputText.trim(),
       hasImage: !!selectedImage,
       timestamp: new Date().toISOString(),
@@ -209,12 +210,12 @@ export default function ChatScreen() {
       imageUri: selectedImage || undefined,
     };
 
-    console.log('📱 [FRONTEND] User message created:', userMessage);
+    logger.debug('📱 [FRONTEND] User message created:', userMessage);
 
     // Clear input immediately to prevent UI issues
     const originalInputText = inputText.trim();
     setInputText('');
-    console.log('📱 [FRONTEND] Input text cleared, was:', originalInputText);
+    logger.debug('📱 [FRONTEND] Input text cleared, was:', originalInputText);
     clearImage();
 
     // Animate message addition
@@ -259,7 +260,7 @@ export default function ChatScreen() {
         })),
       };
 
-      console.log('📱 [FRONTEND] Calling Edge Function with body:', {
+      logger.debug('📱 [FRONTEND] Calling Edge Function with body:', {
         message: requestBody.message,
         hasImage: !!requestBody.imageUri,
         sessionId: requestBody.sessionId,
@@ -272,7 +273,7 @@ export default function ChatScreen() {
         body: requestBody,
       });
 
-      console.log('📱 [FRONTEND] Edge Function response:', {
+      logger.debug('📱 [FRONTEND] Edge Function response:', {
         hasData: !!data,
         hasError: !!error,
         success: data?.success,
@@ -288,7 +289,7 @@ export default function ChatScreen() {
       let analysis;
       if (data?.success && data?.data) {
         analysis = data.data;
-        console.log('📱 [FRONTEND] Analysis received:', {
+        logger.debug('📱 [FRONTEND] Analysis received:', {
           provider: analysis.aiProvider,
           projectType: analysis.projectType,
           confidence: analysis.confidence,
@@ -303,7 +304,7 @@ export default function ChatScreen() {
       // Format response message
       const responseContent = formatAnalysisResponse(analysis);
 
-      console.log('📱 [FRONTEND] Formatted response:', {
+      logger.debug('📱 [FRONTEND] Formatted response:', {
         contentLength: responseContent.length,
         provider: analysis.aiProvider,
         isMock: responseContent.includes('mock') || responseContent.includes('Mock'),
@@ -318,7 +319,7 @@ export default function ChatScreen() {
         analysis: analysis, // Store for document generation
       };
 
-      console.log('📱 [FRONTEND] Assistant message created:', {
+      logger.debug('📱 [FRONTEND] Assistant message created:', {
         messageId: assistantMessage.id,
         provider: analysis.aiProvider,
         hasAnalysis: !!assistantMessage.analysis,
@@ -351,7 +352,7 @@ export default function ChatScreen() {
         )
       );
 
-      console.log('📱 [FRONTEND] Error message added to chat');
+      logger.debug('📱 [FRONTEND] Error message added to chat');
     } finally {
       setIsLoading(false);
     }
@@ -474,8 +475,8 @@ export default function ChatScreen() {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
 
-      console.log('Starting PDF generation for:', type, analysis.projectType);
-      console.log('Original analysis structure:', {
+      logger.debug('Starting PDF generation for:', type, analysis.projectType);
+      logger.debug('Original analysis structure:', {
         hasProjectType: !!analysis.projectType,
         hasCostBreakdown: !!analysis.costBreakdown,
         costBreakdownKeys: analysis.costBreakdown ? Object.keys(analysis.costBreakdown) : [],
@@ -488,7 +489,7 @@ export default function ChatScreen() {
         try {
           return Array.isArray(data) ? data : [];
         } catch (e) {
-          console.warn(`Failed to extract array from ${path}:`, e);
+          logger.warn(`Failed to extract array from ${path}:`, e);
           return [];
         }
       };
@@ -538,7 +539,7 @@ export default function ChatScreen() {
         processingTimeMs: Number(analysis.processingTimeMs || 0),
       };
 
-      console.log('Transformed analysis for PDF:', transformedAnalysis);
+      logger.debug('Transformed analysis for PDF:', transformedAnalysis);
 
       // Call generate-document Edge Function
       const response = await supabase.functions.invoke('generate-document', {
@@ -554,7 +555,7 @@ export default function ChatScreen() {
         },
       });
 
-      console.log('PDF generation response status:', {
+      logger.debug('PDF generation response status:', {
         hasError: !!response.error,
         hasData: !!response.data,
         success: response.data?.success,
@@ -597,7 +598,7 @@ export default function ChatScreen() {
         // Save PDF to device
         const fileUri = `${FileSystem.documentDirectory}${filename}`;
 
-        console.log('Saving PDF to device:', {
+        logger.debug('Saving PDF to device:', {
           filename,
           fileUri,
           base64Length: document.base64?.length || 0,
@@ -610,7 +611,7 @@ export default function ChatScreen() {
 
         // Verify file was saved
         const fileInfo = await FileSystem.getInfoAsync(fileUri);
-        console.log('PDF saved successfully:', {
+        logger.debug('PDF saved successfully:', {
           exists: fileInfo.exists,
           size: (fileInfo as any).size || 'unknown',
           uri: fileInfo.uri || fileUri,

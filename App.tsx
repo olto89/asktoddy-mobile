@@ -4,12 +4,14 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-gesture-handler';
 
 import { AuthProvider } from './src/contexts/AuthContext';
+import ErrorBoundary from './src/components/ErrorBoundary';
 import AuthNavigator from './src/navigation/AuthNavigator';
 import { navigationRef } from './src/services/NavigationService';
 import revenueCatService from './src/services/RevenueCatService';
 
 export type RootStackParamList = {
   Login: undefined;
+  ForgotPassword: { email?: string };
   EmailVerification: { email: string; password: string };
   VerificationSuccess: undefined;
   Main: undefined;
@@ -41,10 +43,12 @@ export default function App() {
 
   return (
     <AuthProvider>
-      <NavigationContainer ref={navigationRef}>
-        <AuthNavigator />
-        <StatusBar style="light" backgroundColor="#FF6B35" translucent={false} />
-      </NavigationContainer>
+      <ErrorBoundary>
+        <NavigationContainer ref={navigationRef}>
+          <AuthNavigator />
+          <StatusBar style="light" backgroundColor="#FF6B35" translucent={false} />
+        </NavigationContainer>
+      </ErrorBoundary>
     </AuthProvider>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,29 +10,25 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system';
+import * as ImageManipulator from 'expo-image-manipulator';
+import { quoteStorage } from '../services/QuoteStorageService';
 import designTokens from '../styles/designTokens';
+import { AppIcons, IconSize } from '../styles/iconRegistry';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { AIService } from '../services/ai/AIServiceEdge';
 import { useAuth } from '../contexts/AuthContext';
 import LoginSignupModal from '../components/modals/LoginSignupModal';
 import UpgradePromptModal from '../components/modals/UpgradePromptModal';
-
-interface Task {
-  id: string;
-  description: string;
-  category: string;
-  estimatedCost: {
-    min: number;
-    max: number;
-  };
-  finalPrice?: number; // User's quoted price (defaults to max)
-  materials?: string[];
-  laborDays?: number;
-  selected: boolean;
-}
+import { logger } from '../services/Logger';
+import {
+  Task,
+  isFallbackResponse,
+  parseAIResponseToTasks,
+  getTaskTemplates,
+  generateTemplateTasksFromType,
+} from './taskListHelpers';
 
 export default function TaskListScreen({ navigation, route }: any) {
   const { siteNotes, savedQuote, isViewingGenerated } = route.params;
@@ -45,17 +41,26 @@ export default function TaskListScreen({ navigation, route }: any) {
   const [currentQuote, setCurrentQuote] = useState<any>(savedQuote || null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [isFallback, setIsFallback] = useState(false);
   const [pendingQuoteGeneration, setPendingQuoteGeneration] = useState(false);
   const [previousAuthState, setPreviousAuthState] = useState(isAnonymous);
+
+  // Guard against setState on unmounted component
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (isViewingGenerated && savedQuote) {
       // Load existing generated quote data - NO AI CALL NEEDED
-      console.log('🔄 Loading existing quote, skipping AI generation');
+      logger.debug('🔄 Loading existing quote, skipping AI generation');
       loadExistingQuoteData();
     } else if (!isViewingGenerated) {
       // Generate new quote from site notes
-      console.log('🚀 Generating new quote with AI');
+      logger.debug('🚀 Generating new quote with AI');
       generateTasksFromNotes();
     }
   }, [savedQuote]); // Re-run when savedQuote changes (e.g., after editing)
@@ -64,14 +69,14 @@ export default function TaskListScreen({ navigation, route }: any) {
   useEffect(() => {
     // Detect transition from anonymous to authenticated
     if (previousAuthState === true && isAnonymous === false) {
-      console.log('🔄 User authenticated! Auth transition detected');
+      logger.debug('🔄 User authenticated! Auth transition detected');
       setPreviousAuthState(false);
 
       // If we have pending quote generation, retry after a small delay
       if (pendingQuoteGeneration && canGenerateQuote()) {
-        console.log('⏱️ Waiting for auth state to stabilize...');
+        logger.debug('⏱️ Waiting for auth state to stabilize...');
         setTimeout(() => {
-          console.log('🚀 Retrying quote generation after auth...');
+          logger.debug('🚀 Retrying quote generation after auth...');
           setPendingQuoteGeneration(false);
           setIsProcessing(true); // Show loading state during AI processing
           generateTasksFromNotes();
@@ -103,7 +108,7 @@ export default function TaskListScreen({ navigation, route }: any) {
   }, [tasks]);
 
   const loadExistingQuoteData = () => {
-    console.log('📋 Loading existing quote data:', savedQuote.id);
+    logger.debug('📋 Loading existing quote data:', savedQuote.id);
 
     if (savedQuote.generatedTasks) {
       setTasks(savedQuote.generatedTasks);
@@ -160,46 +165,50 @@ export default function TaskListScreen({ navigation, route }: any) {
         siteNotes,
       };
 
-      const existingQuotesJson = await AsyncStorage.getItem('saved_quotes');
-      const existingQuotes = existingQuotesJson ? JSON.parse(existingQuotesJson) : [];
-
-      // Update or add the generated quote
-      const updatedQuotes = existingQuotes.filter((q: any) => q.id !== generatedQuote.id);
-      updatedQuotes.push(generatedQuote);
-
-      // Sort by last modified
-      updatedQuotes.sort((a: any, b: any) => b.lastModified - a.lastModified);
-
-      await AsyncStorage.setItem('saved_quotes', JSON.stringify(updatedQuotes));
+      await quoteStorage.save(generatedQuote);
 
       setCurrentQuote(generatedQuote);
-      console.log('💾 Auto-saved generated quote:', generatedQuote.id);
+      logger.debug('💾 Auto-saved generated quote:', generatedQuote.id);
     } catch (error) {
       console.error('Error auto-saving generated quote:', error);
     }
   };
 
-  // Helper function to convert image URIs to base64
+  // Helper function to compress and convert image URIs to base64
   const convertImagesToBase64 = async (
     imageUris: string[]
   ): Promise<{ base64: string; mimeType: string }[]> => {
     const images: { base64: string; mimeType: string }[] = [];
+    const MAX_WIDTH = 1024;
 
     for (const uri of imageUris) {
       try {
-        // Read file as base64
-        const base64 = await FileSystem.readAsStringAsync(uri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
+        // Resize to max 1024px width and compress as JPEG
+        const manipulated = await ImageManipulator.manipulateAsync(
+          uri,
+          [{ resize: { width: MAX_WIDTH } }],
+          { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+        );
 
-        // Determine mime type from extension
-        const extension = uri.split('.').pop()?.toLowerCase() || 'jpg';
-        const mimeType = extension === 'png' ? 'image/png' : 'image/jpeg';
-
-        images.push({ base64, mimeType });
-        console.log(`📸 Converted image to base64: ${uri.substring(0, 50)}...`);
+        if (manipulated.base64) {
+          images.push({ base64: manipulated.base64, mimeType: 'image/jpeg' });
+          logger.debug(
+            `📸 Compressed image: ${uri.substring(0, 50)}... (${Math.round((manipulated.base64.length * 3) / 4 / 1024)}KB)`
+          );
+        }
       } catch (error) {
-        console.error(`Failed to convert image: ${uri}`, error);
+        // Fallback: read original if manipulation fails
+        try {
+          const base64 = await FileSystem.readAsStringAsync(uri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          const extension = uri.split('.').pop()?.toLowerCase() || 'jpg';
+          const mimeType = extension === 'png' ? 'image/png' : 'image/jpeg';
+          images.push({ base64, mimeType });
+          logger.debug(`📸 Fallback (uncompressed): ${uri.substring(0, 50)}...`);
+        } catch (fallbackError) {
+          console.error(`Failed to convert image: ${uri}`, fallbackError);
+        }
       }
     }
 
@@ -233,7 +242,7 @@ export default function TaskListScreen({ navigation, route }: any) {
         }
 
         audioFiles.push({ base64, mimeType });
-        console.log(
+        logger.debug(
           `🎤 Converted audio to base64: ${recording.uri.substring(0, 50)}... (${Math.round(recording.duration)}s)`
         );
       } catch (error) {
@@ -247,7 +256,7 @@ export default function TaskListScreen({ navigation, route }: any) {
   const generateTasksFromNotes = async () => {
     try {
       // Debug auth state
-      console.log('🔍 Quote generation check:', {
+      logger.debug('🔍 Quote generation check:', {
         isAnonymous,
         canGenerate: canGenerateQuote(),
         userTier: freemiumUser.tier,
@@ -276,20 +285,24 @@ export default function TaskListScreen({ navigation, route }: any) {
       // Convert photos to base64 for AI analysis
       let images: { base64: string; mimeType: string }[] = [];
       if (siteNotes.photos && siteNotes.photos.length > 0) {
-        console.log(`📸 Converting ${siteNotes.photos.length} photos to base64...`);
+        logger.debug(`📸 Converting ${siteNotes.photos.length} photos to base64...`);
         images = await convertImagesToBase64(siteNotes.photos);
-        console.log(`✅ Converted ${images.length} photos successfully`);
+        logger.debug(`✅ Converted ${images.length} photos successfully`);
       }
+
+      if (!mountedRef.current) return;
 
       // Convert voice recordings to base64 for AI analysis
       let audioFiles: { base64: string; mimeType: string }[] = [];
       if (siteNotes.voiceRecordings && siteNotes.voiceRecordings.length > 0) {
-        console.log(
+        logger.debug(
           `🎤 Converting ${siteNotes.voiceRecordings.length} voice recordings to base64...`
         );
         audioFiles = await convertAudioToBase64(siteNotes.voiceRecordings);
-        console.log(`✅ Converted ${audioFiles.length} audio files successfully`);
+        logger.debug(`✅ Converted ${audioFiles.length} audio files successfully`);
       }
+
+      if (!mountedRef.current) return;
 
       // Build construction method info string
       const constructionMethodInfo = siteNotes.constructionMethod
@@ -316,6 +329,17 @@ export default function TaskListScreen({ navigation, route }: any) {
 • Factor verbal descriptions into your cost estimates`
           : '';
 
+      // Build structured context lines
+      const specLevelInfo = siteNotes.specLevel
+        ? `⭐ Finish Level: ${siteNotes.specLevel.charAt(0).toUpperCase() + siteNotes.specLevel.slice(1)}`
+        : '';
+      const roomsInfo = siteNotes.numberOfRooms
+        ? `🚪 Number of Rooms: ${siteNotes.numberOfRooms}`
+        : '';
+      const floorsInfo = siteNotes.numberOfFloors
+        ? `🏗️ Number of Floors: ${siteNotes.numberOfFloors}`
+        : '';
+
       // Prepare comprehensive prompt with ALL user input
       const prompt = `You are a UK construction cost estimator. Analyze this project in detail and provide accurate quotes based on ALL the information provided.
 
@@ -325,6 +349,9 @@ PROJECT DETAILS:
 📐 Size/Dimensions: ${siteNotes.size || 'Not specified'}
 🔧 Job Type: ${siteNotes.jobType}
 ${constructionMethodInfo}
+${specLevelInfo}
+${roomsInfo}
+${floorsInfo}
 
 USER REQUIREMENTS:
 ✅ Selected Work Items: ${siteNotes.tasks && siteNotes.tasks.length > 0 ? siteNotes.tasks.join(', ') : 'None specified'}
@@ -342,8 +369,11 @@ ANALYSIS REQUIREMENTS:
 • Consider the specific requirements mentioned in notes and voice notes
 • Factor in the property type and location for accurate regional pricing
 • Include all selected work items plus any obviously necessary additional tasks
-• Provide realistic UK construction costs for 2024/2025
+• Provide realistic UK construction costs for 2025/2026
 • Consider quality levels appropriate for the property type
+${siteNotes.specLevel ? `• IMPORTANT: User specified "${siteNotes.specLevel}" finish level — adjust material quality and costs accordingly (budget=basic materials, standard=mid-range, premium=high-quality, luxury=top-of-line)` : ''}
+${siteNotes.numberOfRooms ? `• Project involves ${siteNotes.numberOfRooms} room(s) — scale quantities and costs accordingly` : ''}
+${siteNotes.numberOfFloors ? `• ${siteNotes.numberOfFloors}-storey build — factor in structural requirements for multi-storey construction` : ''}
 ${images.length > 0 ? '• ANALYZE THE ATTACHED PHOTOS to assess the current condition and scope of work' : ''}
 ${audioFiles.length > 0 ? '• LISTEN TO THE ATTACHED VOICE RECORDINGS for verbal descriptions and requirements' : ''}
 ${siteNotes.constructionMethod ? `• IMPORTANT: Apply ${siteNotes.constructionMethodMultiplier}x price adjustment for ${siteNotes.constructionMethodLabel} construction method` : ''}
@@ -359,542 +389,75 @@ Provide detailed cost breakdown with materials, labor, and realistic price range
         analysisType: hasMedia ? 'image' : 'chat',
       });
 
-      console.log('🤖 AI Response received:', response);
+      if (!mountedRef.current) return;
+
+      logger.debug('🤖 AI Response received:', response);
+
+      // Detect fallback responses
+      if (isFallbackResponse(response)) {
+        setIsFallback(true);
+      }
+
       setAiAnalysis(response);
 
       // Parse AI response into structured tasks
-      const parsedTasks = parseAIResponseToTasks(response);
+      const parsedTasks = parseAIResponseToTasksInternal(response);
       setTasks(parsedTasks);
 
-      // Auto-save the generated quote
+      // Auto-save the generated quote (safe even if unmounted — only writes to storage)
       await autoSaveGeneratedQuote(parsedTasks, response);
 
       // Increment quote usage for tracking
       await incrementQuoteUsage();
     } catch (error) {
       console.error('Error generating tasks:', error);
+      if (!mountedRef.current) return;
       // Fallback to template-based tasks
+      setIsFallback(true);
       generateTemplateTasks();
     } finally {
-      setIsProcessing(false);
+      if (mountedRef.current) {
+        setIsProcessing(false);
+      }
     }
   };
 
-  const parseAIResponseToTasks = (aiResponse: any): Task[] => {
-    const tasks: Task[] = [];
+  const parseAIResponseToTasksInternal = (aiResponse: any): Task[] => {
+    logger.debug('📋 Edge Function returned structured data:', aiResponse);
 
-    console.log('📋 Edge Function returned structured data:', aiResponse);
+    // Use the exported pure function for core parsing
+    const tasks = parseAIResponseToTasks(aiResponse);
 
-    // Check if we have JSON-parsed tasks from Gemini
-    if (aiResponse?.tasks && Array.isArray(aiResponse.tasks)) {
-      console.log('✨ Using AI-generated JSON tasks from Gemini');
-
-      // Convert Gemini tasks to app format
-      aiResponse.tasks.forEach((task: any, index: number) => {
-        const maxCost = task.max_cost || 500;
-        tasks.push({
-          id: `task-${index}`,
-          description: task.description,
-          category: task.category || 'General',
-          estimatedCost: {
-            min: task.min_cost || 100,
-            max: maxCost,
-          },
-          finalPrice: maxCost, // Default to max estimate
-          materials: task.materials || [],
-          laborDays: task.labor_days || 1,
-          selected: true,
-        });
+    // Handle side effects: store summary for display
+    if (aiResponse?.tasks && Array.isArray(aiResponse.tasks) && aiResponse.summary) {
+      setAiAnalysis({
+        ...aiResponse,
+        confidence: aiResponse.summary.confidence || 75,
+        locationMultiplier: aiResponse.summary.location_multiplier || 1.0,
+        sizeMultiplier: aiResponse.summary.size_multiplier || 1.0,
       });
-
-      // Store summary for display
-      if (aiResponse.summary) {
-        setAiAnalysis({
-          ...aiResponse,
-          confidence: aiResponse.summary.confidence || 75,
-          locationMultiplier: aiResponse.summary.location_multiplier || 1.0,
-          sizeMultiplier: aiResponse.summary.size_multiplier || 1.0,
-        });
-      }
-    }
-    // Fallback to materials if no tasks
-    else if (aiResponse?.costBreakdown?.materials?.items) {
-      console.log('⚠️ No tasks from Gemini, using material items');
-
-      // Convert materials to tasks
-      aiResponse.costBreakdown.materials.items.forEach((item: any, index: number) => {
-        const maxCost = Math.round(item.totalPrice * 1.1);
-        tasks.push({
-          id: `material-${index}`,
-          description: item.name,
-          category: item.category.charAt(0).toUpperCase() + item.category.slice(1),
-          estimatedCost: {
-            min: Math.round(item.totalPrice * 0.9),
-            max: maxCost,
-          },
-          finalPrice: maxCost, // Default to max estimate
-          materials: [item.name],
-          laborDays: 0,
-          selected: true,
-        });
-      });
-
-      // Add labor as a separate task
-      if (aiResponse.costBreakdown.labor) {
-        const laborMax = aiResponse.costBreakdown.labor.max;
-        tasks.push({
-          id: 'labor-task',
-          description: 'Professional labor and installation',
-          category: 'Labor',
-          estimatedCost: {
-            min: aiResponse.costBreakdown.labor.min,
-            max: laborMax,
-          },
-          finalPrice: laborMax, // Default to max estimate
-          materials: ['Professional installation'],
-          laborDays: Math.round(aiResponse.costBreakdown.labor.estimatedHours / 8),
-          selected: true,
-        });
-      }
-
-      // Add user-selected tasks from the form if they're not already covered
-      if (siteNotes.tasks && siteNotes.tasks.length > 0) {
-        console.log('🔍 Processing user tasks:', siteNotes.tasks);
-        siteNotes.tasks.forEach((userTask: any, index: number) => {
-          // Ensure userTask is a valid string
-          if (!userTask || typeof userTask !== 'string') {
-            console.warn('Skipping invalid task:', userTask);
-            return;
-          }
-
-          // Check if this task is already covered by AI materials/labor
-          const alreadyCovered = tasks.some(
-            task =>
-              task.description.toLowerCase().includes(userTask.toLowerCase()) ||
-              userTask.toLowerCase().includes(task.description.toLowerCase())
-          );
-
-          if (!alreadyCovered) {
-            // Add user task with estimated cost based on project total
-            const avgCost =
-              (aiResponse.costBreakdown.total.min + aiResponse.costBreakdown.total.max) / 2;
-            const taskCost = Math.round(avgCost * 0.15); // Roughly 15% of total per additional task
-            const maxTaskCost = Math.round(taskCost * 1.2);
-
-            tasks.push({
-              id: `user-task-${index}`,
-              description: userTask,
-              category: 'Additional Work',
-              estimatedCost: {
-                min: Math.round(taskCost * 0.8),
-                max: maxTaskCost,
-              },
-              finalPrice: maxTaskCost, // Default to max estimate
-              materials: [userTask],
-              laborDays: 2,
-              selected: true, // User selected these
-            });
-          }
-        });
-      }
     }
 
     // Fallback only if no structured data
     if (tasks.length === 0) {
-      console.log('⚠️ No structured data, using fallback');
+      logger.debug('⚠️ No structured data, using fallback');
       generateTemplateTasks();
       return [];
     }
 
-    console.log(`📋 Generated ${tasks.length} tasks from structured data`);
+    logger.debug(`📋 Generated ${tasks.length} tasks from structured data`);
     return tasks;
   };
 
-  const getTaskTemplates = (jobType: string) => {
-    const templates: any = {
-      extension: [
-        {
-          description: 'Planning permission and building regulations',
-          category: 'Planning',
-          estimatedCost: { min: 1500, max: 3000 },
-          materials: ['Planning documents', 'Architectural drawings'],
-          laborDays: 0,
-        },
-        {
-          description: 'Foundations and groundwork',
-          category: 'Structural',
-          estimatedCost: { min: 8000, max: 12000 },
-          materials: ['Concrete', 'Steel reinforcement', 'DPM'],
-          laborDays: 10,
-        },
-        {
-          description: 'Structural walls and roof',
-          category: 'Structural',
-          estimatedCost: { min: 15000, max: 20000 },
-          materials: ['Blocks', 'Mortar', 'Roof timbers', 'Tiles'],
-          laborDays: 20,
-        },
-        {
-          description: 'Windows and doors',
-          category: 'Fixtures',
-          estimatedCost: { min: 4000, max: 7000 },
-          materials: ['UPVC windows', 'Composite doors'],
-          laborDays: 3,
-        },
-        {
-          description: 'Electrical and plumbing first fix',
-          category: 'Services',
-          estimatedCost: { min: 3000, max: 5000 },
-          materials: ['Cables', 'Pipes', 'Consumer unit'],
-          laborDays: 5,
-        },
-        {
-          description: 'Insulation and plastering',
-          category: 'Finishing',
-          estimatedCost: { min: 3000, max: 4500 },
-          materials: ['Insulation boards', 'Plasterboard', 'Plaster'],
-          laborDays: 7,
-        },
-      ],
-      bathroom: [
-        {
-          description: 'Strip out existing bathroom',
-          category: 'Demolition',
-          estimatedCost: { min: 300, max: 500 },
-          materials: ['Skip hire'],
-          laborDays: 1,
-        },
-        {
-          description: 'Plumbing first fix',
-          category: 'Services',
-          estimatedCost: { min: 800, max: 1200 },
-          materials: ['Pipes', 'Fittings'],
-          laborDays: 2,
-        },
-        {
-          description: 'Tiling walls and floor',
-          category: 'Finishing',
-          estimatedCost: { min: 1500, max: 2500 },
-          materials: ['Tiles', 'Adhesive', 'Grout'],
-          laborDays: 3,
-        },
-        {
-          description: 'Install bathroom suite',
-          category: 'Fixtures',
-          estimatedCost: { min: 1500, max: 3000 },
-          materials: ['Toilet', 'Basin', 'Bath/Shower'],
-          laborDays: 2,
-        },
-        {
-          description: 'Electrical work and lighting',
-          category: 'Services',
-          estimatedCost: { min: 500, max: 800 },
-          materials: ['Lights', 'Switches', 'Extractor fan'],
-          laborDays: 1,
-        },
-      ],
-      kitchen: [
-        {
-          description: 'Remove old kitchen',
-          category: 'Demolition',
-          estimatedCost: { min: 400, max: 600 },
-          materials: ['Skip hire'],
-          laborDays: 1,
-        },
-        {
-          description: 'Electrical rewiring',
-          category: 'Services',
-          estimatedCost: { min: 1200, max: 2000 },
-          materials: ['Cables', 'Sockets', 'Consumer unit update'],
-          laborDays: 2,
-        },
-        {
-          description: 'Plumbing for appliances',
-          category: 'Services',
-          estimatedCost: { min: 600, max: 1000 },
-          materials: ['Pipes', 'Valves'],
-          laborDays: 1,
-        },
-        {
-          description: 'Install kitchen units',
-          category: 'Fixtures',
-          estimatedCost: { min: 3000, max: 8000 },
-          materials: ['Base units', 'Wall units', 'Doors'],
-          laborDays: 3,
-        },
-        {
-          description: 'Worktops and splashback',
-          category: 'Finishing',
-          estimatedCost: { min: 1500, max: 3000 },
-          materials: ['Worktop', 'Splashback tiles'],
-          laborDays: 2,
-        },
-        {
-          description: 'Appliances installation',
-          category: 'Fixtures',
-          estimatedCost: { min: 2000, max: 5000 },
-          materials: ['Oven', 'Hob', 'Dishwasher', 'Fridge'],
-          laborDays: 1,
-        },
-      ],
-      patio: [
-        {
-          description: 'Site clearance and preparation',
-          category: 'Groundwork',
-          estimatedCost: { min: 300, max: 600 },
-          materials: ['Skip hire', 'Weed killer'],
-          laborDays: 1,
-        },
-        {
-          description: 'Excavation and sub-base',
-          category: 'Groundwork',
-          estimatedCost: { min: 800, max: 1500 },
-          materials: ['Hardcore', 'MOT Type 1', 'Sand'],
-          laborDays: 2,
-        },
-        {
-          description: 'Edging and borders',
-          category: 'Structure',
-          estimatedCost: { min: 400, max: 800 },
-          materials: ['Edging blocks', 'Cement', 'Sand'],
-          laborDays: 1,
-        },
-        {
-          description: 'Paving slabs installation',
-          category: 'Surface',
-          estimatedCost: { min: 2000, max: 4500 },
-          materials: ['Paving slabs', 'Mortar', 'Jointing compound'],
-          laborDays: 3,
-        },
-        {
-          description: 'Pointing and finishing',
-          category: 'Finishing',
-          estimatedCost: { min: 300, max: 500 },
-          materials: ['Pointing compound', 'Sealant'],
-          laborDays: 1,
-        },
-      ],
-      driveway: [
-        {
-          description: 'Site clearance and excavation',
-          category: 'Groundwork',
-          estimatedCost: { min: 1000, max: 2000 },
-          materials: ['Skip hire', 'Machinery hire'],
-          laborDays: 2,
-        },
-        {
-          description: 'Sub-base installation',
-          category: 'Groundwork',
-          estimatedCost: { min: 1500, max: 3000 },
-          materials: ['MOT Type 1', 'Hardcore', 'Compactor hire'],
-          laborDays: 2,
-        },
-        {
-          description: 'Edging and kerbs',
-          category: 'Structure',
-          estimatedCost: { min: 600, max: 1200 },
-          materials: ['Kerb stones', 'Edging', 'Cement'],
-          laborDays: 1,
-        },
-        {
-          description: 'Block paving / surface',
-          category: 'Surface',
-          estimatedCost: { min: 3000, max: 6000 },
-          materials: ['Block pavers', 'Kiln dried sand', 'Edge restraints'],
-          laborDays: 4,
-        },
-        {
-          description: 'Drainage installation',
-          category: 'Services',
-          estimatedCost: { min: 500, max: 1000 },
-          materials: ['Channel drain', 'Soakaway crate', 'Pipes'],
-          laborDays: 1,
-        },
-        {
-          description: 'Drop kerb (council application)',
-          category: 'Planning',
-          estimatedCost: { min: 800, max: 1500 },
-          materials: ['Council fees', 'Dropped kerb stones'],
-          laborDays: 1,
-        },
-      ],
-      conservatory: [
-        {
-          description: 'Planning and building regulations',
-          category: 'Planning',
-          estimatedCost: { min: 500, max: 1500 },
-          materials: ['Planning documents', 'Building regs fees'],
-          laborDays: 0,
-        },
-        {
-          description: 'Foundations and base',
-          category: 'Structural',
-          estimatedCost: { min: 3000, max: 5000 },
-          materials: ['Concrete', 'DPM', 'Steel reinforcement'],
-          laborDays: 5,
-        },
-        {
-          description: 'Dwarf walls construction',
-          category: 'Structural',
-          estimatedCost: { min: 1500, max: 3000 },
-          materials: ['Bricks', 'Blocks', 'Mortar', 'DPC'],
-          laborDays: 3,
-        },
-        {
-          description: 'Frame and glazing installation',
-          category: 'Structure',
-          estimatedCost: { min: 6000, max: 12000 },
-          materials: ['UPVC/Aluminium frame', 'Double glazing units'],
-          laborDays: 4,
-        },
-        {
-          description: 'Roof system',
-          category: 'Structure',
-          estimatedCost: { min: 3000, max: 6000 },
-          materials: ['Polycarbonate/Glass roof', 'Roof bars', 'Guttering'],
-          laborDays: 2,
-        },
-        {
-          description: 'Electrical installation',
-          category: 'Services',
-          estimatedCost: { min: 800, max: 1500 },
-          materials: ['Cables', 'Sockets', 'Lighting'],
-          laborDays: 1,
-        },
-        {
-          description: 'Flooring and finishing',
-          category: 'Finishing',
-          estimatedCost: { min: 1500, max: 3000 },
-          materials: ['Floor tiles', 'Underfloor heating', 'Skirting'],
-          laborDays: 2,
-        },
-      ],
-      roofing: [
-        {
-          description: 'Scaffolding',
-          category: 'Access',
-          estimatedCost: { min: 800, max: 1200 },
-          materials: ['Scaffold hire'],
-          laborDays: 1,
-        },
-        {
-          description: 'Strip existing roof covering',
-          category: 'Demolition',
-          estimatedCost: { min: 1000, max: 1500 },
-          materials: ['Skip hire'],
-          laborDays: 2,
-        },
-        {
-          description: 'Replace battens and felt',
-          category: 'Structural',
-          estimatedCost: { min: 2000, max: 3000 },
-          materials: ['Battens', 'Breathable membrane'],
-          laborDays: 3,
-        },
-        {
-          description: 'Install new tiles/slates',
-          category: 'Covering',
-          estimatedCost: { min: 4000, max: 7000 },
-          materials: ['Tiles/Slates', 'Ridge tiles', 'Hip tiles'],
-          laborDays: 5,
-        },
-        {
-          description: 'Guttering and fascias',
-          category: 'Finishing',
-          estimatedCost: { min: 1200, max: 2000 },
-          materials: ['UPVC guttering', 'Fascia boards'],
-          laborDays: 2,
-        },
-      ],
-      renovation: [
-        {
-          description: 'Structural assessment',
-          category: 'Planning',
-          estimatedCost: { min: 500, max: 1000 },
-          materials: ['Survey report'],
-          laborDays: 0,
-        },
-        {
-          description: 'Demolition and strip out',
-          category: 'Demolition',
-          estimatedCost: { min: 2000, max: 4000 },
-          materials: ['Skip hire', 'Waste removal'],
-          laborDays: 5,
-        },
-        {
-          description: 'Structural repairs',
-          category: 'Structural',
-          estimatedCost: { min: 5000, max: 15000 },
-          materials: ['Timber', 'Steel beams', 'Concrete'],
-          laborDays: 10,
-        },
-        {
-          description: 'Complete rewiring',
-          category: 'Services',
-          estimatedCost: { min: 3000, max: 5000 },
-          materials: ['Cables', 'Consumer unit', 'Sockets'],
-          laborDays: 5,
-        },
-        {
-          description: 'Plumbing and heating',
-          category: 'Services',
-          estimatedCost: { min: 4000, max: 7000 },
-          materials: ['Boiler', 'Radiators', 'Pipes'],
-          laborDays: 7,
-        },
-        {
-          description: 'Plastering all walls',
-          category: 'Finishing',
-          estimatedCost: { min: 3000, max: 5000 },
-          materials: ['Plasterboard', 'Plaster', 'Beading'],
-          laborDays: 7,
-        },
-        {
-          description: 'Flooring throughout',
-          category: 'Finishing',
-          estimatedCost: { min: 3000, max: 6000 },
-          materials: ['Flooring', 'Underlay', 'Skirting'],
-          laborDays: 5,
-        },
-      ],
-      other: [
-        {
-          description: 'Initial survey and planning',
-          category: 'Planning',
-          estimatedCost: { min: 300, max: 500 },
-          materials: [],
-          laborDays: 0,
-        },
-        {
-          description: 'General building work',
-          category: 'General',
-          estimatedCost: { min: 2000, max: 5000 },
-          materials: ['Various materials'],
-          laborDays: 5,
-        },
-        {
-          description: 'Finishing and decoration',
-          category: 'Finishing',
-          estimatedCost: { min: 1000, max: 2000 },
-          materials: ['Paint', 'Decorating materials'],
-          laborDays: 3,
-        },
-      ],
-    };
-
-    return templates[jobType] || templates.other;
+  const generateTemplateTasks = () => {
+    setTasks(generateTemplateTasksFromType(siteNotes.jobType));
   };
 
-  const generateTemplateTasks = () => {
-    const tasks = getTaskTemplates(siteNotes.jobType);
-    setTasks(
-      tasks.map((t: any, i: number) => ({
-        ...t,
-        id: `task-${i}`,
-        finalPrice: t.estimatedCost.max, // Default to max estimate
-        selected: true,
-      }))
-    );
+  const handleRetryAnalysis = () => {
+    setIsFallback(false);
+    setTasks([]);
+    setIsProcessing(true);
+    generateTasksFromNotes();
   };
 
   const toggleTask = (taskId: string) => {
@@ -931,17 +494,46 @@ Provide detailed cost breakdown with materials, labor, and realistic price range
 
   if (isProcessing) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.processingContainer}>
-          <ActivityIndicator size="large" color={designTokens.colors.primary[500]} />
-          <Text style={styles.processingTitle}>🤖 Analyzing Your Notes...</Text>
-          <Text style={styles.processingText}>Extracting tasks and calculating costs</Text>
-          <View style={styles.processingSteps}>
-            <Text style={styles.processingStep}>⚡ Extracting Tasks</Text>
-            <Text style={styles.processingStep}>💰 Calculating Costs</Text>
-            <Text style={styles.processingStep}>📋 Building Quote</Text>
+      <SafeAreaView style={styles.container} edges={['bottom']}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Skeleton: Summary Card */}
+          <Card style={styles.summaryCard}>
+            <View style={styles.skeletonBar} />
+            <View style={[styles.skeletonBar, styles.skeletonBarShort]} />
+          </Card>
+
+          {/* Skeleton: Processing Status */}
+          <View style={styles.skeletonStatusBanner}>
+            <ActivityIndicator size="small" color={designTokens.colors.primary[500]} />
+            <Text style={styles.skeletonStatusText}>Analyzing your project...</Text>
           </View>
-        </View>
+
+          {/* Skeleton: Task Cards */}
+          {[1, 2, 3, 4].map(i => (
+            <View key={i} style={styles.skeletonTaskCard}>
+              <View style={styles.skeletonTaskHeader}>
+                <View style={styles.skeletonCheckbox} />
+                <View style={{ flex: 1 }}>
+                  <View style={styles.skeletonBar} />
+                  <View style={[styles.skeletonBar, styles.skeletonBarShort, { marginTop: 6 }]} />
+                </View>
+              </View>
+              <View style={styles.skeletonCostRow}>
+                <View style={[styles.skeletonBar, { width: 120 }]} />
+              </View>
+            </View>
+          ))}
+
+          {/* Skeleton: Total Card */}
+          <Card style={[styles.totalCard, { opacity: 0.6 }]}>
+            <View style={[styles.skeletonBar, styles.skeletonBarShort]} />
+            <View style={[styles.skeletonBar, { width: 180, height: 28, marginTop: 8 }]} />
+            <View style={[styles.skeletonBar, styles.skeletonBarShort, { marginTop: 8 }]} />
+          </Card>
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -957,6 +549,37 @@ Provide detailed cost breakdown with materials, labor, and realistic price range
             {siteNotes.propertyType || 'Property'}
           </Text>
         </Card>
+
+        {/* Fallback Banner */}
+        {isFallback && (
+          <View style={styles.fallbackBanner}>
+            <View style={styles.fallbackBannerContent}>
+              <Ionicons name="information-circle-outline" size={20} color="#856404" />
+              <Text style={styles.fallbackBannerText}>
+                AI analysis temporarily unavailable. Showing estimated costs based on typical UK
+                projects.
+              </Text>
+            </View>
+            <Button
+              title="Retry with AI"
+              onPress={handleRetryAnalysis}
+              variant="outline"
+              size="sm"
+              loading={isProcessing}
+              icon={
+                !isProcessing ? (
+                  <Ionicons
+                    name="refresh-outline"
+                    size={16}
+                    color={designTokens.colors.primary[500]}
+                    style={{ marginRight: 6 }}
+                  />
+                ) : undefined
+              }
+              style={styles.fallbackRetryButton}
+            />
+          </View>
+        )}
 
         {/* Tasks List */}
         <View style={styles.tasksContainer}>
@@ -1083,9 +706,16 @@ Provide detailed cost breakdown with materials, labor, and realistic price range
         {/* Actions */}
         <View style={styles.actions}>
           {!isViewingGenerated && (
-            <Text style={styles.actionHint}>
-              ✨ Your quote has been generated and saved! Choose your next step:
-            </Text>
+            <View style={styles.actionHintRow}>
+              <Ionicons
+                name={AppIcons.quoteGenerated}
+                size={IconSize.small}
+                color={designTokens.colors.text.secondary}
+              />
+              <Text style={styles.actionHint}>
+                Your quote has been generated and saved! Choose your next step:
+              </Text>
+            </View>
           )}
           <View style={styles.actionButtons}>
             <Button
@@ -1119,7 +749,7 @@ Provide detailed cost breakdown with materials, labor, and realistic price range
         onSuccess={() => {
           setShowLoginModal(false);
           // The useEffect will handle retrying when auth state updates
-          console.log('✅ Login successful, waiting for auth state update...');
+          logger.debug('✅ Login successful, waiting for auth state update...');
         }}
         mode="signup"
         title="Sign Up to Generate Your Quote"
@@ -1155,11 +785,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: designTokens.spacing.xl,
   },
+  processingTitleRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: designTokens.spacing.sm,
+    marginTop: designTokens.spacing.lg,
+  },
   processingTitle: {
     fontSize: designTokens.typography.fontSize.xl,
     fontWeight: designTokens.typography.fontWeight.bold as any,
     color: designTokens.colors.text.primary,
-    marginTop: designTokens.spacing.lg,
   },
   processingText: {
     fontSize: designTokens.typography.fontSize.base,
@@ -1170,10 +805,15 @@ const styles = StyleSheet.create({
     marginTop: designTokens.spacing.xl,
     alignItems: 'center',
   },
+  processingStepRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: designTokens.spacing.sm,
+    marginTop: designTokens.spacing.md,
+  },
   processingStep: {
     fontSize: designTokens.typography.fontSize.base,
     color: designTokens.colors.text.secondary,
-    marginTop: designTokens.spacing.md,
   },
   header: {
     flexDirection: 'row',
@@ -1332,12 +972,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: designTokens.spacing.md,
     paddingVertical: designTokens.spacing.lg,
   },
+  actionHintRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: designTokens.spacing.xs,
+    marginBottom: designTokens.spacing.md,
+  },
   actionHint: {
     fontSize: designTokens.typography.fontSize.sm,
     color: designTokens.colors.text.secondary,
-    textAlign: 'center',
-    marginBottom: designTokens.spacing.md,
-    fontStyle: 'italic',
+    textAlign: 'center' as const,
+    fontStyle: 'italic' as const,
+    flex: 1,
   },
   actionButtons: {
     flexDirection: 'row',
@@ -1403,5 +1050,84 @@ const styles = StyleSheet.create({
     color: designTokens.colors.text.tertiary,
     marginLeft: designTokens.spacing.sm,
     lineHeight: 18,
+  },
+  fallbackBanner: {
+    backgroundColor: '#fff3cd',
+    borderColor: '#ffc107',
+    borderWidth: 1,
+    borderRadius: designTokens.borderRadius.md,
+    padding: designTokens.spacing.md,
+    marginHorizontal: designTokens.spacing.md,
+    marginBottom: designTokens.spacing.sm,
+    gap: designTokens.spacing.sm,
+  },
+  fallbackBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: designTokens.spacing.sm,
+  },
+  fallbackRetryButton: {
+    alignSelf: 'flex-start',
+    borderColor: '#856404',
+  },
+  fallbackBannerText: {
+    flex: 1,
+    fontSize: designTokens.typography.fontSize.sm,
+    color: '#856404',
+    lineHeight: 20,
+  },
+  // Skeleton loading styles
+  skeletonBar: {
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: designTokens.colors.background.secondary,
+    width: '70%',
+  },
+  skeletonBarShort: {
+    width: '45%',
+    marginTop: 8,
+  },
+  skeletonStatusBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: designTokens.spacing.sm,
+    marginHorizontal: designTokens.spacing.md,
+    marginBottom: designTokens.spacing.md,
+    paddingHorizontal: designTokens.spacing.md,
+    paddingVertical: designTokens.spacing.sm,
+    backgroundColor: designTokens.colors.primary[50],
+    borderRadius: designTokens.borderRadius.md,
+    borderWidth: 1,
+    borderColor: designTokens.colors.primary[200],
+  },
+  skeletonStatusText: {
+    fontSize: designTokens.typography.fontSize.sm,
+    color: designTokens.colors.primary[600],
+    fontWeight: designTokens.typography.fontWeight.medium as any,
+  },
+  skeletonTaskCard: {
+    backgroundColor: 'white',
+    borderRadius: designTokens.borderRadius.lg,
+    padding: designTokens.spacing.md,
+    marginHorizontal: designTokens.spacing.md,
+    marginBottom: designTokens.spacing.sm,
+    borderWidth: 1,
+    borderColor: designTokens.colors.border.primary,
+    opacity: 0.6,
+  },
+  skeletonTaskHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: designTokens.spacing.sm,
+  },
+  skeletonCheckbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 4,
+    backgroundColor: designTokens.colors.background.secondary,
+  },
+  skeletonCostRow: {
+    marginTop: designTokens.spacing.sm,
+    marginLeft: 32,
   },
 });

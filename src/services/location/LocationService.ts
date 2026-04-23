@@ -6,6 +6,7 @@
 import * as Location from 'expo-location';
 import { Platform } from 'react-native';
 import { PermissionService } from '../PermissionService';
+import { logger } from '../Logger';
 
 export interface Coordinates {
   latitude: number;
@@ -268,7 +269,7 @@ export class LocationService {
       this.locationPermission = permissionStatus.granted;
 
       if (!this.locationPermission) {
-        console.log('⚠️ Location permission denied');
+        logger.debug('⚠️ Location permission denied');
       }
 
       return this.locationPermission;
@@ -287,7 +288,7 @@ export class LocationService {
       if (!this.locationPermission) {
         const granted = await this.requestPermissions();
         if (!granted) {
-          console.log('📍 Using default location: London');
+          logger.debug('📍 Using default location: London');
           return this.getDefaultLocation();
         }
       }
@@ -315,7 +316,7 @@ export class LocationService {
       };
 
       this.lastKnownLocation = locationData;
-      console.log('📍 Location obtained:', locationData.formatted);
+      logger.debug('📍 Location obtained:', locationData.formatted);
 
       return locationData;
     } catch (error) {

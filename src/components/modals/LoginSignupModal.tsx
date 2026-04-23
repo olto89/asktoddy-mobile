@@ -20,6 +20,7 @@ import designTokens from '../../styles/designTokens';
 import { AppIcons, IconSize } from '../../styles/iconRegistry';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
+import { logger } from '../../services/Logger';
 
 interface LoginSignupModalProps {
   visible: boolean;
@@ -49,7 +50,7 @@ export default function LoginSignupModal({
   // Auto-close modal when user becomes authenticated (e.g., after email verification deep link)
   useEffect(() => {
     if (visible && isAuthenticated && verificationPending) {
-      console.log('✅ User authenticated while verification pending — closing modal');
+      logger.debug('✅ User authenticated while verification pending — closing modal');
       handleClose();
       onSuccess?.();
     }
@@ -114,7 +115,7 @@ export default function LoginSignupModal({
           }
         } else {
           // Successful sign in - wait for auth state to fully propagate
-          console.log('✅ Sign in successful, waiting for auth state...');
+          logger.debug('✅ Sign in successful, waiting for auth state...');
           setTimeout(() => {
             handleClose();
             onSuccess?.();

@@ -12,8 +12,11 @@ import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
+import { Ionicons } from '@expo/vector-icons';
 import designTokens from '../styles/designTokens';
+import { AppIcons, IconSize } from '../styles/iconRegistry';
 import Button from '../components/ui/Button';
+import { logger } from '../services/Logger';
 // AIService removed - now using Edge Functions
 
 type CameraScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Camera'>;
@@ -35,7 +38,7 @@ export default function CameraScreen({ navigation }: Props) {
     (async () => {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        console.log('Media library permission not granted');
+        logger.debug('Media library permission not granted');
       }
     })();
   }, []);
@@ -55,7 +58,13 @@ export default function CameraScreen({ navigation }: Props) {
     return (
       <View style={styles.permissionContainer}>
         <View style={styles.permissionContent}>
-          <Text style={styles.permissionTitle}>📷 Camera Access Required</Text>
+          <Ionicons
+            name={AppIcons.cameraAccess}
+            size={IconSize.xlarge}
+            color={designTokens.colors.text.primary}
+            style={{ marginBottom: 12 }}
+          />
+          <Text style={styles.permissionTitle}>Camera Access Required</Text>
           <Text style={styles.permissionText}>
             AskToddy needs camera access to analyze your construction projects and provide accurate
             quotes.
@@ -88,7 +97,7 @@ export default function CameraScreen({ navigation }: Props) {
 
       if (photo?.uri) {
         // Navigate to results (analysis now happens in Edge Functions via ResultsScreen)
-        console.log('📷 Image captured, navigating to results...');
+        logger.debug('📷 Image captured, navigating to results...');
         navigation.navigate('Results', {
           imageUri: photo.uri,
           analysis: null, // Analysis will happen in ResultsScreen using Edge Functions
@@ -116,7 +125,7 @@ export default function CameraScreen({ navigation }: Props) {
         const asset = result.assets[0];
 
         // Navigate to results (analysis now happens in Edge Functions via ResultsScreen)
-        console.log('📁 Image selected from library, navigating to results...');
+        logger.debug('📁 Image selected from library, navigating to results...');
         navigation.navigate('Results', {
           imageUri: asset.uri,
           analysis: null, // Analysis will happen in ResultsScreen using Edge Functions
@@ -149,9 +158,34 @@ export default function CameraScreen({ navigation }: Props) {
       <CameraView style={styles.camera} facing={facing} ref={cameraRef}>
         {/* Header overlay */}
         <View style={styles.headerOverlay}>
-          <Text style={styles.instructionText}>
-            📷 Point your camera at the area you want to renovate
-          </Text>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              backgroundColor: 'rgba(0, 0, 0, 0.6)',
+              paddingHorizontal: 24,
+              paddingVertical: 8,
+              borderRadius: 8,
+              marginHorizontal: 24,
+            }}
+          >
+            <Ionicons name={AppIcons.cameraInstruction} size={IconSize.small} color="#fff" />
+            <Text
+              style={[
+                styles.instructionText,
+                {
+                  backgroundColor: 'transparent',
+                  paddingHorizontal: 0,
+                  paddingVertical: 0,
+                  borderRadius: 0,
+                  marginHorizontal: 0,
+                },
+              ]}
+            >
+              Point your camera at the area you want to renovate
+            </Text>
+          </View>
         </View>
 
         {/* Camera viewfinder frame */}
@@ -167,7 +201,7 @@ export default function CameraScreen({ navigation }: Props) {
         {/* Bottom controls */}
         <View style={styles.controlsContainer}>
           <TouchableOpacity style={styles.galleryButton} onPress={pickImageFromLibrary}>
-            <Text style={styles.controlButtonText}>📁</Text>
+            <Ionicons name={AppIcons.gallery} size={IconSize.medium} color="#fff" />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.captureButton} onPress={takePicture} disabled={isLoading}>
@@ -175,15 +209,40 @@ export default function CameraScreen({ navigation }: Props) {
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.flipButton} onPress={toggleCameraFacing}>
-            <Text style={styles.controlButtonText}>🔄</Text>
+            <Ionicons name={AppIcons.flipCamera} size={IconSize.medium} color="#fff" />
           </TouchableOpacity>
         </View>
 
         {/* Help text */}
         <View style={styles.helpContainer}>
-          <Text style={styles.helpText}>
-            💡 Tip: Take clear photos with good lighting for best results
-          </Text>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              paddingHorizontal: 16,
+              paddingVertical: 4,
+              borderRadius: 6,
+              marginHorizontal: 24,
+            }}
+          >
+            <Ionicons name={AppIcons.tip} size={IconSize.inline} color="#fff" />
+            <Text
+              style={[
+                styles.helpText,
+                {
+                  backgroundColor: 'transparent',
+                  paddingHorizontal: 0,
+                  paddingVertical: 0,
+                  borderRadius: 0,
+                  marginHorizontal: 0,
+                },
+              ]}
+            >
+              Tip: Take clear photos with good lighting for best results
+            </Text>
+          </View>
         </View>
       </CameraView>
     </View>

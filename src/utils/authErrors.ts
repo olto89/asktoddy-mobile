@@ -7,7 +7,7 @@ interface AuthErrorResponse {
 export const getAuthErrorMessage = (error: any): AuthErrorResponse => {
   const errorMessage = error?.message?.toLowerCase() || '';
   const errorCode = error?.code?.toLowerCase() || '';
-  console.log('🔍 Processing auth error:', {
+  logger.debug('🔍 Processing auth error:', {
     message: errorMessage,
     code: errorCode,
     fullError: error,
@@ -114,7 +114,7 @@ export const getAuthErrorMessage = (error: any): AuthErrorResponse => {
   }
 
   // Generic fallback for unknown errors
-  console.warn('⚠️ Unhandled auth error:', error);
+  logger.warn('⚠️ Unhandled auth error:', error);
   return {
     message: 'Something went wrong',
     suggestion:

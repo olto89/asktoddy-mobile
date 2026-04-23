@@ -16,6 +16,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import designTokens from '../styles/designTokens';
+import { AppIcons, IconSize } from '../styles/iconRegistry';
+import { logger } from '../services/Logger';
 
 interface QuoteItem {
   id: string;
@@ -41,12 +43,12 @@ export default function InteractiveQuoteTable({
 }: InteractiveQuoteProps) {
   const [editingItem, setEditingItem] = useState<string | null>(null);
 
-  console.log('🚨 InteractiveQuoteTable received analysis:', JSON.stringify(analysis, null, 2));
+  logger.debug('🚨 InteractiveQuoteTable received analysis:', JSON.stringify(analysis, null, 2));
 
   const [items, setItems] = useState<QuoteItem[]>(() => {
     const allItems: QuoteItem[] = [];
 
-    console.log('🔍 InteractiveQuoteTable analyzing materials:', {
+    logger.debug('🔍 InteractiveQuoteTable analyzing materials:', {
       hasMaterials: !!analysis.costBreakdown?.materials,
       hasItems: !!analysis.costBreakdown?.materials?.items,
       isArray: Array.isArray(analysis.costBreakdown?.materials?.items),
@@ -59,9 +61,9 @@ export default function InteractiveQuoteTable({
       analysis.costBreakdown?.materials?.items &&
       Array.isArray(analysis.costBreakdown.materials.items)
     ) {
-      console.log('✅ Processing materials items:', analysis.costBreakdown.materials.items);
+      logger.debug('✅ Processing materials items:', analysis.costBreakdown.materials.items);
       analysis.costBreakdown.materials.items.forEach((item: any, index: number) => {
-        console.log(`📦 Processing material ${index}:`, item);
+        logger.debug(`📦 Processing material ${index}:`, item);
         allItems.push({
           id: `mat-${index}`,
           name: item.name || 'Material Item',
@@ -241,7 +243,14 @@ export default function InteractiveQuoteTable({
           <View style={styles.tableContainer}>
             {/* Header */}
             <View style={styles.header}>
-              <Text style={styles.headerTitle}>📊 Interactive Quote</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons
+                  name={AppIcons.interactiveQuote}
+                  size={IconSize.medium}
+                  color={designTokens.colors.text.primary}
+                />
+                <Text style={styles.headerTitle}>Interactive Quote</Text>
+              </View>
               <Text style={styles.headerSubtitle}>Edit items • Add rows • Generate PDF</Text>
             </View>
 

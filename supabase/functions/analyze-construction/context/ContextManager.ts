@@ -2,6 +2,11 @@
  * ContextManager - Handles conversation context storage and retrieval
  */
 
+const IS_DEBUG = Deno.env.get('DEBUG') === 'true' || Deno.env.get('APP_ENV') === 'development';
+const debug = (...args: unknown[]) => {
+  if (IS_DEBUG) console.log(...args);
+};
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type {
   ConversationContext,
@@ -81,7 +86,7 @@ export class ContextManager {
   ): Promise<boolean> {
     const context = await this.getContext(sessionId);
     if (!context) {
-      console.warn('Cannot add question - no context found for session:', sessionId);
+      debug('Cannot add question - no context found for session:', sessionId);
       return false;
     }
 
@@ -143,7 +148,7 @@ export class ContextManager {
   ): Promise<boolean> {
     const context = await this.getContext(sessionId);
     if (!context) {
-      console.warn('Cannot add message - no context found for session:', sessionId);
+      debug('Cannot add message - no context found for session:', sessionId);
       return false;
     }
 
@@ -166,7 +171,7 @@ export class ContextManager {
 
     context.lastUpdated = new Date().toISOString();
 
-    console.log(
+    debug(
       `💾 Added ${role} message with${mediaInfo ? ` ${mediaInfo.type}` : 'out'} media to session ${sessionId}`
     );
 

@@ -9,6 +9,11 @@ export interface SiteNote {
   constructionMethodMultiplier?: number;
   propertyType: string;
   size: string;
+  sizeLength?: string;
+  sizeWidth?: string;
+  specLevel?: string;
+  numberOfRooms?: string;
+  numberOfFloors?: string;
   tasks: string[];
   notes: string;
   photos: string[];
@@ -39,6 +44,11 @@ export interface DraftFormData {
   selectedConstructionMethod: string;
   selectedPropertyType: string;
   size: string;
+  sizeLength?: string;
+  sizeWidth?: string;
+  specLevel?: string;
+  numberOfRooms?: string;
+  numberOfFloors?: string;
   selectedTasks: string[];
   additionalNotes: string;
   photos: string[];

@@ -5,6 +5,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase, authHelpers } from '../services/supabase';
 import { navigate } from '../services/NavigationService';
 import revenueCatService from '../services/RevenueCatService';
+import { parseAuthDeepLink } from '../utils/parseAuthDeepLink';
+import { quoteStorage } from '../services/QuoteStorageService';
+import { logger } from '../services/Logger';
 
 // Enhanced user types for freemium model
 type UserTier = 'anonymous' | 'free' | 'premium';
@@ -19,6 +22,8 @@ interface FreemiumUser {
   subscriptionId?: string;
   createdAt: string;
   anonymousId?: string; // For anonymous users
+  companyName?: string;
+  companyLogoUrl?: string;
 }
 
 interface AuthContextType {
@@ -28,8 +33,8 @@ interface AuthContextType {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string) => Promise<{ error: any; needsVerification?: boolean }>;
-  signUpTest: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
   isAuthenticated: boolean;
   isAnonymous: boolean;
   isPremium: boolean;
@@ -37,6 +42,7 @@ interface AuthContextType {
   incrementQuoteUsage: () => Promise<void>;
   upgradeUser: (tier: UserTier) => Promise<void>;
   refreshPremiumStatus: () => Promise<void>;
+  updateCompanyProfile: (companyName?: string, companyLogoUrl?: string | null) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -74,6 +80,8 @@ const createFreeUser = (user: User): FreemiumUser => ({
   quotesUsed: 0,
   quotesLimit: 5, // Free tier limit
   createdAt: user.created_at || new Date().toISOString(),
+  companyName: (user.user_metadata as any)?.company_name,
+  companyLogoUrl: (user.user_metadata as any)?.company_logo_url,
 });
 
 export function AuthProvider({ children }: AuthProviderProps) {
@@ -96,13 +104,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const initializeAuth = async () => {
       try {
-        console.log('🔄 Initializing authentication...');
+        logger.debug('🔄 Initializing authentication...');
 
         // First, try to load existing freemium user data from storage
         const storedFreemiumUser = await loadFreemiumUserFromStorage();
         if (storedFreemiumUser) {
           setFreemiumUser(storedFreemiumUser);
-          console.log('💾 Loaded existing freemium user:', storedFreemiumUser.tier);
+          logger.debug('💾 Loaded existing freemium user:', storedFreemiumUser.tier);
         }
 
         // Get initial session - let Supabase handle this naturally
@@ -121,7 +129,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             error.message?.includes('Invalid Refresh Token') ||
             error.message?.includes('Refresh Token Not Found')
           ) {
-            console.log('🔄 Clearing invalid session...');
+            logger.debug('🔄 Clearing invalid session...');
             await supabase.auth.signOut();
           }
 
@@ -134,7 +142,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             await saveFreemiumUserToStorage(anonymousUser);
           }
         } else if (session) {
-          console.log('✅ Initial session found for:', session.user?.email);
+          logger.debug('✅ Initial session found for:', session.user?.email);
           setSession(session);
           setUser(session.user);
           // Convert to free user if not already upgraded
@@ -142,7 +150,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setFreemiumUser(freeUser);
           await saveFreemiumUserToStorage(freeUser);
         } else {
-          console.log('ℹ️ No initial session found');
+          logger.debug('ℹ️ No initial session found');
           setSession(null);
           setUser(null);
           // Keep anonymous user if no session
@@ -175,17 +183,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🔔 Auth state changed:', event, session?.user?.email);
+      logger.debug('🔔 Auth state changed:', event, session?.user?.email);
 
       if (!mounted) return; // Component unmounted
 
       switch (event) {
         case 'INITIAL_SESSION':
-          console.log('📱 Initial session loaded');
+          logger.debug('📱 Initial session loaded');
           // Don't override our initialization above
           return;
         case 'SIGNED_IN':
-          console.log('✅ User signed in');
+          logger.debug('✅ User signed in');
           setSession(session);
           setUser(session?.user ?? null);
           // Preserve anonymous session data when converting to free user
@@ -199,7 +207,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             freeUser.anonymousId = currentSessionId; // Keep the session ID for continuity
             freeUser.quotesUsed = currentQuotesUsed; // Preserve quota usage
 
-            console.log('🆔 Creating free user with preserved session:', {
+            logger.debug('🆔 Creating free user with preserved session:', {
               tier: freeUser.tier,
               quotesUsed: freeUser.quotesUsed,
               quotesLimit: freeUser.quotesLimit,
@@ -207,25 +215,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
             });
             setFreemiumUser(freeUser);
             await saveFreemiumUserToStorage(freeUser);
-            console.log('💾 Free user saved to storage with preserved session data');
+            logger.debug('💾 Free user saved to storage with preserved session data');
 
             // Set RevenueCat user ID and sync premium status
             await revenueCatService.setUserId(session.user.id);
             // Check if user has active subscription (will upgrade if needed)
             const status = await revenueCatService.checkPremiumStatus();
             if (status.isPremium) {
-              console.log('💎 User has active premium subscription');
+              logger.debug('💎 User has active premium subscription');
               freeUser.tier = 'premium';
               freeUser.quotesLimit = 999999;
               freeUser.subscriptionStatus = 'active';
               setFreemiumUser(freeUser);
               await saveFreemiumUserToStorage(freeUser);
             }
+
+            // Migrate any anonymous quotes to the new account
+            const getToken = async () => session?.access_token ?? null;
+            quoteStorage.migrateAnonymousQuotes(session.user.id, getToken).catch(err => {
+              logger.warn('Quote migration after sign-in failed:', err);
+            });
           }
           setLoading(false);
           break;
         case 'SIGNED_OUT':
-          console.log('👋 User signed out');
+          logger.debug('👋 User signed out');
           setSession(null);
           setUser(null);
           // Revert to anonymous user on sign out
@@ -235,14 +249,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setLoading(false);
           break;
         case 'TOKEN_REFRESHED':
-          console.log('🔄 Token refreshed successfully');
+          logger.debug('🔄 Token refreshed successfully');
           if (session) {
             setSession(session);
             setUser(session.user);
           }
           break;
         case 'USER_UPDATED':
-          console.log('👤 User data updated');
+          logger.debug('👤 User data updated');
           if (session) {
             setSession(session);
             setUser(session.user);
@@ -253,7 +267,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
           break;
         default:
-          console.log('🔔 Other auth event:', event);
+          logger.debug('🔔 Other auth event:', event);
           setSession(session);
           setUser(session?.user ?? null);
       }
@@ -261,26 +275,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     // Handle deep links for email confirmation
     const handleDeepLink = (url: string) => {
-      console.log('Deep link received:', url);
+      logger.debug('Deep link received:', url);
       if (url.includes('auth/callback')) {
-        // Extract tokens from URL and handle email confirmation
-        const urlParams = new URL(url).searchParams;
-        const access_token = urlParams.get('access_token');
-        const refresh_token = urlParams.get('refresh_token');
-        const type = urlParams.get('type');
+        // Parse tokens from URL (handles both hash fragments and query params)
+        const tokens = parseAuthDeepLink(url);
 
-        if (access_token && refresh_token) {
-          console.log('Setting session from deep link tokens');
+        if (tokens) {
+          logger.debug('Setting session from deep link tokens');
 
-          // Set the session first
+          // Set the session - this triggers SIGNED_IN event which updates auth state
           supabase.auth
-            .setSession({ access_token, refresh_token })
+            .setSession({ access_token: tokens.access_token, refresh_token: tokens.refresh_token })
             .then(() => {
-              // If this is an email confirmation, navigate to success screen
-              if (type === 'signup' || type === 'email_change') {
-                console.log('Email verification successful, navigating to success screen');
+              if (tokens.type === 'signup' || tokens.type === 'email_change') {
+                logger.debug('Email verification successful, user is now logged in');
+                // Navigate to main app - session is already set, user is authenticated
                 setTimeout(() => {
-                  navigate('VerificationSuccess');
+                  navigate('Main');
                 }, 1000); // Small delay to ensure navigation is ready
               }
             })
@@ -288,7 +299,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
               console.error('Error setting session from deep link:', error);
             });
         } else {
-          console.log('Invalid or missing tokens in deep link');
+          logger.debug('Invalid or missing tokens in deep link');
         }
       }
     };
@@ -307,11 +318,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     // Handle app state changes (background/foreground) - simplified
     const handleAppStateChange = async (nextAppState: AppStateStatus) => {
-      console.log('📱 App state changed to:', nextAppState);
+      logger.debug('📱 App state changed to:', nextAppState);
 
       if (nextAppState === 'active' && sessionRef.current && mounted) {
         // App came to foreground, do a gentle session check
-        console.log('🔄 App activated, gentle session check...');
+        logger.debug('🔄 App activated, gentle session check...');
         try {
           const {
             data: { session: currentSession },
@@ -321,7 +332,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           if (!mounted) return; // Component unmounted
 
           if (error || !currentSession) {
-            console.warn('⚠️ Session invalid after app resume');
+            logger.warn('⚠️ Session invalid after app resume');
             setSession(null);
             setUser(null);
           } else if (currentSession.expires_at) {
@@ -330,23 +341,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
             const minutesUntilExpiry = (expiryTime.getTime() - Date.now()) / (1000 * 60);
 
             if (minutesUntilExpiry < 5) {
-              console.log('🔄 Refreshing session on app resume');
+              logger.debug('🔄 Refreshing session on app resume');
               try {
                 const {
                   data: { session: refreshedSession },
                 } = await supabase.auth.refreshSession();
                 if (mounted && refreshedSession) {
-                  console.log('✅ Session refreshed after app resume');
+                  logger.debug('✅ Session refreshed after app resume');
                   setSession(refreshedSession);
                   setUser(refreshedSession.user);
                 }
               } catch (refreshError) {
-                console.warn('⚠️ Session refresh failed on app resume:', refreshError);
+                logger.warn('⚠️ Session refresh failed on app resume:', refreshError);
               }
             }
           }
         } catch (checkError) {
-          console.warn('⚠️ App resume session check error:', checkError);
+          logger.warn('⚠️ App resume session check error:', checkError);
         }
       }
     };
@@ -358,7 +369,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       async () => {
         const currentSession = sessionRef.current;
         if (currentSession && mounted) {
-          console.log('⏰ Periodic session check...');
+          logger.debug('⏰ Periodic session check...');
           try {
             const {
               data: { session: freshSession },
@@ -368,14 +379,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
             if (!mounted) return; // Component unmounted
 
             if (error || !freshSession) {
-              console.warn('⚠️ Session check failed, might be expired');
+              logger.warn('⚠️ Session check failed, might be expired');
 
               // If it's an invalid refresh token error, clear the session
               if (
                 error?.message?.includes('Invalid Refresh Token') ||
                 error?.message?.includes('Refresh Token Not Found')
               ) {
-                console.log('🔄 Clearing invalid session during periodic check...');
+                logger.debug('🔄 Clearing invalid session during periodic check...');
                 await supabase.auth.signOut();
               }
 
@@ -390,28 +401,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 const now = new Date();
                 const minutesUntilExpiry = (expiryTime.getTime() - now.getTime()) / (1000 * 60);
 
-                console.log(`⏱️ Token expires in ${minutesUntilExpiry.toFixed(1)} minutes`);
+                logger.debug(`⏱️ Token expires in ${minutesUntilExpiry.toFixed(1)} minutes`);
 
                 if (minutesUntilExpiry < 10) {
-                  console.log('🔄 Token expiring soon, refreshing...');
+                  logger.debug('🔄 Token expiring soon, refreshing...');
                   try {
                     const {
                       data: { session: refreshedSession },
                     } = await supabase.auth.refreshSession();
 
                     if (mounted && refreshedSession) {
-                      console.log('✅ Token refreshed proactively');
+                      logger.debug('✅ Token refreshed proactively');
                       setSession(refreshedSession);
                       setUser(refreshedSession.user ?? null);
                     }
                   } catch (refreshError) {
-                    console.warn('⚠️ Token refresh failed:', refreshError);
+                    logger.warn('⚠️ Token refresh failed:', refreshError);
                   }
                 }
               }
             }
           } catch (checkError) {
-            console.warn('⚠️ Session check error:', checkError);
+            logger.warn('⚠️ Session check error:', checkError);
           }
         }
       },
@@ -431,8 +442,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     let timeoutId: NodeJS.Timeout | null = null;
 
     try {
-      console.log('🔐 Attempting sign in for:', email);
-      console.log('🔐 Current session before sign in:', session?.user?.email || 'none');
+      logger.debug('🔐 Attempting sign in for:', email);
+      logger.debug('🔐 Current session before sign in:', session?.user?.email || 'none');
 
       // Store current anonymous session data before sign in
       const currentAnonymousId = freemiumUser.anonymousId;
@@ -440,12 +451,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       // Set a timeout to prevent hanging (but don't set global loading)
       timeoutId = setTimeout(() => {
-        console.warn('SignIn timeout reached');
+        logger.warn('SignIn timeout reached');
       }, 30000);
 
       const { data, error } = await authHelpers.signIn(email, password);
 
-      console.log('🔐 SignIn response:', {
+      logger.debug('🔐 SignIn response:', {
         hasData: !!data,
         hasUser: !!data?.user,
         hasSession: !!data?.session,
@@ -460,8 +471,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
 
       if (data?.user && data?.session) {
-        console.log('✅ Sign in successful for:', data.user.email);
-        console.log(
+        logger.debug('✅ Sign in successful for:', data.user.email);
+        logger.debug(
           '✅ Session obtained:',
           data.session.access_token ? 'token present' : 'no token'
         );
@@ -478,7 +489,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
 
       if (data?.user && !data?.session) {
-        console.warn('⚠️ User returned but no session - might need email verification');
+        logger.warn('⚠️ User returned but no session - might need email verification');
         return {
           error: {
             message: 'Please check your email to verify your account',
@@ -488,8 +499,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
 
       // Handle case where no error but also no user data
-      console.warn('⚠️ Sign in completed but no user data received');
-      console.warn('⚠️ Full response:', data);
+      logger.warn('⚠️ Sign in completed but no user data received');
+      logger.warn('⚠️ Full response:', data);
       return {
         error: {
           message: 'Login failed - please try again',
@@ -513,7 +524,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       // Set a timeout to prevent hanging (but don't set global loading)
       timeoutId = setTimeout(() => {
-        console.warn('SignUp timeout reached');
+        logger.warn('SignUp timeout reached');
       }, 30000);
 
       const { data, error } = await authHelpers.signUp(email, password);
@@ -542,27 +553,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const signUpTest = async (email: string, password: string) => {
-    try {
-      setLoading(true);
-      const { data, error } = await authHelpers.signUpTest(email, password);
-
-      if (error) {
-        return { error };
-      }
-
-      return { error: null };
-    } catch (error) {
-      return { error };
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const signOut = async () => {
     try {
       setLoading(true);
-      console.log('🔄 Signing out user...');
+      logger.debug('🔄 Signing out user...');
 
       // Clear RevenueCat user ID
       await revenueCatService.clearUserId();
@@ -580,7 +574,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setSession(null);
 
       // Clear all user data from AsyncStorage for privacy/security
-      await AsyncStorage.removeItem('saved_quotes');
+      await quoteStorage.clear();
       await AsyncStorage.removeItem('freemium_user');
 
       // Revert to anonymous user
@@ -588,7 +582,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setFreemiumUser(anonymousUser);
       await saveFreemiumUserToStorage(anonymousUser);
 
-      console.log('✅ User signed out successfully');
+      logger.debug('✅ User signed out successfully');
     } catch (error) {
       console.error('❌ Sign out exception:', error);
       // Still clear local state on error
@@ -597,7 +591,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       // Clear all user data from AsyncStorage even on error
       try {
-        await AsyncStorage.removeItem('saved_quotes');
+        await quoteStorage.clear();
         await AsyncStorage.removeItem('freemium_user');
       } catch (clearError) {
         console.error('❌ Error clearing AsyncStorage:', clearError);
@@ -607,6 +601,41 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const anonymousUser = createAnonymousUser();
       setFreemiumUser(anonymousUser);
       await saveFreemiumUserToStorage(anonymousUser);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteAccount = async () => {
+    try {
+      setLoading(true);
+      logger.debug('🗑️ Deleting user account...');
+
+      const accessToken = session?.access_token;
+      if (!accessToken) {
+        throw new Error('No active session');
+      }
+
+      const { data, error } = await supabase.functions.invoke('delete-account', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      // On success: same cleanup as signOut
+      await revenueCatService.clearUserId();
+      setUser(null);
+      setSession(null);
+      await quoteStorage.clear();
+      await AsyncStorage.removeItem('freemium_user');
+
+      const anonymousUser = createAnonymousUser();
+      setFreemiumUser(anonymousUser);
+      await saveFreemiumUserToStorage(anonymousUser);
+
+      logger.debug('✅ Account deleted successfully');
     } finally {
       setLoading(false);
     }
@@ -658,7 +687,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       };
       setFreemiumUser(updatedUser);
       await saveFreemiumUserToStorage(updatedUser);
-      console.log(
+      logger.debug(
         `📊 Quote usage incremented: ${updatedUser.quotesUsed}/${updatedUser.quotesLimit}`
       );
     }
@@ -673,7 +702,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
     setFreemiumUser(upgradedUser);
     await saveFreemiumUserToStorage(upgradedUser);
-    console.log(`🎉 User upgraded to ${tier}`);
+    logger.debug(`🎉 User upgraded to ${tier}`);
   };
 
   // Sync premium status with RevenueCat
@@ -683,11 +712,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (status.isPremium && freemiumUser.tier !== 'premium') {
         // User has premium subscription in RevenueCat
-        console.log('💎 RevenueCat reports premium status, upgrading user');
+        logger.debug('💎 RevenueCat reports premium status, upgrading user');
         await upgradeUser('premium');
       } else if (!status.isPremium && freemiumUser.tier === 'premium') {
         // Premium expired or cancelled
-        console.log('⚠️ Premium expired, downgrading to free');
+        logger.debug('⚠️ Premium expired, downgrading to free');
         const downgraded = {
           ...freemiumUser,
           tier: 'free' as UserTier,
@@ -698,8 +727,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
         await saveFreemiumUserToStorage(downgraded);
       }
     } catch (error) {
-      console.warn('Failed to sync RevenueCat status:', error);
+      logger.warn('Failed to sync RevenueCat status:', error);
     }
+  };
+
+  const updateCompanyProfile = async (
+    companyName?: string,
+    companyLogoUrl?: string | null
+  ): Promise<void> => {
+    const metadata: Record<string, any> = {};
+    if (companyName !== undefined) metadata.company_name = companyName;
+    if (companyLogoUrl !== undefined) metadata.company_logo_url = companyLogoUrl;
+
+    const { error } = await supabase.auth.updateUser({ data: metadata });
+    if (error) throw error;
+
+    const updatedUser: FreemiumUser = {
+      ...freemiumUser,
+      ...(companyName !== undefined && { companyName }),
+      ...(companyLogoUrl !== undefined && { companyLogoUrl: companyLogoUrl ?? undefined }),
+    };
+    setFreemiumUser(updatedUser);
+    await saveFreemiumUserToStorage(updatedUser);
   };
 
   const value: AuthContextType = {
@@ -709,8 +758,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     loading,
     signIn,
     signUp,
-    signUpTest,
     signOut,
+    deleteAccount,
     isAuthenticated: !!user,
     isAnonymous: freemiumUser.tier === 'anonymous',
     isPremium: freemiumUser.tier === 'premium',
@@ -718,6 +767,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     incrementQuoteUsage,
     upgradeUser,
     refreshPremiumStatus: syncRevenueCatStatus,
+    updateCompanyProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -3,6 +3,11 @@
  * Tracks daily Gemini API usage to stay within free limits
  */
 
+const IS_DEBUG = Deno.env.get('DEBUG') === 'true' || Deno.env.get('APP_ENV') === 'development';
+const debug = (...args: unknown[]) => {
+  if (IS_DEBUG) console.log(...args);
+};
+
 export class UsageTracker {
   private static DAILY_LIMIT = 200;
   private static WARNING_THRESHOLD = 150;
@@ -32,10 +37,10 @@ export class UsageTracker {
     const shouldWarn = this.dailyCount >= this.WARNING_THRESHOLD;
 
     // Log for monitoring
-    console.log(`📊 API Usage: ${this.dailyCount}/${this.DAILY_LIMIT} (${remaining} remaining)`);
+    debug(`📊 API Usage: ${this.dailyCount}/${this.DAILY_LIMIT} (${remaining} remaining)`);
 
     if (shouldWarn) {
-      console.warn(`⚠️ API Usage Warning: ${this.dailyCount} requests used today!`);
+      debug(`⚠️ API Usage Warning: ${this.dailyCount} requests used today!`);
     }
 
     return {

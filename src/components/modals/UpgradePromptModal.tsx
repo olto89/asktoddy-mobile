@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import useSubscription from '../../hooks/useSubscription';
 import designTokens from '../../styles/designTokens';
+import { AppIcons, IconSize } from '../../styles/iconRegistry';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
 
@@ -49,24 +50,24 @@ export default function UpgradePromptModal({
         return {
           title: 'Quote Limit Reached',
           subtitle: `You've used all ${freemiumUser.quotesLimit} free quotes this month`,
-          emoji: '📊',
+          iconName: AppIcons.quotaExceeded,
         };
       case 'premium_feature':
         return {
           title: 'Premium Feature',
           subtitle: 'This feature is available for premium subscribers',
-          emoji: '✨',
+          iconName: AppIcons.premiumFeature,
         };
       default:
         return {
           title: 'Upgrade to Premium',
           subtitle: 'Unlock all features and unlimited quotes',
-          emoji: '🚀',
+          iconName: AppIcons.upgradeGeneral,
         };
     }
   };
 
-  const { title, subtitle, emoji } = getReasonContent();
+  const { title, subtitle, iconName } = getReasonContent();
 
   const handleUpgrade = async () => {
     setIsPurchasing(true);
@@ -139,7 +140,12 @@ export default function UpgradePromptModal({
           <View style={styles.content}>
             {/* Hero Section */}
             <View style={styles.hero}>
-              <Text style={styles.heroEmoji}>{emoji}</Text>
+              <Ionicons
+                name={iconName}
+                size={IconSize.xlarge}
+                color={designTokens.colors.primary[500]}
+                style={{ marginBottom: designTokens.spacing.md }}
+              />
               <Text style={styles.title}>{title}</Text>
               <Text style={styles.subtitle}>{subtitle}</Text>
             </View>
@@ -289,7 +295,22 @@ export default function UpgradePromptModal({
 
             {/* ROI Section */}
             <Card style={styles.roiCard}>
-              <Text style={styles.roiTitle}>💰 Return on Investment</Text>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  marginBottom: designTokens.spacing.md,
+                }}
+              >
+                <Ionicons
+                  name={AppIcons.roi}
+                  size={IconSize.medium}
+                  color={designTokens.colors.text.primary}
+                />
+                <Text style={[styles.roiTitle, { marginBottom: 0 }]}>Return on Investment</Text>
+              </View>
               <Text style={styles.roiText}>
                 Average contractor saves <Text style={styles.roiHighlight}>2.5 hours</Text> per
                 quote

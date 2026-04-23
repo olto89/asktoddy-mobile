@@ -3,6 +3,11 @@
  * Consistent error handling across all API integrations
  */
 
+const IS_DEBUG = Deno.env.get('DEBUG') === 'true' || Deno.env.get('APP_ENV') === 'development';
+const debug = (...args: unknown[]) => {
+  if (IS_DEBUG) console.log(...args);
+};
+
 export interface IntelligentFetchOptions {
   method?: string;
   headers?: Record<string, string>;
@@ -58,7 +63,7 @@ export async function intelligentFetch(
       } else if (response.status >= 500 && response.status < 600) {
         // Server errors - RETRY ONCE (might be temporary)
         if (attempt < retries) {
-          console.log(`⚠️ Server error ${response.status}, retrying once...`);
+          debug(`⚠️ Server error ${response.status}, retrying once...`);
           attempt++;
           await new Promise(resolve => setTimeout(resolve, retryDelay));
           continue;
@@ -87,7 +92,7 @@ export async function intelligentFetch(
         error.message?.includes('connection')
       ) {
         if (attempt < retries) {
-          console.log('🌐 Network error, retrying once...');
+          debug('🌐 Network error, retrying once...');
           attempt++;
           await new Promise(resolve => setTimeout(resolve, retryDelay));
           continue;

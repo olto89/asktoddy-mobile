@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../services/supabase';
+import { logger } from '../services/Logger';
 
 interface QuoteState {
   projectType: string;
@@ -109,7 +110,7 @@ export const useQuoteUpdates = ({
           setQuoteState(newQuote);
           lastUpdateRef.current = newQuote.lastUpdated;
 
-          console.log('Quote updated:', {
+          logger.debug('Quote updated:', {
             confidence: newQuote.confidence,
             totalCost: newQuote.totalCost,
             lastUpdated: new Date(newQuote.lastUpdated).toISOString(),

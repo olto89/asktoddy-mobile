@@ -11,13 +11,13 @@ import {
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
 import { useAuth } from '../contexts/AuthContext';
-import { authHelpers } from '../services/supabase';
 import designTokens from '../styles/designTokens';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Card from '../components/ui/Card';
 import ErrorAlert from '../components/ui/ErrorAlert';
 import { getAuthErrorMessage, getActionButtonText } from '../utils/authErrors';
+import { logger } from '../services/Logger';
 
 type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -32,7 +32,7 @@ export default function LoginScreen({ navigation }: Props) {
   // Redirect if already authenticated - but only once
   React.useEffect(() => {
     if (isAuthenticated && !hasNavigated) {
-      console.log('🔄 User already authenticated, redirecting...');
+      logger.debug('🔄 User already authenticated, redirecting...');
       setHasNavigated(true);
       if (navigation.canGoBack()) {
         navigation.goBack();
@@ -60,7 +60,7 @@ export default function LoginScreen({ navigation }: Props) {
 
     // Safety timeout to prevent stuck loading
     const safetyTimeout = setTimeout(() => {
-      console.warn('Login safety timeout reached, stopping local loading');
+      logger.warn('Login safety timeout reached, stopping local loading');
       setLocalLoading(false);
       // Show timeout error
       setError({
@@ -112,7 +112,7 @@ export default function LoginScreen({ navigation }: Props) {
 
       // Perform authentication
       if (isLogin) {
-        console.log('🔐 Attempting login for:', email);
+        logger.debug('🔐 Attempting login for:', email);
         const { error } = await signIn(email, password);
         if (error) {
           console.error('❌ Login failed:', error);
@@ -125,7 +125,7 @@ export default function LoginScreen({ navigation }: Props) {
           });
           return;
         } else {
-          console.log('✅ Login successful');
+          logger.debug('✅ Login successful');
           // Don't navigate here - let the auth state change handle it
           // This prevents double navigation
         }
@@ -175,39 +175,8 @@ export default function LoginScreen({ navigation }: Props) {
     setError(null); // Clear errors when switching modes
   };
 
-  const handleForgotPassword = async () => {
-    const resetEmail = email.trim();
-    if (!resetEmail) {
-      Alert.alert(
-        'Enter Email',
-        'Please enter your email address above, then tap Forgot Password.'
-      );
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(resetEmail)) {
-      Alert.alert('Invalid Email', 'Please enter a valid email address above.');
-      return;
-    }
-
-    try {
-      setLocalLoading(true);
-      const { error: resetError } = await authHelpers.resetPassword(resetEmail);
-      if (resetError) {
-        Alert.alert('Error', resetError.message || 'Failed to send reset email. Please try again.');
-      } else {
-        Alert.alert(
-          'Check Your Email',
-          `We've sent a password reset link to ${resetEmail}. Please check your inbox and spam folder.`,
-          [{ text: 'OK' }]
-        );
-      }
-    } catch (err) {
-      Alert.alert('Error', 'Something went wrong. Please try again.');
-    } finally {
-      setLocalLoading(false);
-    }
+  const handleForgotPassword = () => {
+    navigation.navigate('ForgotPassword', { email: email.trim() || undefined });
   };
 
   const handleErrorAction = () => {
@@ -216,7 +185,7 @@ export default function LoginScreen({ navigation }: Props) {
     switch (error.action) {
       case 'forgot_password':
         setError(null);
-        handleForgotPassword();
+        navigation.navigate('ForgotPassword', { email: email.trim() || undefined });
         break;
       case 'signup':
         setIsLogin(false);

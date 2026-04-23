@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import designTokens from '../styles/designTokens';
+import { AppIcons, IconSize } from '../styles/iconRegistry';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 
@@ -364,7 +365,14 @@ export default function ShareQuoteScreen({ navigation, route }: any) {
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={24} color={designTokens.colors.text.primary} />
           </TouchableOpacity>
-          <Text style={styles.title}>📤 Share Quote</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Ionicons
+              name={AppIcons.shareQuote}
+              size={IconSize.medium}
+              color={designTokens.colors.text.primary}
+            />
+            <Text style={styles.title}>Share Quote</Text>
+          </View>
           <View style={{ width: 24 }} />
         </View>
 

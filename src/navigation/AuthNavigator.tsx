@@ -8,6 +8,7 @@ import designTokens from '../styles/designTokens';
 
 // Auth screens
 import LoginScreen from '../screens/LoginScreen';
+import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import EmailVerificationScreen from '../screens/EmailVerificationScreen';
 import VerificationSuccessScreen from '../screens/VerificationSuccessScreen';
 
@@ -64,6 +65,11 @@ export default function AuthNavigator() {
         />
         {/* Auth screens still available for login from modals */}
         <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+        <Stack.Screen
+          name="ForgotPassword"
+          component={ForgotPasswordScreen}
+          options={{ headerShown: false }}
+        />
         <Stack.Screen
           name="EmailVerification"
           component={EmailVerificationScreen}

@@ -1,3 +1,4 @@
+import { logger } from '../Logger';
 import {
   PricingContext,
   PricingResponse,
@@ -31,11 +32,11 @@ export class PricingService {
 
     // Check cache first
     if (this.isCacheValid(cacheKey)) {
-      console.log('📊 Using cached pricing data');
+      logger.debug('📊 Using cached pricing data');
       return this.cache.get(cacheKey)!.data;
     }
 
-    console.log('📊 Fetching fresh pricing data...');
+    logger.debug('📊 Fetching fresh pricing data...');
 
     try {
       // Get pricing from multiple sources
@@ -80,7 +81,7 @@ export class PricingService {
       console.error('❌ Failed to fetch pricing data:', error);
 
       if (this.config.fallbackToEstimates) {
-        console.log('📊 Falling back to estimated pricing');
+        logger.debug('📊 Falling back to estimated pricing');
         return this.getFallbackPricing(context);
       }
 
@@ -479,7 +480,7 @@ export class PricingService {
    * Fallback pricing when APIs fail
    */
   private async getFallbackPricing(context: PricingContext): Promise<PricingResponse> {
-    console.log('📊 Generating fallback pricing estimates');
+    logger.debug('📊 Generating fallback pricing estimates');
 
     return {
       materials: this.getBaseMaterialsForProject(context.projectType) as MaterialPricing[],
@@ -539,6 +540,6 @@ export class PricingService {
    */
   clearCache(): void {
     this.cache.clear();
-    console.log('📊 Pricing cache cleared');
+    logger.debug('📊 Pricing cache cleared');
   }
 }

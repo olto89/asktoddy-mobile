@@ -2,7 +2,7 @@
  * AccountScreen - User account management and logout functionality
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,21 +12,95 @@ import {
   ScrollView,
   TextInput,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../services/supabase';
+import { supabase, dbHelpers } from '../services/supabase';
 import { useNavigation } from '@react-navigation/native';
+import { useImagePicker } from '../hooks/useImagePicker';
 import designTokens from '../styles/designTokens';
+import { AppIcons } from '../styles/iconRegistry';
 
 export default function AccountScreen() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, deleteAccount, freemiumUser, updateCompanyProfile } = useAuth();
   const navigation = useNavigation();
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+
+  // Company branding state
+  const [showCompanyBranding, setShowCompanyBranding] = useState(false);
+  const [companyName, setCompanyName] = useState(freemiumUser.companyName || '');
+  const [savingName, setSavingName] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [removingLogo, setRemovingLogo] = useState(false);
+
+  // Inline "Saved!" acknowledgement timers
+  const [nameSaved, setNameSaved] = useState(false);
+  const [logoSaved, setLogoSaved] = useState(false);
+  const nameSavedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const logoSavedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showNameSaved = () => {
+    setNameSaved(true);
+    if (nameSavedTimer.current) clearTimeout(nameSavedTimer.current);
+    nameSavedTimer.current = setTimeout(() => setNameSaved(false), 2500);
+  };
+
+  const showLogoSaved = () => {
+    setLogoSaved(true);
+    if (logoSavedTimer.current) clearTimeout(logoSavedTimer.current);
+    logoSavedTimer.current = setTimeout(() => setLogoSaved(false), 2500);
+  };
+
+  const { showImagePicker } = useImagePicker({
+    aspect: [1, 1],
+    quality: 0.8,
+    onImageSelected: async (uri: string) => {
+      try {
+        setUploadingLogo(true);
+        const logoPath = `${user?.id}/logo.jpg`;
+        const result = await dbHelpers.uploadImage(uri, logoPath, 'company-logos');
+        if (result.error) throw result.error;
+        await updateCompanyProfile(undefined, result.data!.publicUrl);
+        showLogoSaved();
+      } catch (err) {
+        Alert.alert('Error', 'Failed to upload logo. Please try again.');
+      } finally {
+        setUploadingLogo(false);
+      }
+    },
+  });
+
+  const handleSaveCompanyName = async () => {
+    try {
+      setSavingName(true);
+      await updateCompanyProfile(companyName);
+      showNameSaved();
+    } catch (err) {
+      Alert.alert('Error', 'Failed to save company name. Please try again.');
+    } finally {
+      setSavingName(false);
+    }
+  };
+
+  const handleRemoveLogo = async () => {
+    try {
+      setRemovingLogo(true);
+      const logoPath = `${user?.id}/logo.jpg`;
+      await dbHelpers.deleteStorageFile('company-logos', logoPath);
+      await updateCompanyProfile(undefined, null);
+      showLogoSaved();
+    } catch (err) {
+      Alert.alert('Error', 'Failed to remove logo. Please try again.');
+    } finally {
+      setRemovingLogo(false);
+    }
+  };
 
   const handleChangePassword = async () => {
     if (!newPassword || !confirmPassword) {
@@ -82,6 +156,30 @@ export default function AccountScreen() {
     ]);
   };
 
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'This will permanently delete your account and all data. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Account',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setDeletingAccount(true);
+              await deleteAccount();
+            } catch (error: any) {
+              Alert.alert('Error', error?.message || 'Failed to delete account. Please try again.');
+            } finally {
+              setDeletingAccount(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleGoBack = () => {
     navigation.goBack();
   };
@@ -98,7 +196,7 @@ export default function AccountScreen() {
         >
           <Ionicons name="arrow-back" size={24} color={designTokens.colors.text.inverse} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Account</Text>
+        <Text style={styles.headerTitle}>My Account</Text>
         <View style={styles.headerRight} />
       </View>
 
@@ -139,6 +237,127 @@ export default function AccountScreen() {
             </View>
             <Ionicons name="chevron-forward" size={16} color={designTokens.colors.text.tertiary} />
           </TouchableOpacity>
+
+          {/* Company Branding */}
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => setShowCompanyBranding(!showCompanyBranding)}
+            testID="company-branding-toggle"
+          >
+            <View style={styles.menuItemLeft}>
+              <Ionicons
+                name={AppIcons.companyBranding}
+                size={20}
+                color={designTokens.colors.text.secondary}
+              />
+              <Text style={styles.menuItemText}>Company Branding</Text>
+            </View>
+            <Ionicons
+              name={showCompanyBranding ? 'chevron-down' : 'chevron-forward'}
+              size={16}
+              color={designTokens.colors.text.tertiary}
+            />
+          </TouchableOpacity>
+
+          {showCompanyBranding && (
+            <View style={styles.brandingForm} testID="company-branding-section">
+              {/* Company Name */}
+              <Text style={styles.brandingLabel}>Company Name</Text>
+              <View style={styles.brandingNameRow}>
+                <TextInput
+                  style={styles.brandingInput}
+                  placeholder="Enter company name"
+                  placeholderTextColor={designTokens.colors.text.tertiary}
+                  value={companyName}
+                  onChangeText={setCompanyName}
+                  testID="company-name-input"
+                />
+                <TouchableOpacity
+                  style={[
+                    styles.brandingSaveButton,
+                    savingName && styles.changePasswordButtonDisabled,
+                  ]}
+                  onPress={handleSaveCompanyName}
+                  disabled={savingName}
+                  testID="save-company-name-button"
+                >
+                  {savingName ? (
+                    <ActivityIndicator size="small" color={designTokens.colors.text.inverse} />
+                  ) : (
+                    <Text style={styles.changePasswordButtonText}>Save</Text>
+                  )}
+                </TouchableOpacity>
+                {nameSaved && (
+                  <Text style={styles.savedText} testID="name-saved-indicator">
+                    Saved!
+                  </Text>
+                )}
+              </View>
+
+              {/* Company Logo */}
+              <Text style={[styles.brandingLabel, { marginTop: designTokens.spacing.md }]}>
+                Company Logo
+              </Text>
+              <View style={styles.brandingLogoRow}>
+                <TouchableOpacity
+                  style={styles.logoContainer}
+                  onPress={showImagePicker}
+                  disabled={uploadingLogo}
+                  testID="logo-picker-button"
+                >
+                  {uploadingLogo ? (
+                    <ActivityIndicator size="large" color={designTokens.colors.primary[500]} />
+                  ) : freemiumUser.companyLogoUrl ? (
+                    <Image
+                      source={{ uri: freemiumUser.companyLogoUrl }}
+                      style={styles.logoImage}
+                      testID="company-logo-image"
+                    />
+                  ) : (
+                    <Ionicons
+                      name={AppIcons.companyLogo}
+                      size={32}
+                      color={designTokens.colors.text.tertiary}
+                    />
+                  )}
+                </TouchableOpacity>
+                <View style={styles.logoActions}>
+                  <TouchableOpacity
+                    style={styles.logoActionButton}
+                    onPress={showImagePicker}
+                    disabled={uploadingLogo}
+                  >
+                    <Text style={styles.logoActionText}>
+                      {freemiumUser.companyLogoUrl ? 'Change Logo' : 'Upload Logo'}
+                    </Text>
+                  </TouchableOpacity>
+                  {freemiumUser.companyLogoUrl && (
+                    <TouchableOpacity
+                      style={styles.logoActionButton}
+                      onPress={handleRemoveLogo}
+                      disabled={removingLogo}
+                      testID="remove-logo-button"
+                    >
+                      {removingLogo ? (
+                        <ActivityIndicator size="small" color={designTokens.colors.error[500]} />
+                      ) : (
+                        <Text
+                          style={[styles.logoActionText, { color: designTokens.colors.error[500] }]}
+                        >
+                          Remove Logo
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+              {logoSaved && (
+                <Text style={styles.savedText} testID="logo-saved-indicator">
+                  Saved!
+                </Text>
+              )}
+            </View>
+          )}
 
           <TouchableOpacity
             style={styles.menuItem}
@@ -197,20 +416,22 @@ export default function AccountScreen() {
           )}
 
           <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() =>
-              Alert.alert('Coming Soon', 'Notification settings coming in next update!')
-            }
+            style={[styles.menuItem, { borderBottomWidth: 0 }]}
+            onPress={handleDeleteAccount}
+            disabled={deletingAccount}
+            testID="delete-account-button"
           >
             <View style={styles.menuItemLeft}>
-              <Ionicons
-                name="notifications-outline"
-                size={20}
-                color={designTokens.colors.text.secondary}
-              />
-              <Text style={styles.menuItemText}>Notifications</Text>
+              {deletingAccount ? (
+                <ActivityIndicator size="small" color={designTokens.colors.error[500]} />
+              ) : (
+                <Ionicons name="trash-outline" size={20} color={designTokens.colors.error[500]} />
+              )}
+              <Text style={[styles.menuItemText, { color: designTokens.colors.error[500] }]}>
+                Delete Account
+              </Text>
             </View>
-            <Ionicons name="chevron-forward" size={16} color={designTokens.colors.text.tertiary} />
+            <Ionicons name="chevron-forward" size={16} color={designTokens.colors.error[500]} />
           </TouchableOpacity>
         </View>
 
@@ -249,6 +470,38 @@ export default function AccountScreen() {
             </View>
             <Ionicons name="chevron-forward" size={16} color={designTokens.colors.text.tertiary} />
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => (navigation as any).navigate('PrivacyPolicy')}
+            testID="privacy-policy-link"
+          >
+            <View style={styles.menuItemLeft}>
+              <Ionicons
+                name="shield-checkmark-outline"
+                size={20}
+                color={designTokens.colors.text.secondary}
+              />
+              <Text style={styles.menuItemText}>Privacy Policy</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={designTokens.colors.text.tertiary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => (navigation as any).navigate('Terms')}
+            testID="terms-link"
+          >
+            <View style={styles.menuItemLeft}>
+              <Ionicons
+                name="document-text-outline"
+                size={20}
+                color={designTokens.colors.text.secondary}
+              />
+              <Text style={styles.menuItemText}>Terms & Conditions</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={designTokens.colors.text.tertiary} />
+          </TouchableOpacity>
         </View>
 
         {/* Logout Button */}
@@ -274,7 +527,7 @@ export default function AccountScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: designTokens.colors.navy[900],
+    backgroundColor: designTokens.colors.primary[500],
   },
   header: {
     flexDirection: 'row',
@@ -395,6 +648,80 @@ const styles = StyleSheet.create({
     fontSize: designTokens.typography.fontSize.md,
     fontWeight: designTokens.typography.fontWeight.medium as any,
     color: designTokens.colors.text.inverse,
+  },
+  brandingForm: {
+    paddingTop: designTokens.spacing.sm,
+    paddingBottom: designTokens.spacing.xs,
+  },
+  brandingLabel: {
+    fontSize: designTokens.typography.fontSize.sm,
+    fontWeight: designTokens.typography.fontWeight.medium as any,
+    color: designTokens.colors.text.secondary,
+    marginBottom: designTokens.spacing.xs,
+  },
+  brandingNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: designTokens.spacing.sm,
+  },
+  brandingInput: {
+    flex: 1,
+    backgroundColor: designTokens.colors.background.primary,
+    borderWidth: 1,
+    borderColor: designTokens.colors.border.primary,
+    borderRadius: designTokens.borderRadius.md,
+    paddingHorizontal: designTokens.spacing.md,
+    paddingVertical: designTokens.spacing.sm,
+    fontSize: designTokens.typography.fontSize.md,
+    color: designTokens.colors.text.primary,
+  },
+  brandingSaveButton: {
+    backgroundColor: designTokens.colors.primary[500],
+    paddingVertical: designTokens.spacing.sm,
+    paddingHorizontal: designTokens.spacing.md,
+    borderRadius: designTokens.borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 60,
+  },
+  brandingLogoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: designTokens.spacing.md,
+  },
+  logoContainer: {
+    width: 72,
+    height: 72,
+    borderRadius: designTokens.borderRadius.lg,
+    backgroundColor: designTokens.colors.background.primary,
+    borderWidth: 1,
+    borderColor: designTokens.colors.border.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  logoImage: {
+    width: 72,
+    height: 72,
+    borderRadius: designTokens.borderRadius.lg,
+  },
+  logoActions: {
+    flex: 1,
+    gap: designTokens.spacing.xs,
+  },
+  logoActionButton: {
+    paddingVertical: designTokens.spacing.xs,
+  },
+  logoActionText: {
+    fontSize: designTokens.typography.fontSize.md,
+    color: designTokens.colors.primary[500],
+    fontWeight: designTokens.typography.fontWeight.medium as any,
+  },
+  savedText: {
+    fontSize: designTokens.typography.fontSize.sm,
+    fontWeight: designTokens.typography.fontWeight.medium as any,
+    color: (designTokens.colors as any).success || '#22c55e',
+    marginTop: designTokens.spacing.xs,
   },
   logoutButton: {
     flexDirection: 'row',

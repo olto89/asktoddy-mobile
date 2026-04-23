@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import designTokens from '../styles/designTokens';
+import { AppIcons } from '../styles/iconRegistry';
 
 interface ConfidenceStep {
   id: string;
@@ -76,21 +77,24 @@ export default function ConfidenceGuide({
   const getConfidenceMessage = () => {
     if (confidence >= 85) {
       return {
-        title: '🎉 Excellent! Your quote is ready',
+        title: 'Excellent! Your quote is ready',
         subtitle: 'All key information provided - generate professional PDF',
         color: designTokens.colors.success,
+        iconName: AppIcons.confidenceExcellent,
       };
     } else if (confidence >= 70) {
       return {
-        title: '👍 Good progress! Almost there',
+        title: 'Good progress! Almost there',
         subtitle: 'Complete the steps below to unlock PDF generation',
         color: designTokens.colors.warning,
+        iconName: AppIcons.confidenceGood,
       };
     } else {
       return {
-        title: "📝 Let's improve your quote accuracy",
+        title: "Let's improve your quote accuracy",
         subtitle: 'Complete these steps for a professional estimate',
         color: designTokens.colors.primary[500],
+        iconName: AppIcons.confidenceImprove,
       };
     }
   };
@@ -113,7 +117,19 @@ export default function ConfidenceGuide({
           <Text style={styles.scoreLabel}>Confidence</Text>
         </View>
         <View style={styles.messageContainer}>
-          <Text style={[styles.messageTitle, { color: message.color }]}>{message.title}</Text>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              marginBottom: designTokens.spacing.xs,
+            }}
+          >
+            <Ionicons name={message.iconName} size={20} color={message.color} />
+            <Text style={[styles.messageTitle, { color: message.color, marginBottom: 0 }]}>
+              {message.title}
+            </Text>
+          </View>
           <Text style={styles.messageSubtitle}>{message.subtitle}</Text>
         </View>
       </View>

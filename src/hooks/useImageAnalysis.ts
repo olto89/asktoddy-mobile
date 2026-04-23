@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../services/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { logger } from '../services/Logger';
 
 export interface AnalysisContext {
   location?: string;
@@ -93,7 +94,7 @@ export const useImageAnalysis = (options: UseImageAnalysisOptions = {}): ImageAn
     setIsAnalyzing(true);
 
     try {
-      console.log('🤖 Starting image analysis with Edge Function...');
+      logger.debug('🤖 Starting image analysis with Edge Function...');
 
       const { data, error } = await supabase.functions.invoke('analyze-construction', {
         body: {
@@ -120,7 +121,7 @@ export const useImageAnalysis = (options: UseImageAnalysisOptions = {}): ImageAn
       setLastResult(result);
       onAnalysisComplete?.(result);
 
-      console.log('✅ Image analysis complete:', result.data?.projectType);
+      logger.debug('✅ Image analysis complete:', result.data?.projectType);
       return result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Analysis failed';
@@ -151,7 +152,7 @@ export const useImageAnalysis = (options: UseImageAnalysisOptions = {}): ImageAn
     setIsAnalyzing(true);
 
     try {
-      console.log('🤖 Starting image + message analysis with Edge Function...');
+      logger.debug('🤖 Starting image + message analysis with Edge Function...');
 
       const { data, error } = await supabase.functions.invoke('analyze-construction', {
         body: {
@@ -179,7 +180,7 @@ export const useImageAnalysis = (options: UseImageAnalysisOptions = {}): ImageAn
       setLastResult(result);
       onAnalysisComplete?.(result);
 
-      console.log('✅ Multi-modal analysis complete:', result.data?.projectType);
+      logger.debug('✅ Multi-modal analysis complete:', result.data?.projectType);
       return result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Analysis failed';

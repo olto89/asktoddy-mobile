@@ -9,6 +9,7 @@ import Purchases, {
   PurchasesOffering,
 } from 'react-native-purchases';
 import { Platform } from 'react-native';
+import { logger } from './Logger';
 
 // RevenueCat API keys - set these in your environment
 const REVENUECAT_IOS_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY || '';
@@ -41,21 +42,21 @@ class RevenueCatService {
    */
   async initialize(): Promise<void> {
     if (this.isInitialized) {
-      console.log('RevenueCat already initialized');
+      logger.debug('RevenueCat already initialized');
       return;
     }
 
     const apiKey = Platform.OS === 'ios' ? REVENUECAT_IOS_KEY : REVENUECAT_ANDROID_KEY;
 
     if (!apiKey) {
-      console.warn('RevenueCat API key not configured for', Platform.OS);
+      logger.warn('RevenueCat API key not configured for', Platform.OS);
       return;
     }
 
     try {
       await Purchases.configure({ apiKey });
       this.isInitialized = true;
-      console.log('RevenueCat initialized successfully');
+      logger.debug('RevenueCat initialized successfully');
 
       // Get initial customer info
       await this.refreshCustomerInfo();
@@ -69,14 +70,14 @@ class RevenueCatService {
    */
   async setUserId(userId: string): Promise<void> {
     if (!this.isInitialized) {
-      console.warn('RevenueCat not initialized');
+      logger.warn('RevenueCat not initialized');
       return;
     }
 
     try {
       await Purchases.logIn(userId);
       await this.refreshCustomerInfo();
-      console.log('RevenueCat user ID set:', userId);
+      logger.debug('RevenueCat user ID set:', userId);
     } catch (error) {
       console.error('Failed to set RevenueCat user ID:', error);
     }
@@ -91,7 +92,7 @@ class RevenueCatService {
     try {
       await Purchases.logOut();
       this.customerInfo = null;
-      console.log('RevenueCat user logged out');
+      logger.debug('RevenueCat user logged out');
     } catch (error) {
       console.error('Failed to clear RevenueCat user:', error);
     }

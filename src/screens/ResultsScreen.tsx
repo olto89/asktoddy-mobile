@@ -12,11 +12,14 @@ import {
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../App';
+import { Ionicons } from '@expo/vector-icons';
 import designTokens from '../styles/designTokens';
+import { AppIcons, IconSize } from '../styles/iconRegistry';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 // AIService removed - now using Edge Functions
 import { supabase } from '../services/supabase';
+import { logger } from '../services/Logger';
 
 type ResultsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Results'>;
 type ResultsScreenRouteProp = RouteProp<RootStackParamList, 'Results'>;
@@ -41,7 +44,7 @@ export default function ResultsScreen({ navigation, route }: Props) {
     setError(null);
 
     try {
-      console.log('🔍 Starting Edge Function analysis...');
+      logger.debug('🔍 Starting Edge Function analysis...');
 
       const { data, error } = await supabase.functions.invoke('analyze-construction', {
         body: {
@@ -57,7 +60,7 @@ export default function ResultsScreen({ navigation, route }: Props) {
       if (error) throw error;
 
       setAnalysis(data?.data);
-      console.log('✅ Analysis completed successfully');
+      logger.debug('✅ Analysis completed successfully');
     } catch (err) {
       console.error('❌ Analysis failed:', err);
       setError(err instanceof Error ? err.message : 'Analysis failed');
@@ -105,7 +108,14 @@ export default function ResultsScreen({ navigation, route }: Props) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorTitle}>⚠️ Analysis Failed</Text>
+          <View style={styles.cardTitleRow}>
+            <Ionicons
+              name={AppIcons.analysisFailed}
+              size={IconSize.medium}
+              color={designTokens.colors.error}
+            />
+            <Text style={styles.errorTitle}>Analysis Failed</Text>
+          </View>
           <Text style={styles.errorText}>{error}</Text>
           <Button title="Try Again" onPress={analyzeImage} style={styles.retryButton} />
           <Button title="Go Back" onPress={() => navigation.goBack()} variant="outline" />
@@ -136,7 +146,14 @@ export default function ResultsScreen({ navigation, route }: Props) {
           <>
             {/* Cost Breakdown */}
             <Card variant="elevated" style={styles.resultCard}>
-              <Text style={styles.cardTitle}>💰 Cost Estimate</Text>
+              <View style={styles.cardTitleRow}>
+                <Ionicons
+                  name={AppIcons.costEstimate}
+                  size={IconSize.medium}
+                  color={designTokens.colors.text.primary}
+                />
+                <Text style={styles.cardTitle}>Cost Estimate</Text>
+              </View>
               <View style={styles.costRow}>
                 <Text style={styles.costLabel}>Total Project Cost:</Text>
                 <Text style={styles.costValue}>
@@ -164,7 +181,14 @@ export default function ResultsScreen({ navigation, route }: Props) {
 
             {/* Timeline */}
             <Card variant="elevated" style={styles.resultCard}>
-              <Text style={styles.cardTitle}>⏱️ Timeline</Text>
+              <View style={styles.cardTitleRow}>
+                <Ionicons
+                  name={AppIcons.timeline}
+                  size={IconSize.medium}
+                  color={designTokens.colors.text.primary}
+                />
+                <Text style={styles.cardTitle}>Timeline</Text>
+              </View>
               <View style={styles.timelineRow}>
                 <Text style={styles.timelineLabel}>DIY Project:</Text>
                 <Text style={styles.timelineValue}>{analysis.timeline.diy}</Text>
@@ -179,7 +203,14 @@ export default function ResultsScreen({ navigation, route }: Props) {
             {/* Tools Required */}
             {analysis.toolsRequired.length > 0 && (
               <Card variant="elevated" style={styles.resultCard}>
-                <Text style={styles.cardTitle}>🔧 Tools Required</Text>
+                <View style={styles.cardTitleRow}>
+                  <Ionicons
+                    name={AppIcons.toolsRequired}
+                    size={IconSize.medium}
+                    color={designTokens.colors.text.primary}
+                  />
+                  <Text style={styles.cardTitle}>Tools Required</Text>
+                </View>
                 {analysis.toolsRequired.slice(0, 4).map((tool, index) => (
                   <View key={index} style={styles.toolRow}>
                     <Text style={styles.toolName}>{tool.name}</Text>
@@ -199,7 +230,14 @@ export default function ResultsScreen({ navigation, route }: Props) {
             {/* Recommendations */}
             {analysis.recommendations.length > 0 && (
               <Card variant="outlined" style={styles.recommendationsCard}>
-                <Text style={styles.cardTitle}>💡 Recommendations</Text>
+                <View style={styles.cardTitleRow}>
+                  <Ionicons
+                    name={AppIcons.recommendations}
+                    size={IconSize.medium}
+                    color={designTokens.colors.text.primary}
+                  />
+                  <Text style={styles.cardTitle}>Recommendations</Text>
+                </View>
                 {analysis.recommendations.slice(0, 3).map((rec, index) => (
                   <Text key={index} style={styles.recommendationText}>
                     • {rec}
@@ -211,7 +249,14 @@ export default function ResultsScreen({ navigation, route }: Props) {
             {/* Professional Required Warning */}
             {analysis.requiresProfessional && (
               <Card variant="outlined" style={styles.warningCard}>
-                <Text style={styles.warningTitle}>⚠️ Professional Required</Text>
+                <View style={styles.cardTitleRow}>
+                  <Ionicons
+                    name={AppIcons.professionalRequired}
+                    size={IconSize.medium}
+                    color={designTokens.colors.warning}
+                  />
+                  <Text style={styles.warningTitle}>Professional Required</Text>
+                </View>
                 {analysis.professionalReasons?.map((reason, index) => (
                   <Text key={index} style={styles.warningText}>
                     • {reason}
@@ -335,11 +380,16 @@ const styles = StyleSheet.create({
   resultCard: {
     marginBottom: designTokens.spacing.lg,
   },
+  cardTitleRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: designTokens.spacing.sm,
+    marginBottom: designTokens.spacing.md,
+  },
   cardTitle: {
     fontSize: designTokens.typography.fontSize.lg,
     fontWeight: designTokens.typography.fontWeight.semibold,
     color: designTokens.colors.text.primary,
-    marginBottom: designTokens.spacing.md,
   },
 
   // Cost breakdown

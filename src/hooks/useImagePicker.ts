@@ -4,9 +4,8 @@
  */
 
 import { useState } from 'react';
-import { Alert, ActionSheetIOS, Platform } from 'react-native';
+import { Alert, ActionSheetIOS, Platform, Linking } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { useCameraPermissions } from 'expo-camera';
 
 export interface ImagePickerState {
   selectedImage: string | null;
@@ -48,9 +47,18 @@ export const useImagePicker = (options: UseImagePickerOptions = {}): ImagePicker
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
       if (permissionResult.granted === false) {
-        Alert.alert('Permission Required', 'Please enable photo library access to select images.', [
-          { text: 'OK' },
-        ]);
+        if (!permissionResult.canAskAgain) {
+          Alert.alert(
+            'Photo Library Access',
+            'AskToddy needs access to your photo library to select images. Please enable it in Settings.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Open Settings', onPress: () => Linking.openSettings() },
+            ]
+          );
+        } else {
+          Alert.alert('Permission Required', 'Photo library access is needed to select images.');
+        }
         return;
       }
 
@@ -88,9 +96,18 @@ export const useImagePicker = (options: UseImagePickerOptions = {}): ImagePicker
       const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
 
       if (permissionResult.granted === false) {
-        Alert.alert('Permission Required', 'Please enable camera access to take photos.', [
-          { text: 'OK' },
-        ]);
+        if (!permissionResult.canAskAgain) {
+          Alert.alert(
+            'Camera Access',
+            'AskToddy needs camera access to take photos. Please enable it in Settings.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Open Settings', onPress: () => Linking.openSettings() },
+            ]
+          );
+        } else {
+          Alert.alert('Permission Required', 'Camera access is needed to take photos.');
+        }
         return;
       }
 

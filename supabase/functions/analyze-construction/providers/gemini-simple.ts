@@ -2,6 +2,11 @@
  * Simple Gemini Provider - Minimal implementation with intelligent material calculation
  */
 
+const IS_DEBUG = Deno.env.get('DEBUG') === 'true' || Deno.env.get('APP_ENV') === 'development';
+const debug = (...args: unknown[]) => {
+  if (IS_DEBUG) console.log(...args);
+};
+
 import { AIProvider, AnalysisRequest, ProjectAnalysis } from '../types.ts';
 import { createMaterialCalculationPrompt } from '../prompts/material-quantity-calculator.ts';
 import { createQuantityBasedPrompt, ProjectDimensions } from '../calculators/QuantityCalculator.ts';
@@ -91,8 +96,8 @@ export class GeminiSimpleProvider implements AIProvider {
   async analyzeImage(request: AnalysisRequest): Promise<ProjectAnalysis> {
     const url = `${this.endpoint}/${this.model}:generateContent?key=${this.apiKey}`;
 
-    console.log('🤖 [GEMINI-SIMPLE] Starting analysis...');
-    console.log('📋 [GEMINI-SIMPLE] Request:', {
+    debug('🤖 [GEMINI-SIMPLE] Starting analysis...');
+    debug('📋 [GEMINI-SIMPLE] Request:', {
       hasMessage: !!request.message,
       hasImage: !!request.imageUri,
       message: request.message?.substring(0, 50) + '...',
@@ -118,7 +123,7 @@ export class GeminiSimpleProvider implements AIProvider {
 
     while (retries > 0) {
       try {
-        console.log(`🔄 [GEMINI-SIMPLE] API call (single attempt to preserve quota)...`);
+        debug(`🔄 [GEMINI-SIMPLE] API call (single attempt to preserve quota)...`);
 
         const response = await fetch(url, {
           method: 'POST',
@@ -129,7 +134,7 @@ export class GeminiSimpleProvider implements AIProvider {
         });
 
         if (response.ok) {
-          console.log('✅ [GEMINI-SIMPLE] API call successful');
+          debug('✅ [GEMINI-SIMPLE] API call successful');
           const data = await response.json();
 
           if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
@@ -137,14 +142,14 @@ export class GeminiSimpleProvider implements AIProvider {
           }
 
           const responseText = data.candidates[0].content.parts[0].text;
-          console.log('📝 [GEMINI-SIMPLE] Response length:', responseText.length);
+          debug('📝 [GEMINI-SIMPLE] Response length:', responseText.length);
 
           return this.parseAndValidateResponse(responseText);
         }
 
         // Check for rate limiting
         if (response.status === 429) {
-          console.log(
+          debug(
             `⏳ [GEMINI-SIMPLE] Rate limited, retrying in ${delay}ms... (${retries} retries left)`
           );
           await new Promise(resolve => setTimeout(resolve, delay));
@@ -166,7 +171,7 @@ export class GeminiSimpleProvider implements AIProvider {
         }
 
         retries--;
-        console.log(`🔄 [GEMINI-SIMPLE] Retrying in ${delay}ms... (${retries} retries left)`);
+        debug(`🔄 [GEMINI-SIMPLE] Retrying in ${delay}ms... (${retries} retries left)`);
         await new Promise(resolve => setTimeout(resolve, delay));
         delay *= 2;
       }
@@ -176,7 +181,7 @@ export class GeminiSimpleProvider implements AIProvider {
   }
 
   private parseAndValidateResponse(responseText: string): ProjectAnalysis {
-    console.log('🔍 [GEMINI-SIMPLE] Parsing response...');
+    debug('🔍 [GEMINI-SIMPLE] Parsing response...');
 
     try {
       // Try to parse JSON from response
@@ -189,10 +194,10 @@ export class GeminiSimpleProvider implements AIProvider {
         throw new Error('No JSON found in response');
       }
 
-      console.log('📄 [GEMINI-SIMPLE] JSON extracted, parsing...');
+      debug('📄 [GEMINI-SIMPLE] JSON extracted, parsing...');
       const parsed = JSON.parse(jsonMatch[0]);
 
-      console.log('✅ [GEMINI-SIMPLE] Successfully parsed response');
+      debug('✅ [GEMINI-SIMPLE] Successfully parsed response');
 
       // Return with required fields
       const analysis = {
@@ -223,7 +228,7 @@ export class GeminiSimpleProvider implements AIProvider {
         processingTimeMs: 0,
       };
 
-      console.log('🎯 [GEMINI-SIMPLE] Analysis complete:', {
+      debug('🎯 [GEMINI-SIMPLE] Analysis complete:', {
         projectType: analysis.projectType,
         confidence: analysis.confidence,
         provider: analysis.aiProvider,

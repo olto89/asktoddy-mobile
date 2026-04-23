@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import designTokens from '../styles/designTokens';
+import { AppIcons, IconSize } from '../styles/iconRegistry';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 
@@ -20,7 +21,7 @@ export default function PricingScreen({ navigation }: any) {
     if (planType === 'premium') {
       Alert.alert(
         'Upgrade to Premium',
-        "Premium subscription coming soon! You'll be able to upgrade via Stripe integration.",
+        'Premium subscription coming soon! In-app purchase will be available shortly.',
         [
           { text: 'Cancel', style: 'cancel' },
           {
@@ -48,7 +49,16 @@ export default function PricingScreen({ navigation }: any) {
 
         {/* Hero */}
         <View style={styles.hero}>
-          <Text style={styles.heroTitle}>🏗️ AskToddy Plans</Text>
+          <View
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+          >
+            <Ionicons
+              name={AppIcons.brand}
+              size={IconSize.large}
+              color={designTokens.colors.primary[500]}
+            />
+            <Text style={styles.heroTitle}>AskToddy Plans</Text>
+          </View>
           <Text style={styles.heroSubtitle}>
             Choose the plan that works best for your construction business
           </Text>
@@ -238,7 +248,14 @@ export default function PricingScreen({ navigation }: any) {
 
         {/* ROI Section */}
         <Card style={styles.roiCard}>
-          <Text style={styles.roiTitle}>💰 Why Upgrade?</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Ionicons
+              name={AppIcons.whyUpgrade}
+              size={IconSize.medium}
+              color={designTokens.colors.text.primary}
+            />
+            <Text style={styles.roiTitle}>Why Upgrade?</Text>
+          </View>
           <View style={styles.roiItem}>
             <Ionicons name="time-outline" size={20} color={designTokens.colors.success[600]} />
             <Text style={styles.roiText}>

@@ -7,6 +7,7 @@
 import { AnalysisRequest, ContextualAnalysisRequest, ProjectAnalysis } from './types';
 import { config } from '../../config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { logger } from '../Logger';
 
 interface AnalysisResponse {
   success: boolean;
@@ -19,15 +20,23 @@ interface AnalysisResponse {
   aiProvider?: string;
 }
 
+// Timeout durations
+const HEALTH_CHECK_TIMEOUT_MS = 10_000;
+const ANALYSIS_TIMEOUT_MS = 60_000;
+
 class AIServiceEdge {
   private baseUrl: string;
   private isInitialized = false;
   private currentSessionId: string | null = null;
 
+  // Promise that resolves once the initial session load finishes.
+  // Callers await this to avoid duplicate session creation.
+  private sessionReady: Promise<void>;
+
   constructor() {
     // Use Supabase Edge Function URL
     this.baseUrl = `${config.supabase.url}/functions/v1/analyze-construction`;
-    this.loadOrCreateSession();
+    this.sessionReady = this.loadOrCreateSession();
   }
 
   /**
@@ -38,7 +47,7 @@ class AIServiceEdge {
       const existingSessionId = await AsyncStorage.getItem('conversation_session_id');
       if (existingSessionId) {
         this.currentSessionId = existingSessionId;
-        console.log('📱 Loaded existing conversation session:', existingSessionId);
+        logger.debug('📱 Loaded existing conversation session:', existingSessionId);
       } else {
         await this.createNewSession();
       }
@@ -57,7 +66,7 @@ class AIServiceEdge {
 
     try {
       await AsyncStorage.setItem('conversation_session_id', sessionId);
-      console.log('🆕 Created new conversation session:', sessionId);
+      logger.debug('🆕 Created new conversation session:', sessionId);
     } catch (error) {
       console.error('Failed to save session ID:', error);
     }
@@ -78,29 +87,33 @@ class AIServiceEdge {
   async initialize(): Promise<void> {
     if (this.isInitialized) return;
 
-    console.log('🚀 Initializing Edge AI Service...');
+    logger.debug('🚀 Initializing Edge AI Service...');
 
     try {
-      // Health check to validate the edge function is available
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), HEALTH_CHECK_TIMEOUT_MS);
+
       const response = await fetch(this.baseUrl, {
         method: 'GET',
         headers: {
           apikey: config.supabase.anonKey,
           Authorization: `Bearer ${config.supabase.anonKey}`,
         },
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (response.ok) {
         const health = await response.json();
-        console.log('✅ Edge AI Service initialized:', health);
+        logger.debug('✅ Edge AI Service initialized:', health);
       } else {
-        console.warn('⚠️ Edge function health check failed, but continuing:', response.status);
-        // Don't throw error - allow the service to work even if health check fails
+        logger.warn('⚠️ Edge function health check failed, but continuing:', response.status);
       }
 
       this.isInitialized = true;
     } catch (error) {
-      console.warn('⚠️ Failed to initialize Edge AI Service, but continuing:', error);
+      logger.warn('⚠️ Failed to initialize Edge AI Service, but continuing:', error);
       // Don't throw error - allow fallback behavior
       this.isInitialized = true;
     }
@@ -115,13 +128,14 @@ class AIServiceEdge {
       await this.initialize();
     }
 
-    // Ensure session is ready
-    if (!this.currentSessionId) {
-      await this.loadOrCreateSession();
-    }
+    // Wait for the constructor's session load to finish (no-op if already done)
+    await this.sessionReady;
 
     const startTime = Date.now();
-    console.log('📸 Sending contextual analysis request to Edge Function...');
+    logger.debug('📸 Sending contextual analysis request to Edge Function...');
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), ANALYSIS_TIMEOUT_MS);
 
     try {
       // Convert to contextual request if sessionId is available
@@ -138,7 +152,20 @@ class AIServiceEdge {
           Authorization: `Bearer ${config.supabase.anonKey}`,
         },
         body: JSON.stringify(contextualRequest),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
+
+      // Handle 503: AI unavailable but fallback data provided
+      if (response.status === 503) {
+        const body = await response.json();
+        if (body.fallbackData) {
+          logger.warn('⚠️ AI unavailable, using fallback data');
+          return { ...body.fallbackData, _isFallback: true };
+        }
+        throw new Error(body.error?.message || 'AI analysis temporarily unavailable');
+      }
 
       if (!response.ok) {
         const error = await response.text();
@@ -152,15 +179,20 @@ class AIServiceEdge {
       }
 
       const processingTime = Date.now() - startTime;
-      console.log(
+      logger.debug(
         `✅ Contextual analysis completed in ${processingTime}ms using ${result.aiProvider}`
       );
-      console.log(
+      logger.debug(
         `🧠 Response type: ${result.data.responseType}, Confidence: ${result.data.confidence}%`
       );
 
       return result.data;
-    } catch (error) {
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      if (error?.name === 'AbortError') {
+        console.error('❌ AI analysis timed out after 60 seconds');
+        throw new Error('AI analysis timed out. Please try again.');
+      }
       console.error('❌ Edge AI contextual analysis failed:', error);
       throw error;
     }
@@ -187,13 +219,19 @@ class AIServiceEdge {
    */
   async getAvailableProviders(): Promise<string[]> {
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), HEALTH_CHECK_TIMEOUT_MS);
+
       const response = await fetch(this.baseUrl, {
         method: 'GET',
         headers: {
           apikey: config.supabase.anonKey,
           Authorization: `Bearer ${config.supabase.anonKey}`,
         },
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (response.ok) {
         const health = await response.json();
@@ -210,7 +248,7 @@ class AIServiceEdge {
    */
   cleanup(): void {
     this.isInitialized = false;
-    console.log('🧹 Edge AI Service cleaned up');
+    logger.debug('🧹 Edge AI Service cleaned up');
   }
 }
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import designTokens from '../../styles/designTokens';
 import Card from './Card';
 
@@ -52,7 +53,12 @@ export default function ErrorAlert({
         {/* Error Icon and Dismiss */}
         <View style={styles.header}>
           <View style={styles.iconContainer}>
-            <Text style={styles.icon}>⚠️</Text>
+            <Ionicons
+              name="warning-outline"
+              size={20}
+              color={designTokens.colors.error}
+              style={{ marginRight: designTokens.spacing.sm }}
+            />
             <Text style={styles.title}>{title}</Text>
           </View>
           {onDismiss && (

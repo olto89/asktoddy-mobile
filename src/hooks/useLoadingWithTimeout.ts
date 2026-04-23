@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { logger } from '../services/Logger';
 
 export interface UseLoadingWithTimeoutOptions {
   timeoutMs?: number;
@@ -12,7 +13,7 @@ export function useLoadingWithTimeout(options: UseLoadingWithTimeoutOptions = {}
 
   const startLoading = () => {
     setLoading(true);
-    
+
     // Clear any existing timeout
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -20,7 +21,7 @@ export function useLoadingWithTimeout(options: UseLoadingWithTimeoutOptions = {}
 
     // Set timeout to force stop loading
     timeoutRef.current = setTimeout(() => {
-      console.warn('Loading timeout reached, forcing loading to stop');
+      logger.warn('Loading timeout reached, forcing loading to stop');
       setLoading(false);
       onTimeout?.();
     }, timeoutMs);
@@ -28,7 +29,7 @@ export function useLoadingWithTimeout(options: UseLoadingWithTimeoutOptions = {}
 
   const stopLoading = () => {
     setLoading(false);
-    
+
     // Clear timeout
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
