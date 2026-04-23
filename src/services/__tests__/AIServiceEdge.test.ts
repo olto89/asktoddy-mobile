@@ -212,6 +212,106 @@ describe('AIServiceEdge', () => {
     });
   });
 
+  describe('503 fallback handling', () => {
+    beforeEach(() => {
+      // Pre-initialize to skip health check
+      mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) });
+      AIService.cleanup();
+    });
+
+    it('returns fallback data with _isFallback flag on 503 with fallbackData', async () => {
+      const fallbackData = {
+        projectType: 'general',
+        description: 'Estimated costs',
+        confidence: 60,
+        provider: 'fallback-template',
+        costBreakdown: {
+          materials: { min: 1000, max: 3000, items: [] },
+          labor: { min: 800, max: 1200, hourlyRate: 25, estimatedHours: 40 },
+          total: { min: 1800, max: 4200 },
+        },
+      };
+
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 503,
+        json: () =>
+          Promise.resolve({
+            success: false,
+            error: { message: 'AI unavailable', code: 'AI_UNAVAILABLE' },
+            fallbackData,
+          }),
+      });
+
+      const result = await AIService.analyzeImage({
+        message: 'test',
+        analysisType: 'chat',
+      });
+
+      expect(result._isFallback).toBe(true);
+      expect(result.projectType).toBe('general');
+      expect(result.confidence).toBe(60);
+    });
+
+    it('throws error on 503 without fallbackData', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 503,
+        json: () =>
+          Promise.resolve({
+            success: false,
+            error: { message: 'AI unavailable', code: 'AI_UNAVAILABLE' },
+          }),
+      });
+
+      await expect(
+        AIService.analyzeImage({ message: 'test', analysisType: 'chat' })
+      ).rejects.toThrow('AI unavailable');
+    });
+
+    it('does not set _isFallback on successful 200 response', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: () =>
+          Promise.resolve({
+            success: true,
+            data: {
+              projectType: 'Kitchen Renovation',
+              description: 'Real AI analysis',
+              confidence: 85,
+              costBreakdown: {
+                materials: { min: 5000, max: 8000, items: [] },
+                labor: { min: 2000, max: 3000, hourlyRate: 30, estimatedHours: 80 },
+                total: { min: 7000, max: 11000 },
+              },
+              timeline: { diy: '14 days', professional: '7 days', phases: [] },
+              toolsRequired: [],
+              safetyConsiderations: [],
+              permitsRequired: [],
+              requiresProfessional: false,
+              recommendations: [],
+              warnings: [],
+              analysisId: 'real-id',
+              timestamp: new Date().toISOString(),
+              aiProvider: 'gemini-structured',
+              processingTimeMs: 2000,
+            },
+            aiProvider: 'gemini-structured',
+          }),
+      });
+
+      const result = await AIService.analyzeImage({
+        message: 'Analyze my kitchen renovation',
+        analysisType: 'chat',
+      });
+
+      expect(result._isFallback).toBeUndefined();
+      expect(result.projectType).toBe('Kitchen Renovation');
+      expect(result.confidence).toBe(85);
+    });
+  });
+
   describe('getAvailableProviders', () => {
     it('returns providers from health endpoint', async () => {
       mockFetch.mockResolvedValueOnce({

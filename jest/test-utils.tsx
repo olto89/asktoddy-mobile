@@ -43,8 +43,8 @@ export function createMockAuthContext(overrides: Partial<any> = {}) {
     loading: false,
     signIn: jest.fn(() => Promise.resolve({ error: null })),
     signUp: jest.fn(() => Promise.resolve({ error: null })),
-    signUpTest: jest.fn(() => Promise.resolve({ error: null })),
     signOut: jest.fn(() => Promise.resolve()),
+    deleteAccount: jest.fn(() => Promise.resolve()),
     isAuthenticated: false,
     isAnonymous: true,
     isPremium: false,
@@ -52,6 +52,7 @@ export function createMockAuthContext(overrides: Partial<any> = {}) {
     incrementQuoteUsage: jest.fn(() => Promise.resolve()),
     upgradeUser: jest.fn(() => Promise.resolve()),
     refreshPremiumStatus: jest.fn(() => Promise.resolve()),
+    updateCompanyProfile: jest.fn(() => Promise.resolve()),
     ...overrides,
   };
 }

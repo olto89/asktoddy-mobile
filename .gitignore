@@ -48,3 +48,4 @@ yarn-error.*
 # Test files that might contain keys
 test-*.js
 *-test.js
+coverage/

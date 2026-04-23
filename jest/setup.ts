@@ -157,6 +157,22 @@ jest.mock('expo-av', () => {
   };
 });
 
+// ─── expo-file-system ───────────────────────────────────────────
+jest.mock(
+  'expo-file-system',
+  () => ({
+    readAsStringAsync: jest.fn(() => Promise.resolve('base64data')),
+    writeAsStringAsync: jest.fn(() => Promise.resolve()),
+    deleteAsync: jest.fn(() => Promise.resolve()),
+    getInfoAsync: jest.fn(() => Promise.resolve({ exists: true, isDirectory: false })),
+    makeDirectoryAsync: jest.fn(() => Promise.resolve()),
+    documentDirectory: 'file:///mock/documents/',
+    cacheDirectory: 'file:///mock/cache/',
+    EncodingType: { UTF8: 'utf8', Base64: 'base64' },
+  }),
+  { virtual: true }
+);
+
 // ─── expo-font ───────────────────────────────────────────────────
 jest.mock('expo-font', () => ({
   loadAsync: jest.fn(() => Promise.resolve()),
@@ -262,16 +278,39 @@ jest.mock('../src/services/supabase', () => ({
       })),
       refreshSession: jest.fn(),
       setSession: jest.fn(),
+      updateUser: jest.fn(() => Promise.resolve({ data: { user: null }, error: null })),
     },
     from: jest.fn(() => mockQueryBuilder()),
+    storage: {
+      from: jest.fn(() => ({
+        upload: jest.fn(() =>
+          Promise.resolve({
+            data: { path: 'test.jpg', fullPath: 'company-logos/test.jpg' },
+            error: null,
+          })
+        ),
+        getPublicUrl: jest.fn(() => ({ data: { publicUrl: 'https://example.com/test.jpg' } })),
+      })),
+    },
   },
   authHelpers: {
     signIn: jest.fn(() => Promise.resolve({ data: { user: null, session: null }, error: null })),
     signUp: jest.fn(() => Promise.resolve({ data: { user: null, session: null }, error: null })),
-    signUpTest: jest.fn(() =>
-      Promise.resolve({ data: { user: null, session: null }, error: null })
-    ),
     signOut: jest.fn(() => Promise.resolve({ error: null })),
+    resetPassword: jest.fn(() => Promise.resolve({ data: {}, error: null })),
+  },
+  dbHelpers: {
+    uploadImage: jest.fn(() =>
+      Promise.resolve({
+        data: {
+          path: 'test.jpg',
+          fullPath: 'company-logos/test.jpg',
+          publicUrl: 'https://example.com/test.jpg',
+        },
+        error: null,
+      })
+    ),
+    deleteStorageFile: jest.fn(() => Promise.resolve({ error: null })),
   },
 }));
 

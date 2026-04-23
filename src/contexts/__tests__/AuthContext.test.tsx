@@ -71,7 +71,6 @@ describe('AuthContext', () => {
         loading: false,
         signIn: jest.fn(),
         signUp: jest.fn(),
-        signUpTest: jest.fn(),
         signOut: jest.fn(),
         isAuthenticated: false,
         isAnonymous: false,
@@ -104,7 +103,6 @@ describe('AuthContext', () => {
         loading: false,
         signIn: jest.fn(),
         signUp: jest.fn(),
-        signUpTest: jest.fn(),
         signOut: jest.fn(),
         isAuthenticated: false,
         isAnonymous: false,
@@ -138,7 +136,6 @@ describe('AuthContext', () => {
         loading: false,
         signIn: jest.fn(),
         signUp: jest.fn(),
-        signUpTest: jest.fn(),
         signOut: jest.fn(),
         isAuthenticated: false,
         isAnonymous: false,
@@ -158,6 +155,55 @@ describe('AuthContext', () => {
     });
   });
 
+  describe('signUp', () => {
+    it('returns needsVerification when user created without session', async () => {
+      (mockAuthHelpers.signUp as jest.Mock).mockResolvedValueOnce({
+        data: { user: { id: 'new-user' }, session: null },
+        error: null,
+      });
+
+      const wrapper = ({ children }: { children: React.ReactNode }) => (
+        <AuthProvider>{children}</AuthProvider>
+      );
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      let signUpResult: any;
+      await act(async () => {
+        signUpResult = await result.current.signUp('new@example.com', 'password123');
+      });
+
+      expect(signUpResult.error).toBeNull();
+      expect(signUpResult.needsVerification).toBe(true);
+    });
+
+    it('does NOT change auth state when verification is needed', async () => {
+      (mockAuthHelpers.signUp as jest.Mock).mockResolvedValueOnce({
+        data: { user: { id: 'new-user' }, session: null },
+        error: null,
+      });
+
+      const wrapper = ({ children }: { children: React.ReactNode }) => (
+        <AuthProvider>{children}</AuthProvider>
+      );
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await act(async () => {
+        await result.current.signUp('new@example.com', 'password123');
+      });
+
+      // User should still be anonymous - not authenticated yet
+      expect(result.current.isAnonymous).toBe(true);
+      expect(result.current.isAuthenticated).toBe(false);
+      expect(result.current.freemiumUser.tier).toBe('anonymous');
+    });
+  });
+
   describe('tier states', () => {
     it('anonymous user has correct flags', () => {
       const mockAuth = {
@@ -173,7 +219,6 @@ describe('AuthContext', () => {
         loading: false,
         signIn: jest.fn(),
         signUp: jest.fn(),
-        signUpTest: jest.fn(),
         signOut: jest.fn(),
         isAuthenticated: false,
         isAnonymous: true,
@@ -210,7 +255,6 @@ describe('AuthContext', () => {
         loading: false,
         signIn: jest.fn(),
         signUp: jest.fn(),
-        signUpTest: jest.fn(),
         signOut: jest.fn(),
         isAuthenticated: true,
         isAnonymous: false,
