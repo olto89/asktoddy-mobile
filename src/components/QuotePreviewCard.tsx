@@ -85,9 +85,9 @@ export default function QuotePreviewCard({
   // Permission service for enhanced UX
   const permissionService = PermissionService.getInstance();
   const getConfidenceColor = () => {
-    if (confidence >= 85) return designTokens.colors.success;
-    if (confidence >= 70) return designTokens.colors.warning;
-    return designTokens.colors.error;
+    if (confidence >= 85) return designTokens.colors.success[500];
+    if (confidence >= 70) return designTokens.colors.warning[500];
+    return designTokens.colors.error[500];
   };
 
   const getConfidenceText = () => {
@@ -274,7 +274,7 @@ export default function QuotePreviewCard({
       {shouldShowPDFPrompt && showPremiumFeatures && (
         <TouchableOpacity style={styles.pdfPrompt} onPress={onGeneratePDF}>
           <View style={styles.pdfPromptContent}>
-            <Ionicons name="document-text" size={18} color={designTokens.colors.success} />
+            <Ionicons name="document-text" size={18} color={designTokens.colors.success[500]} />
             <Text style={styles.pdfPromptText}>
               {isManuallyEdited ? 'Generate Custom PDF' : 'Generate Professional PDF'}
             </Text>
@@ -302,7 +302,7 @@ export default function QuotePreviewCard({
             style={styles.confidenceTipHeader}
             onPress={() => setShowGuideExpanded(!showGuideExpanded)}
           >
-            <Ionicons name="bulb-outline" size={16} color={designTokens.colors.warning} />
+            <Ionicons name="bulb-outline" size={16} color={designTokens.colors.warning[500]} />
             <Text style={styles.confidenceTipTitle}>
               Improve accuracy for PDF ({Math.round(confidence)}%)
             </Text>
@@ -374,7 +374,7 @@ const getCategoryColor = (category: string) => {
     case 'labor':
       return designTokens.colors.secondary[500];
     case 'tools':
-      return designTokens.colors.warning;
+      return designTokens.colors.warning[500];
     default:
       return designTokens.colors.grey[400];
   }
@@ -583,7 +583,7 @@ const styles = StyleSheet.create({
 
   // Confidence Tip Styles
   confidenceTip: {
-    backgroundColor: designTokens.colors.warning + '10',
+    backgroundColor: designTokens.colors.warning[500] + '10',
     borderRadius: designTokens.borderRadius.md,
     marginBottom: designTokens.spacing.md,
     overflow: 'hidden',
@@ -646,14 +646,14 @@ const styles = StyleSheet.create({
     color: designTokens.colors.text.primary,
   },
   enhancedBadge: {
-    backgroundColor: designTokens.colors.success + '20',
+    backgroundColor: designTokens.colors.success[500] + '20',
     borderRadius: designTokens.borderRadius.full,
     paddingHorizontal: designTokens.spacing.sm,
     paddingVertical: 2,
   },
   enhancedBadgeText: {
     fontSize: designTokens.typography.fontSize.xs,
-    color: designTokens.colors.success,
+    color: designTokens.colors.success[500],
     fontWeight: designTokens.typography.fontWeight.medium as any,
   },
   costBreakdown: {

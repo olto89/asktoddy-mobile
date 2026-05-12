@@ -1,194 +1,172 @@
 {
-  "project": "AskToddy Mobile MVP",
-  "lastUpdated": "2025-12-22T16:25:00Z",
+  "project": "AskToddy Mobile - May 2026 Launch",
+  "lastUpdated": "2026-05-07T00:00:00Z",
   "tickets": [
     {
-      "id": "ASK-101",
-      "title": "Implement Voice-to-Text Functionality",
+      "id": "ASK-201",
+      "title": "PDF Export Implementation",
       "status": "Todo",
       "priority": "High",
-      "assignee": "Development Team",
-      "description": "Add real voice-to-text transcription to replace mock implementation in SiteNotesScreen",
+      "description": "Add PDF export for professional quote output. Users need to send quotes to clients.",
       "acceptance_criteria": [
-        "Integrate with device microphone",
-        "Real-time transcription to text",
-        "Error handling for permissions",
-        "Offline capability if possible"
+        "Generate professional PDF from quote data",
+        "Include company branding placeholders",
+        "Itemized task breakdown with costs",
+        "Share via native share sheet",
+        "Works offline (generate locally)"
       ],
       "effort": "Medium",
-      "milestone": "Pre-Investor Demo"
+      "sprint": "Week 1 (May 12-16)",
+      "blocker": null
     },
     {
-      "id": "ASK-102",
-      "title": "Create Investor Demo Mode",
+      "id": "ASK-202",
+      "title": "App Polish & Bug Fixes",
       "status": "Todo",
       "priority": "High",
-      "assignee": "Development Team",
-      "description": "Add demo mode with pre-populated data for smooth investor presentation",
+      "description": "Full pass through app to fix any issues, verify all features work correctly after months of inactivity",
       "acceptance_criteria": [
-        "Toggle demo mode in settings",
-        "Pre-populated site assessment data",
-        "Fast, reliable quote generation",
-        "Professional sample quotes"
+        "All 9 job types generate quotes successfully",
+        "Auth flow works end-to-end",
+        "Auto-save functioning",
+        "Menu and navigation working",
+        "No console errors or warnings"
       ],
-      "effort": "Small",
-      "milestone": "Pre-Investor Demo"
+      "effort": "Medium",
+      "sprint": "Week 1 (May 12-16)",
+      "blocker": null
     },
     {
-      "id": "ASK-103",
-      "title": "Technical Debt Cleanup",
+      "id": "ASK-203",
+      "title": "App Store Metadata Preparation",
+      "status": "Todo",
+      "priority": "High",
+      "description": "Prepare all App Store listing assets - can be done before account is ready",
+      "acceptance_criteria": [
+        "App Store screenshots (6.7\" and 5.5\")",
+        "App description and keywords",
+        "Privacy policy URL",
+        "Support URL",
+        "App icon finalized",
+        "Category selection"
+      ],
+      "effort": "Medium",
+      "sprint": "Week 1 (May 12-16)",
+      "blocker": null
+    },
+    {
+      "id": "ASK-204",
+      "title": "Set Up Own iOS Developer Account",
+      "status": "Blocked",
+      "priority": "Critical",
+      "description": "Enroll in Apple Developer Program with own DUNS number. Required for App Store submission.",
+      "acceptance_criteria": [
+        "DUNS number received",
+        "Apple Developer enrollment completed",
+        "New bundle ID registered",
+        "Certificates and provisioning profiles created"
+      ],
+      "effort": "Small",
+      "sprint": "Week 2 (May 19-23)",
+      "blocker": "DUNS number pending"
+    },
+    {
+      "id": "ASK-205",
+      "title": "Reconfigure RevenueCat for Own Account",
+      "status": "Blocked",
+      "priority": "Critical",
+      "description": "Set up RevenueCat with new iOS dev account. Previous setup was on partner's account.",
+      "acceptance_criteria": [
+        "New app created in RevenueCat with own bundle ID",
+        "New iOS API key generated",
+        "Subscription product created in App Store Connect: asktoddy_pro_monthly (£9.99/month)",
+        "Premium entitlement configured",
+        "Sandbox tester account created",
+        "Purchase flow tested in sandbox",
+        ".env.local updated with new API keys"
+      ],
+      "effort": "Medium",
+      "sprint": "Week 2 (May 19-23)",
+      "blocker": "ASK-204 (own iOS dev account)"
+    },
+    {
+      "id": "ASK-206",
+      "title": "Final QA & App Store Submission",
+      "status": "Todo",
+      "priority": "Critical",
+      "description": "Complete QA pass and submit to App Store for review",
+      "acceptance_criteria": [
+        "Full regression test on device",
+        "Payment flow working in sandbox",
+        "Production build succeeds",
+        "Submitted to App Store review",
+        "Review feedback addressed"
+      ],
+      "effort": "Medium",
+      "sprint": "Week 3 (May 26-30)",
+      "blocker": "ASK-204, ASK-205"
+    },
+    {
+      "id": "ASK-207",
+      "title": "Android Build & Google Play Setup",
       "status": "Todo",
       "priority": "Medium",
-      "assignee": "Development Team",
-      "description": "Clean up unused imports, components, and navigation references",
+      "description": "Prepare Android build and Google Play Console listing for June release",
       "acceptance_criteria": [
-        "Remove unused screen components",
-        "Clean up navigation references",
-        "Remove unused imports",
-        "Code quality improvements"
-      ],
-      "effort": "Small",
-      "milestone": "Code Quality"
-    },
-    {
-      "id": "ASK-104",
-      "title": "TestFlight Build Preparation",
-      "status": "In Progress",
-      "priority": "High",
-      "assignee": "Development Team",
-      "description": "Prepare final TestFlight build for investor testing",
-      "acceptance_criteria": [
-        "Production build configuration",
-        "App Store metadata",
-        "TestFlight deployment",
-        "Internal testing complete"
-      ],
-      "effort": "Medium",
-      "milestone": "Pre-Investor Demo",
-      "build_id": "b859f4b7-7be3-4df2-8a2c-0a9fcfc16461",
-      "auto_submit": true
-    },
-    {
-      "id": "ASK-105",
-      "title": "API Quota Optimization",
-      "status": "Done",
-      "priority": "Critical",
-      "assignee": "Development Team",
-      "description": "Resolve Gemini API quota exhaustion with intelligent retry logic",
-      "acceptance_criteria": [
-        "Implement error-type-based retry logic",
-        "Preserve quota for rate limit errors",
-        "Maintain reliability for network issues",
-        "4x improvement in API efficiency"
-      ],
-      "effort": "Medium",
-      "milestone": "Technical Foundation",
-      "completed": "2025-12-22"
-    },
-    {
-      "id": "ASK-106",
-      "title": "Fix Expo Go Compatibility Issues",
-      "status": "Done",
-      "priority": "Critical",
-      "assignee": "Development Team",
-      "description": "Resolve runtime not ready errors preventing development",
-      "acceptance_criteria": [
-        "Remove incompatible dependencies",
-        "Maintain navigation functionality",
-        "Enable rapid development iteration",
-        "Zero runtime errors in Expo Go"
-      ],
-      "effort": "Medium",
-      "milestone": "Technical Foundation",
-      "completed": "2025-12-22"
-    },
-    {
-      "id": "ASK-107",
-      "title": "Implement Saved Quotes Management",
-      "status": "Done",
-      "priority": "High",
-      "assignee": "Development Team",
-      "description": "Add menu system with saved quotes and delete functionality",
-      "acceptance_criteria": [
-        "Modal menu with hamburger icon",
-        "Saved quotes list view",
-        "Delete functionality with confirmation",
-        "User profile and settings access"
-      ],
-      "effort": "Medium",
-      "milestone": "Core MVP Features",
-      "completed": "2025-12-22"
-    },
-    {
-      "id": "ASK-108",
-      "title": "Complete MVP User Flow",
-      "status": "Done",
-      "priority": "Critical",
-      "assignee": "Development Team",
-      "description": "Build complete user journey from site notes to quote sharing",
-      "acceptance_criteria": [
-        "SiteNotesScreen with guided capture",
-        "TaskListScreen with AI generation",
-        "EditQuoteScreen for customization",
-        "ShareQuoteScreen for distribution",
-        "Authentication flow integration"
+        "Android build compiles and runs",
+        "Google Play Console account set up",
+        "Store listing created",
+        "RevenueCat Android products configured",
+        "Submitted for review"
       ],
       "effort": "Large",
-      "milestone": "Core MVP Features",
-      "completed": "2025-12-22"
-    },
-    {
-      "id": "ASK-109",
-      "title": "Auto-Save Draft Quotes Implementation",
-      "status": "Done",
-      "priority": "High",
-      "assignee": "Development Team",
-      "description": "Implement auto-save functionality for draft quotes with smart navigation",
-      "acceptance_criteria": [
-        "Auto-save drafts after 1-second debounce on any input",
-        "Visual feedback showing auto-save status",
-        "Smart navigation: drafts → SiteNotesScreen, generated → EditQuoteScreen",
-        "Quote status tracking (draft/generated/completed)",
-        "Offline capability with AsyncStorage"
-      ],
-      "effort": "Medium",
-      "milestone": "Core MVP Features",
-      "completed": "2025-12-22"
+      "sprint": "June 2026",
+      "blocker": null
     }
+  ],
+  "completed_from_previous": [
+    "ASK-105: API Quota Optimization",
+    "ASK-106: Expo Go Compatibility",
+    "ASK-107: Saved Quotes Management",
+    "ASK-108: Complete MVP User Flow",
+    "ASK-109: Auto-Save Draft Quotes"
+  ],
+  "removed": [
+    "ASK-101: Voice-to-text (deferred to post-launch)",
+    "ASK-102: Investor Demo Mode (no longer needed)",
+    "ASK-103: Technical debt (rolled into ASK-202)"
   ],
   "milestones": [
     {
-      "name": "Technical Foundation",
-      "description": "Core technical issues resolved",
-      "status": "Complete",
-      "tickets": ["ASK-105", "ASK-106"]
-    },
-    {
-      "name": "Core MVP Features",
-      "description": "Essential user-facing functionality",
-      "status": "Complete",
-      "tickets": ["ASK-107", "ASK-108", "ASK-109"]
-    },
-    {
-      "name": "Pre-Investor Demo",
-      "description": "Final preparations for investor presentation",
-      "status": "In Progress",
-      "tickets": ["ASK-101", "ASK-102", "ASK-104"]
-    },
-    {
-      "name": "Code Quality",
-      "description": "Technical debt and code improvements",
+      "name": "Week 1: Pre-Account Prep",
+      "date": "May 12-16, 2026",
       "status": "Not Started",
-      "tickets": ["ASK-103"]
+      "tickets": ["ASK-201", "ASK-202", "ASK-203"]
+    },
+    {
+      "name": "Week 2: Account + Payments",
+      "date": "May 19-23, 2026",
+      "status": "Blocked (DUNS)",
+      "tickets": ["ASK-204", "ASK-205"]
+    },
+    {
+      "name": "Week 3: Submit & Launch",
+      "date": "May 26-30, 2026",
+      "status": "Not Started",
+      "tickets": ["ASK-206"]
+    },
+    {
+      "name": "Android Launch",
+      "date": "June 2026",
+      "status": "Not Started",
+      "tickets": ["ASK-207"]
     }
   ],
   "summary": {
-    "total_tickets": 9,
-    "completed": 5,
-    "in_progress": 1,
-    "todo": 3,
-    "critical_priority": 3,
-    "high_priority": 4,
-    "medium_priority": 2
+    "total_tickets": 7,
+    "completed": 0,
+    "blocked": 2,
+    "todo": 4,
+    "deferred": 1
   }
 }

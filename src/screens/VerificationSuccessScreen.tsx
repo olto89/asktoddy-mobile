@@ -40,7 +40,7 @@ export default function VerificationSuccessScreen({ navigation }: Props) {
             <Ionicons
               name={AppIcons.verificationSuccess}
               size={60}
-              color={designTokens.colors.success}
+              color={designTokens.colors.success[500]}
             />
           </View>
         </View>
@@ -60,7 +60,7 @@ export default function VerificationSuccessScreen({ navigation }: Props) {
             <Ionicons
               name={AppIcons.celebration}
               size={IconSize.medium}
-              color={designTokens.colors.success}
+              color={designTokens.colors.success[500]}
             />
             <Text style={styles.successTitle}>You're all set!</Text>
           </View>

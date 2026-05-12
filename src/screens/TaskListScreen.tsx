@@ -44,6 +44,9 @@ export default function TaskListScreen({ navigation, route }: any) {
   const [isFallback, setIsFallback] = useState(false);
   const [pendingQuoteGeneration, setPendingQuoteGeneration] = useState(false);
   const [previousAuthState, setPreviousAuthState] = useState(isAnonymous);
+  const [processingStage, setProcessingStage] = useState<
+    'preparing' | 'compressing' | 'sending' | 'generating' | 'finalising'
+  >('preparing');
 
   // Guard against setState on unmounted component
   const mountedRef = useRef(true);
@@ -178,41 +181,42 @@ export default function TaskListScreen({ navigation, route }: any) {
   const convertImagesToBase64 = async (
     imageUris: string[]
   ): Promise<{ base64: string; mimeType: string }[]> => {
-    const images: { base64: string; mimeType: string }[] = [];
     const MAX_WIDTH = 1024;
 
-    for (const uri of imageUris) {
-      try {
-        // Resize to max 1024px width and compress as JPEG
-        const manipulated = await ImageManipulator.manipulateAsync(
-          uri,
-          [{ resize: { width: MAX_WIDTH } }],
-          { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG, base64: true }
-        );
-
-        if (manipulated.base64) {
-          images.push({ base64: manipulated.base64, mimeType: 'image/jpeg' });
-          logger.debug(
-            `📸 Compressed image: ${uri.substring(0, 50)}... (${Math.round((manipulated.base64.length * 3) / 4 / 1024)}KB)`
-          );
-        }
-      } catch (error) {
-        // Fallback: read original if manipulation fails
+    // Process all images in parallel for faster compression
+    const results = await Promise.all(
+      imageUris.map(async (uri): Promise<{ base64: string; mimeType: string } | null> => {
         try {
-          const base64 = await FileSystem.readAsStringAsync(uri, {
-            encoding: FileSystem.EncodingType.Base64,
-          });
-          const extension = uri.split('.').pop()?.toLowerCase() || 'jpg';
-          const mimeType = extension === 'png' ? 'image/png' : 'image/jpeg';
-          images.push({ base64, mimeType });
-          logger.debug(`📸 Fallback (uncompressed): ${uri.substring(0, 50)}...`);
-        } catch (fallbackError) {
-          console.error(`Failed to convert image: ${uri}`, fallbackError);
-        }
-      }
-    }
+          const manipulated = await ImageManipulator.manipulateAsync(
+            uri,
+            [{ resize: { width: MAX_WIDTH } }],
+            { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+          );
 
-    return images;
+          if (manipulated.base64) {
+            logger.debug(
+              `📸 Compressed image: ${uri.substring(0, 50)}... (${Math.round((manipulated.base64.length * 3) / 4 / 1024)}KB)`
+            );
+            return { base64: manipulated.base64, mimeType: 'image/jpeg' };
+          }
+        } catch (error) {
+          try {
+            const base64 = await FileSystem.readAsStringAsync(uri, {
+              encoding: FileSystem.EncodingType.Base64,
+            });
+            const extension = uri.split('.').pop()?.toLowerCase() || 'jpg';
+            const mimeType = extension === 'png' ? 'image/png' : 'image/jpeg';
+            logger.debug(`📸 Fallback (uncompressed): ${uri.substring(0, 50)}...`);
+            return { base64, mimeType };
+          } catch (fallbackError) {
+            console.error(`Failed to convert image: ${uri}`, fallbackError);
+          }
+        }
+        return null;
+      })
+    );
+
+    return results.filter((r): r is { base64: string; mimeType: string } => r !== null);
   };
 
   // Helper function to convert audio recordings to base64
@@ -282,25 +286,22 @@ export default function TaskListScreen({ navigation, route }: any) {
 
       const aiService = AIService;
 
-      // Convert photos to base64 for AI analysis
-      let images: { base64: string; mimeType: string }[] = [];
-      if (siteNotes.photos && siteNotes.photos.length > 0) {
-        logger.debug(`📸 Converting ${siteNotes.photos.length} photos to base64...`);
-        images = await convertImagesToBase64(siteNotes.photos);
-        logger.debug(`✅ Converted ${images.length} photos successfully`);
+      // Convert photos and audio in parallel
+      const hasPhotos = siteNotes.photos && siteNotes.photos.length > 0;
+      const hasRecordings = siteNotes.voiceRecordings && siteNotes.voiceRecordings.length > 0;
+
+      if (hasPhotos || hasRecordings) {
+        setProcessingStage('compressing');
       }
 
-      if (!mountedRef.current) return;
-
-      // Convert voice recordings to base64 for AI analysis
-      let audioFiles: { base64: string; mimeType: string }[] = [];
-      if (siteNotes.voiceRecordings && siteNotes.voiceRecordings.length > 0) {
-        logger.debug(
-          `🎤 Converting ${siteNotes.voiceRecordings.length} voice recordings to base64...`
-        );
-        audioFiles = await convertAudioToBase64(siteNotes.voiceRecordings);
-        logger.debug(`✅ Converted ${audioFiles.length} audio files successfully`);
-      }
+      const [images, audioFiles] = await Promise.all([
+        hasPhotos
+          ? convertImagesToBase64(siteNotes.photos)
+          : Promise.resolve([] as { base64: string; mimeType: string }[]),
+        hasRecordings
+          ? convertAudioToBase64(siteNotes.voiceRecordings)
+          : Promise.resolve([] as { base64: string; mimeType: string }[]),
+      ]);
 
       if (!mountedRef.current) return;
 
@@ -381,7 +382,14 @@ ${siteNotes.constructionMethod ? `• IMPORTANT: Apply ${siteNotes.constructionM
 Provide detailed cost breakdown with materials, labor, and realistic price ranges based on current UK market rates.`;
 
       // Call AI service with images and audio if available
+      setProcessingStage('sending');
       const hasMedia = images.length > 0 || audioFiles.length > 0;
+
+      // Transition to 'generating' after 2s so user sees progress during the AI wait
+      const stageTimer = setTimeout(() => {
+        if (mountedRef.current) setProcessingStage('generating');
+      }, 2000);
+
       const response = await aiService.analyzeImage({
         message: prompt,
         images: images.length > 0 ? images : undefined,
@@ -389,8 +397,11 @@ Provide detailed cost breakdown with materials, labor, and realistic price range
         analysisType: hasMedia ? 'image' : 'chat',
       });
 
+      clearTimeout(stageTimer);
+
       if (!mountedRef.current) return;
 
+      setProcessingStage('finalising');
       logger.debug('🤖 AI Response received:', response);
 
       // Detect fallback responses
@@ -456,6 +467,7 @@ Provide detailed cost breakdown with materials, labor, and realistic price range
   const handleRetryAnalysis = () => {
     setIsFallback(false);
     setTasks([]);
+    setProcessingStage('preparing');
     setIsProcessing(true);
     generateTasksFromNotes();
   };
@@ -505,10 +517,16 @@ Provide detailed cost breakdown with materials, labor, and realistic price range
             <View style={[styles.skeletonBar, styles.skeletonBarShort]} />
           </Card>
 
-          {/* Skeleton: Processing Status */}
+          {/* Processing Status with stage progress */}
           <View style={styles.skeletonStatusBanner}>
             <ActivityIndicator size="small" color={designTokens.colors.primary[500]} />
-            <Text style={styles.skeletonStatusText}>Analyzing your project...</Text>
+            <Text style={styles.skeletonStatusText}>
+              {processingStage === 'preparing' && 'Preparing your project details...'}
+              {processingStage === 'compressing' && 'Compressing photos...'}
+              {processingStage === 'sending' && 'Sending to AI...'}
+              {processingStage === 'generating' && 'Generating your quote...'}
+              {processingStage === 'finalising' && 'Finalising details...'}
+            </Text>
           </View>
 
           {/* Skeleton: Task Cards */}

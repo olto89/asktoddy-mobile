@@ -244,6 +244,22 @@ class AIServiceEdge {
   }
 
   /**
+   * Prewarm the edge function to eliminate cold start latency.
+   * Fire-and-forget — always sends a GET regardless of isInitialized.
+   */
+  prewarm(): void {
+    fetch(this.baseUrl, {
+      method: 'GET',
+      headers: {
+        apikey: config.supabase.anonKey,
+        Authorization: `Bearer ${config.supabase.anonKey}`,
+      },
+    })
+      .then(() => logger.debug('🔥 Edge function prewarmed'))
+      .catch(() => {}); // Silently ignore — best effort only
+  }
+
+  /**
    * Clean up resources (no-op for Edge Function)
    */
   cleanup(): void {

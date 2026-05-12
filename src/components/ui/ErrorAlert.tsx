@@ -56,7 +56,7 @@ export default function ErrorAlert({
             <Ionicons
               name="warning-outline"
               size={20}
-              color={designTokens.colors.error}
+              color={designTokens.colors.error[500]}
               style={{ marginRight: designTokens.spacing.sm }}
             />
             <Text style={styles.title}>{title}</Text>
@@ -88,7 +88,7 @@ export default function ErrorAlert({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#fef2f2', // Light red background
-    borderColor: designTokens.colors.error,
+    borderColor: designTokens.colors.error[500],
     borderWidth: 1,
     marginVertical: designTokens.spacing.md,
   },
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: designTokens.typography.fontSize.base,
     fontWeight: designTokens.typography.fontWeight.semibold,
-    color: designTokens.colors.error,
+    color: designTokens.colors.error[500],
     flex: 1,
   },
   dismissButton: {
@@ -119,12 +119,12 @@ const styles = StyleSheet.create({
   },
   dismissText: {
     fontSize: designTokens.typography.fontSize.lg,
-    color: designTokens.colors.error,
+    color: designTokens.colors.error[500],
     fontWeight: designTokens.typography.fontWeight.bold,
   },
   message: {
     fontSize: designTokens.typography.fontSize.sm,
-    color: designTokens.colors.error,
+    color: designTokens.colors.error[500],
     marginBottom: designTokens.spacing.xs,
     lineHeight: designTokens.typography.lineHeight.base,
   },
@@ -142,11 +142,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#fee2e2', // Light red background for button
     borderRadius: designTokens.borderRadius.md,
     borderWidth: 1,
-    borderColor: designTokens.colors.error,
+    borderColor: designTokens.colors.error[500],
   },
   actionText: {
     fontSize: designTokens.typography.fontSize.sm,
-    color: designTokens.colors.error,
+    color: designTokens.colors.error[500],
     fontWeight: designTokens.typography.fontWeight.medium,
   },
 });

@@ -1,14 +1,31 @@
 {
-  "sessionId": "revenuecat-integration-2026-01-14",
-  "timestamp": "2026-01-14T22:00:00Z",
-  "phase": "MVP Development - Payment Integration In Progress",
-  "targetDate": "2026-01-31",
-  "investorMeeting": "2026-06-01",
-  "currentStatus": "RevenueCat Integration Complete - Dashboard Setup Required",
+  "sessionId": "may-2026-relaunch-plan",
+  "timestamp": "2026-05-07T00:00:00Z",
+  "phase": "iOS Launch Sprint - May 2026",
+  "targetDate_iOS": "2026-05-31",
+  "targetDate_Android": "2026-06-30",
+  "investorMeeting": null,
+  "currentStatus": "Timeline reset - iOS launch end of May, Android June",
+  "blockers": {
+    "duns_number": {
+      "status": "Applied, waiting for approval",
+      "impact": "Cannot create own iOS developer account until received",
+      "action": "Monitor Apple Developer enrollment process"
+    },
+    "ios_dev_account": {
+      "status": "Blocked by DUNS",
+      "impact": "Cannot submit to App Store until account is set up",
+      "note": "Want own account from the outset, not partner's"
+    },
+    "revenuecat": {
+      "status": "Blocked by iOS dev account",
+      "impact": "Cannot create App Store Connect products or test purchases until own account is live"
+    }
+  },
   "architecture": {
     "primary": "Single-provider AI architecture",
     "providers": {
-      "active": "Gemini 2.5 Flash (upgraded from deprecated 1.5)",
+      "active": "Gemini 2.5 Flash",
       "fallback": "Template-based quotes",
       "strategy": "45s timeout, intelligent retry, two-priority project detection"
     },
@@ -36,33 +53,57 @@
       "Your Price editing per line item",
       "Auto-calculating quote totals",
       "RevenueCat SDK integration (code complete)"
-    ],
-    "demo_ready": true
+    ]
   },
-  "milestone_jan14": {
-    "name": "RevenueCat Payment Integration",
-    "completed": [
-      "Gemini model upgraded from 1.5-flash to 2.5-flash",
-      "Timeout increased from 15s to 45s",
-      "Tasks array pass-through to frontend",
-      "Two-priority project type detection (explicit + keyword)",
-      "Patio job type with 8 tasks",
-      "Driveway job type with 8 tasks",
-      "Conservatory job type with 9 tasks",
-      "Spec level detection from notes (high-spec 1.5x, budget 0.75x)",
-      "Your Price field per line item",
-      "Auto-calculating quote totals",
-      "Git staging/main branch structure",
-      "RevenueCat service created",
-      "useSubscription hook created",
-      "AuthContext premium status sync",
-      "UpgradePromptModal with real purchases"
+  "may_release_scope": {
+    "included": [
+      "Core quoting flow (site notes → AI analysis → quote → share)",
+      "Freemium with RevenueCat payments",
+      "PDF export",
+      "iOS only"
     ],
-    "ai_performance": {
-      "success_rate": "~95% (up from ~30%)",
-      "response_time": "20-30 seconds",
-      "confidence": "80-85% (vs 60% fallback)"
+    "deferred_to_later": [
+      "Voice-to-text (post-launch)",
+      "Android (June 2026)",
+      "Analytics (post-launch)"
+    ]
+  },
+  "may_sprint_plan": {
+    "week1_may12": {
+      "name": "Pre-Account Prep",
+      "tasks": [
+        "PDF export implementation",
+        "App polish and bug fixes",
+        "Verify all existing features still work",
+        "Prepare App Store metadata (screenshots, description, keywords)",
+        "Chase DUNS if not received"
+      ]
+    },
+    "week2_may19": {
+      "name": "Account Setup + Payments",
+      "tasks": [
+        "Set up iOS developer account (DUNS dependent)",
+        "Create app in App Store Connect",
+        "RevenueCat dashboard: products, entitlements, sandbox tester",
+        "Create subscription product: asktoddy_pro_monthly (£9.99/month)",
+        "Build dev client and test purchase flow"
+      ]
+    },
+    "week3_may26": {
+      "name": "Submit & Launch",
+      "tasks": [
+        "Final QA pass",
+        "Submit to App Store review",
+        "Address any review feedback",
+        "Launch"
+      ]
     }
+  },
+  "june_android_plan": {
+    "week1": "Android build setup and testing",
+    "week2": "Google Play Console setup and submission",
+    "week3": "Android launch",
+    "week4": "Post-launch fixes for both platforms"
   },
   "job_types": [
     "extension",
@@ -75,53 +116,37 @@
     "renovation",
     "other"
   ],
-  "january_launch_readiness": {
+  "launch_readiness": {
     "core_functionality": "100% complete",
     "ai_quote_engine": "100% complete",
     "freemium_infrastructure": "100% complete",
-    "payment_integration": "50% - Code complete, dashboard setup needed",
-    "premium_features": "10% - Voice-to-text mocked",
-    "analytics": "0% - Not started",
-    "overall_progress": "70% complete"
-  },
-  "june_investor_goals": {
-    "target_users": "5000+ active users",
-    "target_mrr": "£5000+ monthly recurring revenue",
-    "target_rating": "4.7+ App Store rating",
-    "target_conversion": "15% free-to-paid",
-    "data_collection_months": "4 months (Feb-May)"
+    "payment_integration": "50% - Code complete, needs own App Store account + dashboard setup",
+    "pdf_export": "0% - Not started",
+    "app_store_metadata": "0% - Not started",
+    "own_ios_dev_account": "Blocked - DUNS pending",
+    "overall_progress": "65%"
   },
   "revenuecat_setup_status": {
     "step1": "✅ DONE - Created RevenueCat account",
     "step2": "✅ DONE - Created project 'AskToddy'",
-    "step3": "✅ DONE - Added iOS app (com.asktoddy.staging) with In-App Purchase key",
-    "step4": "✅ DONE - iOS API key added to .env.local (appl_fzMpeIdnKZEhSbuJxHucxfSlVwx)",
-    "step5": "⏳ BLOCKED - Need to accept Paid Applications agreement in App Store Connect",
-    "step5_blocker": "Account Holder (partner) needs to accept agreement, or complete Tax/Banking info",
+    "step3": "⚠️ REDO - Need to reconfigure for own iOS dev account (not partner's)",
+    "step4": "⚠️ REDO - API key will change with new account",
+    "step5": "⏳ BLOCKED - Need own iOS dev account first",
     "step6": "PENDING - Create subscription product: asktoddy_pro_monthly (£9.99/month)",
     "step7": "PENDING - Create 'premium' entitlement in RevenueCat",
     "step8": "PENDING - Create sandbox tester account",
     "step9": "PENDING - Build development client and test purchases"
   },
-  "next_priorities": [
-    "Set up RevenueCat dashboard and API keys",
-    "Create products in App Store Connect",
-    "Build development client (expo-dev-client)",
-    "Test purchase flow in sandbox",
-    "Voice-to-text implementation",
-    "PDF export functionality",
-    "Analytics setup (Mixpanel/Amplitude)"
-  ],
   "latest_build": {
     "build_number": "30",
     "version": "1.2.4",
     "submitted": "2026-01-05T15:36:48Z",
     "platform": "iOS",
     "profile": "staging",
-    "status": "TestFlight Available"
+    "status": "TestFlight Available (old partner account)"
   },
   "edge_function_version": "107",
-  "lastUpdated": "2026-04-23T06:33:24.277Z",
+  "lastUpdated": "2026-05-07T00:00:00Z",
   "project": {
     "name": "asktoddy-mobile",
     "version": "1.2.4",
@@ -133,35 +158,6 @@
   },
   "git": {
     "branch": "staging",
-    "lastCommit": "7fb3906 feat: Major app improvements and TaskListScreen refactor",
-    "hasUncommittedChanges": true,
-    "changedFiles": 31
-  },
-  "environment": {
-    "nodeVersion": "v24.3.0",
-    "platform": "darwin"
-  },
-  "runningProcesses": [],
-  "recentFiles": [
-    "src/types/Quote.ts",
-    "src/contexts/__tests__/AuthContext.test.tsx",
-    "src/contexts/AuthContext.tsx",
-    "src/navigation/DrawerNavigator.tsx",
-    "src/navigation/AuthNavigator.tsx",
-    "src/utils/authErrors.ts",
-    "src/screens/AccountScreen.tsx",
-    "src/screens/EmailVerificationScreen.tsx",
-    "src/screens/VerificationSuccessScreen.tsx",
-    "src/screens/SiteNotesScreen.tsx",
-    "src/screens/ForgotPasswordScreen.tsx",
-    "src/screens/CameraScreen.tsx",
-    "src/screens/ShareQuoteScreen.tsx",
-    "src/screens/PrivacyPolicyScreen.tsx",
-    "src/screens/ChatScreen.tsx",
-    "src/screens/PricingScreen.tsx",
-    "src/screens/__tests__/SiteNotesScreen.structuredInputs.test.tsx",
-    "src/screens/__tests__/SiteNotesScreen.rateLimit.test.tsx",
-    "src/screens/__tests__/SiteNotesScreen.newAssessment.test.tsx",
-    "src/screens/__tests__/TaskListScreen.test.ts"
-  ]
+    "lastCommit": "16f6e3c test: Add comprehensive test suite and CI pipeline"
+  }
 }

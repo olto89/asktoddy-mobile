@@ -299,4 +299,59 @@ Revolutionary AI-powered construction quoting mobile app targeting January 15, 2
 
 ---
 
-_Last Updated: December 22, 2025_
+---
+
+## ADR-012: Own iOS Developer Account from Outset
+
+**Date**: May 2026
+**Status**: Accepted
+
+**Context**: App was previously being developed under partner's App Store Connect account. Want full control from launch day — own DUNS, own developer account, own revenue.
+
+**Decision**: Wait for DUNS number and set up own Apple Developer account before submitting to App Store. Reconfigure RevenueCat and all App Store Connect assets under own account.
+
+**Consequences**:
+✅ Full ownership and control from day one
+✅ Clean revenue split (no partner dependency)
+✅ Professional setup for future investors
+❌ Delays launch until DUNS arrives
+❌ RevenueCat needs reconfiguring (new bundle ID, new API keys)
+
+---
+
+## ADR-013: iOS-First Launch, Android June Follow-Up
+
+**Date**: May 2026
+**Status**: Accepted
+
+**Context**: Limited time and capacity. Need to focus efforts for a quality launch rather than splitting across platforms.
+
+**Decision**: Launch iOS only by end of May 2026. Android follows in June 2026.
+
+**Consequences**:
+✅ Focused QA and polish on one platform
+✅ Faster time to market
+✅ Learn from iOS launch before Android
+❌ Miss Android users initially
+❌ Two separate launch efforts
+
+---
+
+## ADR-014: Drop Investor Meeting, Focus on Product
+
+**Date**: May 2026
+**Status**: Accepted
+
+**Context**: Investor meeting timelines kept slipping. Better to focus on shipping a quality product and let traction speak for itself.
+
+**Decision**: Remove investor meeting from timeline. Focus purely on product launch and user acquisition.
+
+**Consequences**:
+✅ No artificial deadline pressure
+✅ Focus on real users, not demos
+✅ Can approach investors with real data later
+❌ No external accountability deadline
+
+---
+
+_Last Updated: May 7, 2026_

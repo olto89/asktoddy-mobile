@@ -573,3 +573,69 @@ Status: All changes committed and pushed
 ---
 
 _Last Updated: January 14, 2026 (Evening) - RevenueCat Integration Complete_
+
+---
+
+## 📅 May 7, 2026 - TIMELINE RESET: iOS END OF MAY, ANDROID JUNE
+
+### 🎯 **MAJOR TIMELINE RESET**
+
+Previous timelines (Jan 15 investor demo → Jan 31 launch → June investor meeting) have all slipped due to other commitments. Clean slate with realistic plan.
+
+**❌ REMOVED:**
+
+- Investor meeting (no longer planned)
+- January/February deadlines (passed)
+
+**✅ NEW PLAN:**
+
+| Milestone                  | Target        | Status           |
+| -------------------------- | ------------- | ---------------- |
+| DUNS number received       | Mid-May 2026  | Applied, waiting |
+| Own iOS developer account  | Mid-May 2026  | Blocked by DUNS  |
+| iOS App Store launch       | May 31, 2026  | Planning         |
+| Android Google Play launch | June 30, 2026 | Planning         |
+
+**📋 MAY SPRINT (3 WEEKS):**
+
+**Week 1 (May 12-16) - Pre-Account Prep:**
+
+- PDF export implementation
+- App polish and bug fixes
+- Verify all existing features
+- Prepare App Store metadata (screenshots, description, keywords)
+- Chase DUNS if not received
+
+**Week 2 (May 19-23) - Account Setup + Payments:**
+
+- Set up own iOS developer account (DUNS dependent)
+- Create app in App Store Connect
+- Reconfigure RevenueCat for own account
+- Create subscription product: asktoddy_pro_monthly (£9.99/month)
+- Build dev client and test purchase flow
+
+**Week 3 (May 26-30) - Submit & Launch:**
+
+- Final QA pass
+- Submit to App Store review
+- Address review feedback
+- Launch
+
+**🎯 MAY RELEASE SCOPE:**
+
+- ✅ Core quoting (site notes → AI → quote → share)
+- ✅ Freemium with RevenueCat payments
+- ✅ PDF export
+- ❌ Voice-to-text (deferred)
+- ❌ Android (June)
+- ❌ Analytics (post-launch)
+
+**⚠️ KEY DEPENDENCY:**
+Everything hinges on the DUNS number arriving. Without it, no own iOS dev account, no App Store Connect, no RevenueCat product setup. Dev work (PDF export, polish) can proceed in parallel.
+
+**🔄 REVENUECAT NOTE:**
+Previous setup was on partner's account. Will need to reconfigure for own iOS dev account — new bundle ID, new API keys, new App Store Connect products.
+
+---
+
+_Last Updated: May 7, 2026 - Timeline Reset_

@@ -79,6 +79,8 @@ describe('AuthContext', () => {
         incrementQuoteUsage: jest.fn(),
         upgradeUser: jest.fn(),
         refreshPremiumStatus: jest.fn(),
+        deleteAccount: jest.fn(),
+        updateCompanyProfile: jest.fn(),
       };
 
       const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -111,6 +113,8 @@ describe('AuthContext', () => {
         incrementQuoteUsage: jest.fn(),
         upgradeUser: jest.fn(),
         refreshPremiumStatus: jest.fn(),
+        deleteAccount: jest.fn(),
+        updateCompanyProfile: jest.fn(),
       };
 
       const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -144,6 +148,8 @@ describe('AuthContext', () => {
         incrementQuoteUsage: jest.fn(),
         upgradeUser: jest.fn(),
         refreshPremiumStatus: jest.fn(),
+        deleteAccount: jest.fn(),
+        updateCompanyProfile: jest.fn(),
       };
 
       const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -227,6 +233,8 @@ describe('AuthContext', () => {
         incrementQuoteUsage: jest.fn(),
         upgradeUser: jest.fn(),
         refreshPremiumStatus: jest.fn(),
+        deleteAccount: jest.fn(),
+        updateCompanyProfile: jest.fn(),
       };
 
       const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -263,6 +271,8 @@ describe('AuthContext', () => {
         incrementQuoteUsage: jest.fn(),
         upgradeUser: jest.fn(),
         refreshPremiumStatus: jest.fn(),
+        deleteAccount: jest.fn(),
+        updateCompanyProfile: jest.fn(),
       };
 
       const wrapper = ({ children }: { children: React.ReactNode }) => (

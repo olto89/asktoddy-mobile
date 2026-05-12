@@ -1,3 +1,5 @@
+import { logger } from '../services/Logger';
+
 interface AuthErrorResponse {
   message: string;
   suggestion?: string;

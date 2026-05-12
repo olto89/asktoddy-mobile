@@ -86,7 +86,11 @@ export default function PaywallModal({
             <Text style={styles.featuresTitle}>What you get with AskToddy Pro:</Text>
             {SUBSCRIPTION_PLANS.pro_monthly.features.map((featureText, index) => (
               <View key={index} style={styles.featureRow}>
-                <Ionicons name="checkmark-circle" size={24} color={designTokens.colors.success} />
+                <Ionicons
+                  name="checkmark-circle"
+                  size={24}
+                  color={designTokens.colors.success[500]}
+                />
                 <Text style={styles.featureText}>{featureText}</Text>
               </View>
             ))}
@@ -143,7 +147,7 @@ export default function PaywallModal({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: designTokens.colors.background,
+    backgroundColor: designTokens.colors.background.primary,
   },
   header: {
     flexDirection: 'row',
@@ -215,7 +219,7 @@ const styles = StyleSheet.create({
     marginBottom: designTokens.spacing.lg,
   },
   planCard: {
-    backgroundColor: designTokens.colors.background,
+    backgroundColor: designTokens.colors.background.primary,
     borderWidth: 2,
     borderColor: designTokens.colors.grey[200],
     borderRadius: designTokens.borderRadius.xl,
@@ -258,7 +262,7 @@ const styles = StyleSheet.create({
   },
   planSavings: {
     fontSize: designTokens.typography.fontSize.sm,
-    color: designTokens.colors.success,
+    color: designTokens.colors.success[500],
     fontWeight: designTokens.typography.fontWeight.medium as any,
   },
   trialButton: {

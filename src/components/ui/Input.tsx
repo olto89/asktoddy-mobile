@@ -84,12 +84,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderRadius: designTokens.borderRadius.lg,
-    backgroundColor: designTokens.colors.background,
+    backgroundColor: designTokens.colors.background.primary,
   },
 
   // Variants
   default: {
-    borderColor: designTokens.colors.border,
+    borderColor: designTokens.colors.border.primary,
   },
   filled: {
     backgroundColor: designTokens.colors.neutral[50],
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   error: {
-    borderColor: designTokens.colors.error,
+    borderColor: designTokens.colors.error[500],
     borderWidth: 1,
   },
 
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
 
   errorText: {
     fontSize: designTokens.typography.fontSize.xs,
-    color: designTokens.colors.error,
+    color: designTokens.colors.error[500],
     marginTop: designTokens.spacing.xs,
   },
   helperText: {

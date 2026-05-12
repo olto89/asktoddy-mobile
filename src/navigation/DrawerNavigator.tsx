@@ -299,7 +299,11 @@ function MenuModal({ visible, onClose, navigation }: any) {
                       onPress={() => handleDeleteQuote(quote.id)}
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
-                      <Ionicons name="close-circle" size={24} color={designTokens.colors.error} />
+                      <Ionicons
+                        name="close-circle"
+                        size={24}
+                        color={designTokens.colors.error[500]}
+                      />
                     </Pressable>
                   </Pressable>
                 ))

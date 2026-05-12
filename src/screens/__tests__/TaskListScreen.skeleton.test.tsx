@@ -73,8 +73,8 @@ describe('TaskListScreen skeleton loading', () => {
       }
     );
 
-    // Should show the status text
-    expect(getByText('Analyzing your project...')).toBeTruthy();
+    // Should show the initial processing stage text
+    expect(getByText('Preparing your project details...')).toBeTruthy();
 
     // Should NOT show the old "Analyzing Your Notes..." title
     expect(queryByText('Analyzing Your Notes...')).toBeNull();
@@ -122,7 +122,7 @@ describe('TaskListScreen skeleton loading', () => {
     );
 
     // Should NOT show skeleton
-    expect(queryByText('Analyzing your project...')).toBeNull();
+    expect(queryByText('Preparing your project details...')).toBeNull();
     // Should show actual quote data
     expect(getByText('Install shower')).toBeTruthy();
   });

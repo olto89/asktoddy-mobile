@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    backgroundColor: designTokens.colors.background,
+    backgroundColor: designTokens.colors.background.primary,
     borderTopLeftRadius: designTokens.borderRadius.xxl,
     borderTopRightRadius: designTokens.borderRadius.xxl,
     maxHeight: screenHeight * 0.95,
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   pdfOptionsModal: {
-    backgroundColor: designTokens.colors.background,
+    backgroundColor: designTokens.colors.background.primary,
     borderRadius: designTokens.borderRadius.xl,
     margin: designTokens.spacing.lg,
     padding: designTokens.spacing.lg,

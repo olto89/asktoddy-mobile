@@ -18,10 +18,15 @@ import designTokens from '../styles/designTokens';
 import { AppIcons, IconSize } from '../styles/iconRegistry';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function ShareQuoteScreen({ navigation, route }: any) {
   const { quote } = route.params;
+  const { freemiumUser } = useAuth();
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+
+  const companyName = freemiumUser.companyName;
+  const companyLogoUrl = freemiumUser.companyLogoUrl;
 
   const formatQuoteText = () => {
     let quoteText = `📋 QUOTE: ${quote.quoteName || 'Construction Quote'}\n\n`;
@@ -52,6 +57,9 @@ export default function ShareQuoteScreen({ navigation, route }: any) {
       quoteText += `📝 Notes:\n${quote.projectNotes}\n\n`;
     }
 
+    if (companyName) {
+      quoteText += `🏢 ${companyName}\n`;
+    }
     quoteText += `⚡ Generated with AskToddy - Professional Quotes in Minutes\n`;
     quoteText += `📅 Quote Date: ${new Date(quote.timestamp || Date.now()).toLocaleDateString()}`;
 
@@ -235,9 +243,12 @@ export default function ShareQuoteScreen({ navigation, route }: any) {
         </head>
         <body>
           <div class="header">
-            <div>
-              <div class="logo">AskToddy</div>
-              <div class="logo-tagline">Professional Construction Quotes</div>
+            <div style="display: flex; align-items: center;">
+              ${companyLogoUrl ? `<img src="${companyLogoUrl}" style="width: 48px; height: 48px; border-radius: 8px; object-fit: cover; margin-right: 12px;" />` : ''}
+              <div>
+                <div class="logo">${companyName || 'AskToddy'}</div>
+                <div class="logo-tagline">${companyName ? 'Professional Construction Quotes' : 'Professional Construction Quotes'}</div>
+              </div>
             </div>
             <div class="quote-info">
               <div class="quote-title">QUOTE</div>
@@ -307,8 +318,13 @@ export default function ShareQuoteScreen({ navigation, route }: any) {
           </div>
 
           <div class="footer">
-            <p>Generated with AskToddy - Professional Construction Quotes</p>
-            <p style="margin-top: 4px;">© ${new Date().getFullYear()} AskToddy. All rights reserved.</p>
+            ${
+              companyName
+                ? `<p>© ${new Date().getFullYear()} ${companyName}</p>
+                 <p style="margin-top: 4px; font-size: 10px; color: #d1d5db;">Powered by AskToddy</p>`
+                : `<p>Generated with AskToddy - Professional Construction Quotes</p>
+                 <p style="margin-top: 4px;">© ${new Date().getFullYear()} AskToddy. All rights reserved.</p>`
+            }
           </div>
         </body>
       </html>

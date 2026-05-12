@@ -79,14 +79,14 @@ export default function ConfidenceGuide({
       return {
         title: 'Excellent! Your quote is ready',
         subtitle: 'All key information provided - generate professional PDF',
-        color: designTokens.colors.success,
+        color: designTokens.colors.success[500],
         iconName: AppIcons.confidenceExcellent,
       };
     } else if (confidence >= 70) {
       return {
         title: 'Good progress! Almost there',
         subtitle: 'Complete the steps below to unlock PDF generation',
-        color: designTokens.colors.warning,
+        color: designTokens.colors.warning[500],
         iconName: AppIcons.confidenceGood,
       };
     } else {
@@ -201,7 +201,7 @@ export default function ConfidenceGuide({
 
       {/* Bottom Tip */}
       <View style={styles.tipContainer}>
-        <Ionicons name="bulb" size={16} color={designTokens.colors.warning} />
+        <Ionicons name="bulb" size={16} color={designTokens.colors.warning[500]} />
         <Text style={styles.tipText}>
           <Text style={styles.tipBold}>Tip:</Text> More details = more accurate pricing. Include
           specific materials, finishes, and any special requirements.
@@ -213,7 +213,7 @@ export default function ConfidenceGuide({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: designTokens.colors.background,
+    backgroundColor: designTokens.colors.background.primary,
     borderRadius: designTokens.borderRadius.xl,
     padding: designTokens.spacing.lg,
     margin: designTokens.spacing.md,
@@ -287,9 +287,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   stepCompleted: {
-    backgroundColor: designTokens.colors.success + '10',
+    backgroundColor: designTokens.colors.success[500] + '10',
     borderWidth: 1,
-    borderColor: designTokens.colors.success + '30',
+    borderColor: designTokens.colors.success[500] + '30',
   },
   stepPending: {
     backgroundColor: designTokens.colors.grey[50],
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   stepIconCompleted: {
-    backgroundColor: designTokens.colors.success,
+    backgroundColor: designTokens.colors.success[500],
   },
   stepIconPending: {
     backgroundColor: designTokens.colors.primary[50],
@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
     marginBottom: designTokens.spacing.xs,
   },
   stepTitleCompleted: {
-    color: designTokens.colors.success,
+    color: designTokens.colors.success[500],
   },
   stepDescription: {
     fontSize: designTokens.typography.fontSize.sm,
@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     padding: designTokens.spacing.md,
-    backgroundColor: designTokens.colors.warning + '10',
+    backgroundColor: designTokens.colors.warning[500] + '10',
     borderRadius: designTokens.borderRadius.md,
     gap: designTokens.spacing.sm,
   },

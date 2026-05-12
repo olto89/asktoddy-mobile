@@ -24,6 +24,8 @@ export type RootStackParamList = {
   Camera: undefined;
   Results: { imageUri: string; analysis?: any };
   Account: undefined;
+  Terms: undefined;
+  PrivacyPolicy: undefined;
 };
 
 export default function App() {

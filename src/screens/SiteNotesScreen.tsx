@@ -28,6 +28,7 @@ import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { quoteStorage } from '../services/QuoteStorageService';
 import type { SiteNote, DraftFormData } from '../types/Quote';
 import { logger } from '../services/Logger';
+import { AIService } from '../services/ai/AIServiceEdge';
 
 // Job type templates for guided capture
 const JOB_TYPES = [
@@ -381,6 +382,11 @@ export default function SiteNotesScreen({ navigation, route }: any) {
   useEffect(() => {
     isAnonymousRef.current = isAnonymous;
   }, [isAnonymous]);
+
+  // Prewarm the edge function on mount to eliminate cold start latency
+  useEffect(() => {
+    AIService.prewarm();
+  }, []);
 
   // Save draft on unmount so navigating away preserves work
   useEffect(() => {
@@ -819,11 +825,15 @@ export default function SiteNotesScreen({ navigation, route }: any) {
               )}
               {saveStatus === 'saved' && (
                 <View style={styles.autoSaveIndicator}>
-                  <Ionicons name="checkmark-circle" size={16} color={designTokens.colors.success} />
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={16}
+                    color={designTokens.colors.success[500]}
+                  />
                   <Text
                     style={[
                       styles.autoSaveText,
-                      { color: designTokens.colors.success, fontStyle: 'normal' },
+                      { color: designTokens.colors.success[500], fontStyle: 'normal' },
                     ]}
                   >
                     Saved

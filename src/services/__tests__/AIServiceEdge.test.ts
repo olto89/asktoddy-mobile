@@ -204,6 +204,42 @@ describe('AIServiceEdge', () => {
     });
   });
 
+  describe('prewarm', () => {
+    it('sends a GET request to the edge function URL', () => {
+      mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) });
+      AIService.prewarm();
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://test.supabase.co/functions/v1/analyze-construction',
+        expect.objectContaining({
+          method: 'GET',
+          headers: expect.objectContaining({
+            apikey: 'test-anon-key',
+            Authorization: 'Bearer test-anon-key',
+          }),
+        })
+      );
+    });
+
+    it('is fire-and-forget — does not throw on failure', () => {
+      mockFetch.mockRejectedValueOnce(new Error('Network error'));
+
+      // Should not throw
+      expect(() => AIService.prewarm()).not.toThrow();
+    });
+
+    it('can be called multiple times without guard (unlike initialize)', () => {
+      mockFetch.mockResolvedValue({ ok: true, json: () => Promise.resolve({}) });
+      AIService.prewarm();
+      AIService.prewarm();
+      AIService.prewarm();
+
+      // Each call should fire a fetch (no isInitialized guard)
+      const getCalls = mockFetch.mock.calls.filter((call: any) => call[1]?.method === 'GET');
+      expect(getCalls.length).toBe(3);
+    });
+  });
+
   describe('cleanup', () => {
     it('resets initialization state', () => {
       AIService.cleanup();

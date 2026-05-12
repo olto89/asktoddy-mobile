@@ -81,7 +81,7 @@ export default function EmailVerificationScreen({ navigation, route }: Props) {
             <Ionicons
               name={AppIcons.emailVerification}
               size={48}
-              color={designTokens.colors.success}
+              color={designTokens.colors.success[500]}
             />
           </View>
         </View>
