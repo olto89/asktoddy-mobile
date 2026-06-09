@@ -354,4 +354,74 @@ Revolutionary AI-powered construction quoting mobile app targeting January 15, 2
 
 ---
 
-_Last Updated: May 7, 2026_
+## ADR-015: Proper Sign-Out After Account Deletion
+
+**Date**: June 4, 2026
+**Status**: Accepted
+
+**Context**: `deleteAccount()` manually cleared state (`setUser`, `setSession`, `AsyncStorage`) after the edge function deleted the user server-side. This never called `supabase.auth.signOut()`, so the `SIGNED_OUT` auth event never fired and stale session tokens could linger. Apple requires account deletion to properly sign the user out.
+
+**Decision**: After successful edge function call + RevenueCat cleanup + quote storage clear, call `authHelpers.signOut()` instead of duplicating cleanup code. The existing `SIGNED_OUT` auth listener already handles reverting to anonymous state.
+
+**Consequences**:
+✅ Proper session invalidation through Supabase auth system
+✅ `SIGNED_OUT` event fires, triggering auth listener cleanup
+✅ No stale session tokens
+✅ Eliminates duplicated cleanup code
+✅ App Store review compliance for account deletion
+❌ None — strictly an improvement
+
+---
+
+## ADR-016: Park ONS Construction Price Index Integration
+
+**Date**: June 9, 2026
+**Status**: Accepted
+
+**Context**: The edge function has a partially-built ONS (Office for National Statistics) construction price index integration (`_shared/ons-service.ts`, `update-ons-cache`, `ons_pricing_cache` table) intended to improve quote accuracy with real UK government price data. It is not wired into the live quote flow (`analyze-construction/index.ts`), and the cache cron currently feeds **mock data** (`update-ons-cache/index.ts` has an explicit `TODO: Replace with real ONS API calls`).
+
+Investigation (June 9) of third-party pricing APIs/SDKs concluded **none are worth the integration risk**. For ONS specifically:
+
+- The Construction Output Price Indices (OPI) data is free and public, **but only published as a quarterly XLSX spreadsheet** — there is no clean JSON/CSV API. The ONS beta API exposes construction _output volume_, not _price indices_.
+- Parsing the XLSX is brittle (layout shifts between releases) and the data only updates 4×/year, making automation poor value.
+- Even with real data, the gain is a ±2-5% trend nudge on top of Gemini's already-current pricing — a correctness signal, not a needle-mover.
+
+**Decision**: Park the ONS integration. Do not wire it into the quote flow or build XLSX parsing. Leave the scaffolding in place (dormant) for a possible post-launch revisit. If pursued later, the sane path is **manual quarterly entry** of ~4-8 index numbers into `ons_pricing_cache`, not automated parsing.
+
+**Consequences**:
+✅ No effort spent on brittle, low-value parsing pre-launch
+✅ Focus stays on launch-critical work
+✅ Scaffolding remains if we want it later
+❌ No real ONS-driven price adjustment (acceptable — Gemini prices at current market rates)
+
+---
+
+## ADR-017: Quoting Consistency & Quality Improvements
+
+**Date**: June 9, 2026
+**Status**: Accepted
+
+**Context**: AI quoting is not the primary USP, but inconsistent or wildly-off quotes lose repeat users. Three concrete issues were found in `analyze-construction/index.ts`:
+
+1. The Gemini call sent **no `generationConfig`** — default temperature (~1.0) meant identical site notes could produce materially different quotes each run, and JSON was prompt-coaxed + regex-extracted (flaky → silent template fallback).
+2. The materials-vs-labour breakdown used a **hardcoded 60/40 split** on every quote regardless of trade.
+3. Confidence was **whatever the AI invented** (`summary.confidence || 75`), ungrounded in actual input.
+
+**Decision**:
+
+1. Add `GEMINI_GENERATION_CONFIG` (`temperature: 0.2`, `seed: 42`, `responseMimeType: 'application/json'`) — near-deterministic pricing + native JSON output. Model is now a single `GEMINI_MODEL` constant (free-tier `gemini-2.5-flash` now; upgrade to `gemini-3.5-flash` on paid tier — current stable as of June 2026).
+2. Replace the flat split with `materialFraction()` — uses an AI-provided per-task `material_pct` (clamped 15-85%), falling back to a project-type default. Totals unchanged; only the breakdown is now trade-realistic.
+3. Replace invented confidence with `calculateGroundedConfidence()`, scored from real input richness (photos, dimensions, location, finish level, detail).
+
+Covered by `analyze-construction/__tests__/quoteQuality.test.ts` (16 cases). Deferred (ticketed, not done): making Gemini output base prices and applying the size/location/spec multipliers **deterministically in code** rather than trusting the LLM's arithmetic.
+
+**Consequences**:
+✅ Consistent quotes for identical inputs (biggest lever)
+✅ Fewer parse failures → fewer degraded template-fallback quotes
+✅ Honest materials/labour breakdown and grounded confidence
+✅ One-line model upgrade path for paid tier
+❌ Multiplier arithmetic still trusted to the LLM (deferred to a follow-up)
+
+---
+
+_Last Updated: June 9, 2026_

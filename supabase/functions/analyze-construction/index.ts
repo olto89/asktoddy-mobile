@@ -8,6 +8,20 @@ const debug = (...args: unknown[]) => {
   if (IS_DEBUG) console.log(...args);
 };
 
+// AI model — single source of truth.
+// Currently on the free tier (gemini-2.5-flash). On the paid tier, upgrade to
+// 'gemini-3.5-flash' (current stable as of June 2026) by changing only this line.
+const GEMINI_MODEL = 'gemini-2.5-flash';
+
+// Generation config for consistent quoting. A low temperature + fixed seed make
+// identical site notes produce near-identical quotes (no random price swings),
+// and native JSON output removes reliance on prompt-coaxed/regex-extracted JSON.
+const GEMINI_GENERATION_CONFIG = {
+  temperature: 0.2,
+  seed: 42,
+  responseMimeType: 'application/json',
+};
+
 // Type definitions matching frontend interfaces
 interface MaterialItem {
   name: string;
@@ -94,6 +108,7 @@ interface ProjectAnalysis {
     max_cost: number;
     materials: string[];
     labor_days: number;
+    material_pct?: number;
     notes?: string;
   }>;
   summary?: {
@@ -325,12 +340,14 @@ ${specInfo.level === 'high-spec' ? '- Use PREMIUM materials and finishes in esti
 ${specInfo.level === 'budget' ? '- Use BUDGET materials and basic finishes' : ''}
 
 === CRITICAL INSTRUCTIONS ===
+• All costs must EXCLUDE VAT — quote net prices only (VAT is added separately at display time)
 • Provide 5-8 main construction tasks with COMBINED materials+labor costs
 • Base ALL costs on current UK market rates (2025/2026)
 • Consider property type, dimensions, and location for realistic pricing
 • Factor in voice note descriptions and any details visible in site photos
 • If photos show existing damage, poor condition, or complications, adjust costs upward accordingly
 • Each task cost should reflect the TOTAL (materials + labor) — do not split them
+• For each task, set "material_pct" = the percentage (0-100) of that task's cost that is materials (the rest is labour). Be realistic per trade: labour-heavy work (tiling, plastering, painting, groundwork) is ~25-40% materials; supply-heavy work (kitchen/bathroom fit-outs, windows, roofing) is ~55-70% materials
 
 === REQUIRED JSON FORMAT ===
 {
@@ -342,6 +359,7 @@ ${specInfo.level === 'budget' ? '- Use BUDGET materials and basic finishes' : ''
       "max_cost": 3000,
       "materials": ["toilet", "basin", "bath"],
       "labor_days": 2,
+      "material_pct": 60,
       "notes": "includes materials and labor"
     }
   ],
@@ -379,7 +397,7 @@ async function callGemini(
     debug(`🎤 Including ${audio.length} audio file(s) in request`);
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
 
   // Build parts array - text first, then images
   const parts: any[] = [{ text: prompt }];
@@ -423,6 +441,7 @@ async function callGemini(
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts }],
+          generationConfig: GEMINI_GENERATION_CONFIG,
         }),
         signal: controller.signal,
       });
@@ -464,7 +483,7 @@ async function callGemini(
       if (attempt >= retries) {
         // Handle timeout specifically
         if (error.name === 'AbortError') {
-          throw new Error('Gemini API timeout after 15 seconds');
+          throw new Error('Gemini API timeout after 45 seconds');
         }
         throw error;
       }
@@ -483,11 +502,84 @@ async function callGemini(
   throw new Error('Max retries exceeded');
 }
 
+// Default materials-vs-labour split by project type, used when the AI doesn't
+// provide a per-task material_pct. Labour-heavy trades skew lower.
+function defaultMaterialFraction(projectType: string): number {
+  const map: Record<string, number> = {
+    bathroom: 0.55,
+    kitchen: 0.6,
+    extension: 0.5,
+    conservatory: 0.55,
+    roofing: 0.55,
+    driveway: 0.6,
+    patio: 0.6,
+    renovation: 0.5,
+  };
+  return map[(projectType || '').toLowerCase()] ?? 0.55;
+}
+
+// Fraction of a task's cost attributable to materials (rest is labour).
+// Prefers the AI's per-task material_pct (clamped to a sane 15-85% band) and
+// falls back to a project-type default. Replaces the old flat 60/40 split that
+// made every quote's breakdown look formulaic regardless of trade.
+function materialFraction(task: any, projectType: string): number {
+  const pct = task?.material_pct;
+  if (typeof pct === 'number' && isFinite(pct)) {
+    return Math.min(0.85, Math.max(0.15, pct / 100));
+  }
+  return defaultMaterialFraction(projectType);
+}
+
+// Signals describing how much real input the user gave — used to ground the
+// quote's confidence score instead of trusting whatever number the AI invents.
+interface ConfidenceSignals {
+  message?: string;
+  imageCount?: number;
+  audioCount?: number;
+}
+
+// Grounds quote confidence in input richness (photos, dimensions, location,
+// finish level, detail). Mirrors the philosophy of utils/ConfidenceCalculator
+// but reads the structured brief the edge function actually receives.
+function calculateGroundedConfidence(signals: ConfidenceSignals | undefined, tasks: any[]): number {
+  const message = (signals?.message || '').toLowerCase();
+  let confidence = 25; // base
+
+  if (signals?.imageCount && signals.imageCount > 0) confidence += 15;
+  if (signals?.audioCount && signals.audioCount > 0) confidence += 5;
+
+  // Dimensions / size present
+  if (
+    /\b\d+\s*(?:m2|sqm|sq\s?m|m²|x|by)\b/.test(message) ||
+    message.includes('dimensions') ||
+    message.includes('size')
+  ) {
+    confidence += 15;
+  }
+  // Location present
+  if (message.includes('location') || message.includes('postcode')) confidence += 10;
+  // Explicit finish / spec level
+  if (message.includes('finish level') || message.includes('spec')) confidence += 10;
+  // Detail richness (up to 10)
+  confidence += Math.min(10, Math.floor(message.length / 80));
+  // Enough tasks to be a real quote
+  if (Array.isArray(tasks) && tasks.length >= 4) confidence += 5;
+
+  return Math.min(95, Math.max(30, Math.round(confidence)));
+}
+
 // Process valid parsed JSON into ProjectAnalysis
-function processValidJson(parsed: any, projectType: string): ProjectAnalysis {
+function processValidJson(
+  parsed: any,
+  projectType: string,
+  signals?: ConfidenceSignals
+): ProjectAnalysis {
   // Convert parsed JSON to ProjectAnalysis format
   const tasks = Array.isArray(parsed.tasks) ? parsed.tasks : [];
   const summary = parsed.summary && typeof parsed.summary === 'object' ? parsed.summary : {};
+
+  // Ground confidence in actual input richness rather than the AI's self-report
+  const groundedConfidence = calculateGroundedConfidence(signals, tasks);
 
   // Build material items from tasks
   const materialItems: MaterialItem[] = [];
@@ -524,13 +616,25 @@ function processValidJson(parsed: any, projectType: string): ProjectAnalysis {
 
     costBreakdown: {
       materials: {
-        min: tasks.reduce((sum: number, t: any) => sum + t.min_cost * 0.6, 0),
-        max: tasks.reduce((sum: number, t: any) => sum + t.max_cost * 0.6, 0),
+        min: tasks.reduce(
+          (sum: number, t: any) => sum + t.min_cost * materialFraction(t, projectType),
+          0
+        ),
+        max: tasks.reduce(
+          (sum: number, t: any) => sum + t.max_cost * materialFraction(t, projectType),
+          0
+        ),
         items: materialItems,
       },
       labor: {
-        min: tasks.reduce((sum: number, t: any) => sum + t.min_cost * 0.4, 0),
-        max: tasks.reduce((sum: number, t: any) => sum + t.max_cost * 0.4, 0),
+        min: tasks.reduce(
+          (sum: number, t: any) => sum + t.min_cost * (1 - materialFraction(t, projectType)),
+          0
+        ),
+        max: tasks.reduce(
+          (sum: number, t: any) => sum + t.max_cost * (1 - materialFraction(t, projectType)),
+          0
+        ),
         hourlyRate: 30,
         estimatedHours: tasks.reduce((sum: number, t: any) => sum + (t.labor_days || 1), 0) * 8,
       },
@@ -552,7 +656,7 @@ function processValidJson(parsed: any, projectType: string): ProjectAnalysis {
     permitsRequired: generatePermitsRequired(projectType),
     requiresProfessional: (summary.total_max || 0) > 20000,
 
-    confidence: summary.confidence || 75,
+    confidence: groundedConfidence,
     recommendations: summary.assumptions || [
       'Get multiple quotes',
       'Check material prices locally',
@@ -570,6 +674,7 @@ function processValidJson(parsed: any, projectType: string): ProjectAnalysis {
       max_cost: task.max_cost || 0,
       materials: Array.isArray(task.materials) ? task.materials : [],
       labor_days: task.labor_days || 1,
+      material_pct: task.material_pct,
       notes: task.notes,
     })),
     summary: {
@@ -578,7 +683,7 @@ function processValidJson(parsed: any, projectType: string): ProjectAnalysis {
       total_max:
         summary.total_max || tasks.reduce((sum: number, t: any) => sum + (t.max_cost || 0), 0),
       timeline_days: summary.timeline_days || 10,
-      confidence: summary.confidence || 75,
+      confidence: groundedConfidence,
       location_multiplier: summary.location_multiplier,
       size_multiplier: summary.size_multiplier,
       spec_multiplier: summary.spec_multiplier,
@@ -590,7 +695,11 @@ function processValidJson(parsed: any, projectType: string): ProjectAnalysis {
 
 // Parse structured AI response into ProjectAnalysis
 // New JSON parser for Gemini responses
-function parseJsonResponse(aiText: string, projectType: string): ProjectAnalysis {
+function parseJsonResponse(
+  aiText: string,
+  projectType: string,
+  signals?: ConfidenceSignals
+): ProjectAnalysis {
   try {
     if (!aiText || typeof aiText !== 'string') {
       throw new Error('Invalid aiText provided to parseJsonResponse');
@@ -629,7 +738,7 @@ function parseJsonResponse(aiText: string, projectType: string): ProjectAnalysis
         }
 
         // If we get here, we have valid JSON with tasks
-        return processValidJson(parsed, projectType);
+        return processValidJson(parsed, projectType, signals);
       } catch (parseError) {
         console.error('❌ JSON parse error:', parseError.message);
         debug('🔍 Failed JSON string:', jsonStr.substring(0, 200) + '...');
@@ -1091,7 +1200,11 @@ Deno.serve(async req => {
     );
 
     // Parse JSON response with new parser
-    const structuredAnalysis = parseJsonResponse(aiResponse, projectType);
+    const structuredAnalysis = parseJsonResponse(aiResponse, projectType, {
+      message,
+      imageCount: images?.length || 0,
+      audioCount: audio?.length || 0,
+    });
     debug(
       '📊 Parse result:',
       JSON.stringify({

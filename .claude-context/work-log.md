@@ -4,6 +4,31 @@
 
 **Revolutionary AI-powered construction quoting mobile app** targeting January 15, 2025 investor meeting.
 
+---
+
+## 📅 June 9, 2026 — Quote Quality + ONS Investigation + Professional Quote Enhancements
+
+### 🔎 Third-party pricing / ONS investigation
+
+- Reviewed third-party pricing APIs/SDKs to improve quote accuracy → **nothing worth the integration risk**.
+- ONS construction price index: data is free/public but **only as quarterly XLSX** (no usable price-index API); the existing scaffolding (`_shared/ons-service.ts`, `update-ons-cache`) feeds **mock data**. **Parked** — see ADR-016. Possible post-launch revisit via manual quarterly entry.
+
+### ⚙️ Quoting consistency & quality (edge function `analyze-construction`) — see ADR-017
+
+- **Gemini generation config**: added `GEMINI_GENERATION_CONFIG` (`temperature: 0.2`, `seed: 42`, `responseMimeType: 'application/json'`). Fixes the root cause of inconsistent quotes (default temp ~1.0) and cuts JSON parse failures. Model now a single `GEMINI_MODEL` constant — one-line upgrade to `gemini-3.5-flash` on paid tier.
+- **Materials/labour split**: replaced the flat 60/40 with `materialFraction()` (AI per-task `material_pct`, clamped 15-85%, project-type fallback).
+- **Grounded confidence**: replaced invented `summary.confidence` with `calculateGroundedConfidence()` based on input richness.
+- Tests: new `__tests__/quoteQuality.test.ts` (16 cases). **Full suite: 310 passing, 35 suites, zero regressions.**
+
+### 🧾 Professional quote enhancements (completed earlier, committed this session)
+
+- VAT breakdown (`src/utils/vat.ts`): all prices stored ex-VAT, 20% VAT calculated at display.
+- Business contact details (address/phone/email/website) flow through `freemiumUser` into quote share text + PDF.
+- Legal notice + quote validity defaults (`src/constants/quoteDefaults.ts`); `AccountScreen` captures business details.
+- Sign in with Apple, password reset, delete-account auto-logout (App Store compliance).
+
+**Build:** none yet — edge function (v107→v108) to be deployed/tested before next TestFlight build.
+
 **MVP Pivot Strategy**: Transformed from chat-based app to guided note-taking → AI task generation → quote editing workflow.
 
 ---
@@ -638,4 +663,38 @@ Previous setup was on partner's account. Will need to reconfigure for own iOS de
 
 ---
 
-_Last Updated: May 7, 2026 - Timeline Reset_
+## 📅 June 4, 2026 - DELETE ACCOUNT AUTO-LOGOUT FIX
+
+### 🎯 **App Store Review Compliance: Account Deletion with Proper Sign-Out**
+
+Apple requires account deletion to cleanly sign the user out. Fixed `deleteAccount()` in AuthContext to properly call `supabase.auth.signOut()` instead of manually clearing state.
+
+**✅ CHANGES:**
+
+#### 1. AuthContext.tsx — `deleteAccount()` simplified
+
+- **Before**: After edge function deleted user server-side, client manually cleared state (`setUser(null)`, `setSession(null)`, `AsyncStorage.removeItem`, etc.) — duplicating signOut logic and never firing the `SIGNED_OUT` auth event
+- **After**: Calls `authHelpers.signOut()` which fires `SIGNED_OUT` → existing auth listener handles cleanup (clear session, revert to anonymous)
+- **Result**: Proper session invalidation, no stale tokens, clean logout signal
+
+#### 2. AuthContext.test.tsx — 6 new deleteAccount tests
+
+- Calls edge function with correct auth header
+- Signs out via `authHelpers.signOut()` after successful deletion
+- Clears RevenueCat user ID
+- Clears local quote storage
+- Throws on missing session
+- Throws on edge function error (and does NOT sign out)
+
+#### 3. AccountScreen.test.tsx — 1 new confirmation flow test
+
+- Simulates user pressing Delete Account, confirming the alert
+- Verifies `deleteAccount` is called
+
+**📊 TEST RESULTS:** 258/258 passing, 32/32 suites, zero regressions
+
+**🚀 BUILD:** Staging build #47 triggered for TestFlight testing
+
+---
+
+_Last Updated: June 4, 2026 - Delete Account Auto-Logout Fix_

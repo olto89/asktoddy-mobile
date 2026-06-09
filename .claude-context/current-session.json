@@ -8,18 +8,18 @@
   "currentStatus": "Timeline reset - iOS launch end of May, Android June",
   "blockers": {
     "duns_number": {
-      "status": "Applied, waiting for approval",
-      "impact": "Cannot create own iOS developer account until received",
-      "action": "Monitor Apple Developer enrollment process"
+      "status": "RECEIVED (May 29, 2026)",
+      "impact": "UNBLOCKED — can now enroll in Apple Developer Program",
+      "action": "Enroll at developer.apple.com/enroll immediately"
     },
     "ios_dev_account": {
-      "status": "Blocked by DUNS",
-      "impact": "Cannot submit to App Store until account is set up",
+      "status": "UNBLOCKED — enroll now with DUNS",
+      "impact": "Expect ~48 hours for Apple approval",
       "note": "Want own account from the outset, not partner's"
     },
     "revenuecat": {
-      "status": "Blocked by iOS dev account",
-      "impact": "Cannot create App Store Connect products or test purchases until own account is live"
+      "status": "Unblocked once iOS dev account approved",
+      "impact": "Can configure App Store Connect products + RevenueCat dashboard after enrollment"
     }
   },
   "architecture": {
@@ -121,10 +121,87 @@
     "ai_quote_engine": "100% complete",
     "freemium_infrastructure": "100% complete",
     "payment_integration": "50% - Code complete, needs own App Store account + dashboard setup",
-    "pdf_export": "0% - Not started",
+    "pdf_export": "100% - Implemented via expo-print/expo-sharing",
+    "company_logo": "100% - Fixed format detection, gallery-only picker",
     "app_store_metadata": "0% - Not started",
     "own_ios_dev_account": "Blocked - DUNS pending",
-    "overall_progress": "65%"
+    "overall_progress": "70%"
+  },
+  "production_checklist": {
+    "status": "Pre-launch — complete before real users",
+    "gemini_cost_controls": {
+      "priority": "CRITICAL",
+      "status": "TODO",
+      "actions": [
+        "Set monthly spend cap at aistudio.google.com/spend (e.g. £20/month to start)",
+        "Set daily request quota in Google Cloud Console → APIs & Services → Gemini API → Quotas",
+        "Set budget alerts at 50%, 75%, 90% in Cloud Console → Billing → Budgets & Alerts",
+        "Note: Tier 1 has built-in $250/month account cap"
+      ],
+      "notes": "App has template fallback so users still get quotes when Gemini is blocked — just not AI-generated ones"
+    },
+    "per_user_rate_limiting": {
+      "priority": "HIGH",
+      "status": "TODO",
+      "actions": [
+        "Build database-backed per-user usage tracking in Edge Function",
+        "Enforce free tier: 5 quotes/month",
+        "Enforce pro tier: unlimited but 20/day abuse cap",
+        "Replace in-memory UsageTracker with Supabase table",
+        "Return clear error to frontend when limit hit"
+      ]
+    },
+    "coming_soon_placeholders": {
+      "priority": "HIGH",
+      "status": "TODO",
+      "locations": [
+        "TaskListScreen.tsx:783-784 - Payment CTA shows alert",
+        "AccountScreen.tsx:235 - Edit Profile shows alert",
+        "SiteNotesScreen.tsx:845 - Saved notes shows alert"
+      ],
+      "action": "Replace with working functionality or remove buttons"
+    },
+    "subscription_service_todos": {
+      "priority": "HIGH",
+      "status": "TODO",
+      "locations": [
+        "SubscriptionService.ts:81 - Load from AsyncStorage/backend",
+        "SubscriptionService.ts:163 - Save to AsyncStorage/backend sync",
+        "SubscriptionService.ts:192 - Process payment/backend sync"
+      ]
+    },
+    "silent_failures": {
+      "priority": "MEDIUM",
+      "status": "TODO",
+      "actions": [
+        "Add user feedback when auto-save fails (TaskListScreen)",
+        "Mark template fallback quotes so users know it's not AI-generated",
+        "Remove mock provider from production config"
+      ]
+    },
+    "landing_page": {
+      "priority": "HIGH",
+      "status": "TODO",
+      "domain": "asktoddy.com",
+      "company": "Oakhouse",
+      "requirements": [
+        "Simple landing page with app description",
+        "Privacy policy (required by Apple)",
+        "Support contact (required by Apple)",
+        "App Store / Google Play download links once live"
+      ],
+      "notes": "Must be live before App Store review submission. Can be a single-page site."
+    },
+    "security_hardening": {
+      "priority": "MEDIUM",
+      "status": "TODO",
+      "actions": [
+        "Rotate Gemini API key before launch",
+        "Verify all .env files are gitignored",
+        "Confirm RLS policies on all Supabase tables",
+        "Review edge function for injection vulnerabilities"
+      ]
+    }
   },
   "revenuecat_setup_status": {
     "step1": "✅ DONE - Created RevenueCat account",
@@ -138,15 +215,15 @@
     "step9": "PENDING - Build development client and test purchases"
   },
   "latest_build": {
-    "build_number": "30",
+    "build_number": "49",
     "version": "1.2.4",
-    "submitted": "2026-01-05T15:36:48Z",
+    "submitted": "2026-06-05",
     "platform": "iOS",
     "profile": "staging",
-    "status": "TestFlight Available (old partner account)"
+    "status": "Submitted to TestFlight — delete-account auto-logout fix + Sign in with Apple capability"
   },
   "edge_function_version": "107",
-  "lastUpdated": "2026-05-07T00:00:00Z",
+  "lastUpdated": "2026-06-09T11:06:28.317Z",
   "project": {
     "name": "asktoddy-mobile",
     "version": "1.2.4",
@@ -158,6 +235,30 @@
   },
   "git": {
     "branch": "staging",
-    "lastCommit": "16f6e3c test: Add comprehensive test suite and CI pipeline"
-  }
+    "lastCommit": "3197301 feat: Design token expansion, parallel image compression, edge function prewarm, and company branding",
+    "hasUncommittedChanges": true,
+    "changedFiles": 36
+  },
+  "environment": {
+    "nodeVersion": "v24.3.0",
+    "platform": "darwin"
+  },
+  "runningProcesses": [],
+  "recentFiles": [
+    "src/contexts/AuthContext.tsx",
+    "src/constants/quoteDefaults.ts",
+    "src/constants/__tests__/quoteDefaults.test.ts",
+    "src/utils/__tests__/imageStorage.test.ts",
+    "src/utils/__tests__/vat.test.ts",
+    "src/utils/vat.ts",
+    "src/screens/AccountScreen.tsx",
+    "src/screens/SiteNotesScreen.tsx",
+    "src/screens/ShareQuoteScreen.tsx",
+    "src/screens/EditQuoteScreen.tsx",
+    "src/screens/__tests__/ShareQuoteScreen.test.tsx",
+    "src/screens/__tests__/ResetPasswordScreen.test.tsx",
+    "src/screens/__tests__/AccountScreen.test.tsx",
+    "src/screens/TaskListScreen.tsx",
+    "src/screens/ResetPasswordScreen.tsx"
+  ]
 }
