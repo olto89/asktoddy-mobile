@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import designTokens from '../styles/designTokens';
 import { quoteStorage } from '../services/QuoteStorageService';
 import { AppIcons, IconSize } from '../styles/iconRegistry';
+import { calculateVAT, calculateIncVAT, formatGBP } from '../utils/vat';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 
@@ -269,7 +270,7 @@ export default function EditQuoteScreen({ navigation, route }: any) {
 
                 <View style={styles.costSection}>
                   <View style={styles.priceInputRow}>
-                    <Text style={styles.priceLabel}>Your Price:</Text>
+                    <Text style={styles.priceLabel}>Your Price (exc. VAT):</Text>
                     <View style={styles.priceInputContainer}>
                       <Text style={styles.priceCurrency}>£</Text>
                       <TextInput
@@ -314,11 +315,28 @@ export default function EditQuoteScreen({ navigation, route }: any) {
           </TouchableOpacity>
         </View>
 
-        {/* Cost Summary */}
+        {/* Cost Summary with VAT Breakdown */}
         <Card style={styles.totalCard}>
-          <Text style={styles.quoteTotalLabel}>Quote Total</Text>
-          <Text style={styles.quoteTotalAmount}>£{calculateFinalTotal().toLocaleString()}</Text>
+          <Text style={styles.quoteTotalLabel}>Quote Total (exc. VAT)</Text>
+          <Text style={styles.quoteTotalAmount}>£{formatGBP(calculateFinalTotal())}</Text>
           <Text style={styles.quoteTotalNote}>Auto-calculated from line items above</Text>
+
+          <View style={styles.vatBreakdown}>
+            <View style={styles.vatRow}>
+              <Text style={styles.vatLabel}>Subtotal (exc. VAT)</Text>
+              <Text style={styles.vatValue}>£{formatGBP(calculateFinalTotal())}</Text>
+            </View>
+            <View style={styles.vatRow}>
+              <Text style={styles.vatLabel}>VAT (20%)</Text>
+              <Text style={styles.vatValue}>£{formatGBP(calculateVAT(calculateFinalTotal()))}</Text>
+            </View>
+            <View style={[styles.vatRow, styles.vatTotalRow]}>
+              <Text style={styles.vatTotalLabel}>Total (inc. VAT)</Text>
+              <Text style={styles.vatTotalValue}>
+                £{formatGBP(calculateIncVAT(calculateFinalTotal()))}
+              </Text>
+            </View>
+          </View>
 
           <View style={styles.rangeContainer}>
             <Text style={styles.rangeLabel}>AI Estimated Range:</Text>
@@ -548,6 +566,44 @@ const styles = StyleSheet.create({
     color: designTokens.colors.text.tertiary,
     marginTop: designTokens.spacing.xs,
     fontStyle: 'italic',
+  },
+  vatBreakdown: {
+    marginTop: designTokens.spacing.md,
+    paddingTop: designTokens.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: designTokens.colors.primary[200],
+  },
+  vatRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: designTokens.spacing.xs,
+  },
+  vatLabel: {
+    fontSize: designTokens.typography.fontSize.sm,
+    color: designTokens.colors.text.secondary,
+  },
+  vatValue: {
+    fontSize: designTokens.typography.fontSize.sm,
+    fontWeight: designTokens.typography.fontWeight.medium as any,
+    color: designTokens.colors.text.primary,
+  },
+  vatTotalRow: {
+    marginTop: designTokens.spacing.sm,
+    paddingTop: designTokens.spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: designTokens.colors.primary[200],
+    marginBottom: 0,
+  },
+  vatTotalLabel: {
+    fontSize: designTokens.typography.fontSize.base,
+    fontWeight: designTokens.typography.fontWeight.semibold as any,
+    color: designTokens.colors.text.primary,
+  },
+  vatTotalValue: {
+    fontSize: designTokens.typography.fontSize.lg,
+    fontWeight: designTokens.typography.fontWeight.bold as any,
+    color: designTokens.colors.primary[600],
   },
   rangeContainer: {
     marginTop: designTokens.spacing.md,

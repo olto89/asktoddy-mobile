@@ -31,6 +31,13 @@ export const mockPremiumUser = {
   quotesLimit: 999999,
   createdAt: '2025-01-01T00:00:00.000Z',
   subscriptionStatus: 'active' as const,
+  companyName: 'Premium Builders Ltd',
+  quoteValidityDays: 14,
+  businessAddress: '123 Builder Street, London',
+  businessPhone: '020 1234 5678',
+  businessEmail: 'info@premiumbuilders.co.uk',
+  businessWebsite: 'https://premiumbuilders.co.uk',
+  legalNotice: 'Custom premium legal terms apply.',
 };
 
 // ─── Mock AuthContext value ──────────────────────────────────────

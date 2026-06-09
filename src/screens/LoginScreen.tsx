@@ -17,6 +17,7 @@ import Input from '../components/ui/Input';
 import Card from '../components/ui/Card';
 import ErrorAlert from '../components/ui/ErrorAlert';
 import { getAuthErrorMessage, getActionButtonText } from '../utils/authErrors';
+import AppleSignInButton from '../components/AppleSignInButton';
 import { logger } from '../services/Logger';
 
 type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
@@ -233,6 +234,22 @@ export default function LoginScreen({ navigation }: Props) {
           persistent={true}
         />
 
+        {/* Apple Sign-In */}
+        <AppleSignInButton
+          onSuccess={() => {
+            if (!hasNavigated) {
+              setHasNavigated(true);
+              navigation.navigate('Main');
+            }
+          }}
+        />
+
+        <View style={styles.dividerRow}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>or use email</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
         {/* Auth Form */}
         <Card variant="elevated" style={styles.authCard}>
           <Text style={styles.formTitle}>{isLogin ? 'Sign In' : 'Create Account'}</Text>
@@ -349,6 +366,21 @@ const styles = StyleSheet.create({
     color: designTokens.colors.text.secondary,
     textAlign: 'center',
     lineHeight: designTokens.typography.lineHeight.lg,
+  },
+  dividerRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    marginBottom: designTokens.spacing.lg,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: designTokens.colors.border.primary,
+  },
+  dividerText: {
+    paddingHorizontal: designTokens.spacing.md,
+    fontSize: designTokens.typography.fontSize.sm,
+    color: designTokens.colors.text.tertiary,
   },
   authCard: {
     marginBottom: designTokens.spacing['2xl'],

@@ -16,6 +16,8 @@ export interface ImagePickerState {
   takePhoto: () => Promise<void>;
   clearImage: () => void;
   showImagePicker: () => void;
+  /** Opens photo library directly — no camera option. Use for logos/documents. */
+  pickFromLibrary: () => Promise<void>;
 }
 
 export interface UseImagePickerOptions {
@@ -172,6 +174,14 @@ export const useImagePicker = (options: UseImagePickerOptions = {}): ImagePicker
     }
   };
 
+  /**
+   * Open photo library directly (no camera option)
+   * Best for logos and documents where camera doesn't make sense
+   */
+  const pickFromLibrary = async (): Promise<void> => {
+    await pickImage();
+  };
+
   return {
     selectedImage,
     isLoading,
@@ -179,5 +189,6 @@ export const useImagePicker = (options: UseImagePickerOptions = {}): ImagePicker
     takePhoto,
     clearImage,
     showImagePicker,
+    pickFromLibrary,
   };
 };

@@ -3,14 +3,30 @@ import React from 'react';
 import { renderHook, act, waitFor } from '@testing-library/react-native';
 import { AuthContext, AuthProvider, useAuth } from '../AuthContext';
 import { supabase, authHelpers } from '../../services/supabase';
+import revenueCatService from '../../services/RevenueCatService';
+import { quoteStorage } from '../../services/QuoteStorageService';
+
+// Mock QuoteStorageService
+jest.mock('../../services/QuoteStorageService', () => ({
+  quoteStorage: {
+    clear: jest.fn(() => Promise.resolve()),
+    migrateAnonymousQuotes: jest.fn(() => Promise.resolve()),
+  },
+}));
 
 // Get mocked modules
 const mockSupabase = supabase as jest.Mocked<typeof supabase>;
 const mockAuthHelpers = authHelpers as jest.Mocked<typeof authHelpers>;
+const mockRevenueCat = revenueCatService as jest.Mocked<typeof revenueCatService>;
+const mockQuoteStorage = quoteStorage as jest.Mocked<typeof quoteStorage>;
 
 describe('AuthContext', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Ensure supabase.functions.invoke is available for deleteAccount tests
+    (mockSupabase as any).functions = {
+      invoke: jest.fn(() => Promise.resolve({ data: { success: true }, error: null })),
+    };
   });
 
   describe('useAuth hook', () => {
@@ -283,6 +299,133 @@ describe('AuthContext', () => {
       expect(result.current.isAnonymous).toBe(false);
       expect(result.current.isPremium).toBe(true);
       expect(result.current.isAuthenticated).toBe(true);
+    });
+  });
+
+  describe('deleteAccount', () => {
+    const mockSession = {
+      access_token: 'test-access-token',
+      refresh_token: 'test-refresh-token',
+      expires_at: Math.floor(Date.now() / 1000) + 3600,
+      user: {
+        id: 'user-123',
+        email: 'test@example.com',
+        created_at: '2025-01-01T00:00:00.000Z',
+        user_metadata: {},
+      },
+    };
+
+    function setupAuthenticatedProvider() {
+      // Mock getSession to return an active session
+      (mockSupabase.auth.getSession as jest.Mock).mockResolvedValueOnce({
+        data: { session: mockSession },
+        error: null,
+      });
+
+      const wrapper = ({ children }: { children: React.ReactNode }) => (
+        <AuthProvider>{children}</AuthProvider>
+      );
+
+      return wrapper;
+    }
+
+    it('calls edge function with correct authorization header', async () => {
+      const wrapper = setupAuthenticatedProvider();
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await act(async () => {
+        await result.current.deleteAccount();
+      });
+
+      expect((mockSupabase as any).functions.invoke).toHaveBeenCalledWith('delete-account', {
+        headers: { Authorization: `Bearer ${mockSession.access_token}` },
+      });
+    });
+
+    it('signs out via authHelpers after successful deletion', async () => {
+      const wrapper = setupAuthenticatedProvider();
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await act(async () => {
+        await result.current.deleteAccount();
+      });
+
+      expect(mockAuthHelpers.signOut).toHaveBeenCalled();
+    });
+
+    it('clears RevenueCat user ID', async () => {
+      const wrapper = setupAuthenticatedProvider();
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await act(async () => {
+        await result.current.deleteAccount();
+      });
+
+      expect(mockRevenueCat.clearUserId).toHaveBeenCalled();
+    });
+
+    it('clears local quote storage', async () => {
+      const wrapper = setupAuthenticatedProvider();
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await act(async () => {
+        await result.current.deleteAccount();
+      });
+
+      expect(mockQuoteStorage.clear).toHaveBeenCalled();
+    });
+
+    it('throws when there is no active session', async () => {
+      // Default mock returns no session
+      const wrapper = ({ children }: { children: React.ReactNode }) => (
+        <AuthProvider>{children}</AuthProvider>
+      );
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await expect(
+        act(async () => {
+          await result.current.deleteAccount();
+        })
+      ).rejects.toThrow('No active session');
+    });
+
+    it('throws when edge function returns an error', async () => {
+      (mockSupabase.auth.getSession as jest.Mock).mockResolvedValueOnce({
+        data: { session: mockSession },
+        error: null,
+      });
+      (mockSupabase as any).functions.invoke.mockResolvedValueOnce({
+        data: null,
+        error: new Error('Server error'),
+      });
+
+      const wrapper = ({ children }: { children: React.ReactNode }) => (
+        <AuthProvider>{children}</AuthProvider>
+      );
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await expect(
+        act(async () => {
+          await result.current.deleteAccount();
+        })
+      ).rejects.toThrow('Server error');
+
+      // signOut should NOT have been called since the edge function failed
+      expect(mockAuthHelpers.signOut).not.toHaveBeenCalled();
     });
   });
 });

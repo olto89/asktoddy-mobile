@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { SiteNote } from '../types/Quote';
 import { logger } from './Logger';
+import { deletePersistedImages } from '../utils/imageStorage';
 
 const STORAGE_KEYS = {
   QUOTES: 'saved_quotes',
@@ -95,6 +96,13 @@ class QuoteStorageService {
     return this.withWriteLock(async () => {
       try {
         const quotes = await this.getAll();
+        const toDelete = quotes.find(q => q.id === id);
+
+        // Clean up persisted photo files
+        if (toDelete?.photos && toDelete.photos.length > 0) {
+          deletePersistedImages(toDelete.photos); // fire-and-forget
+        }
+
         const updated = quotes.filter(q => q.id !== id);
         this.cache = updated;
         await AsyncStorage.setItem(STORAGE_KEYS.QUOTES, JSON.stringify(updated));

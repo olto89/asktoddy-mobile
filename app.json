@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.asktoddy.staging",
-      "buildNumber": "45",
+      "buildNumber": "49",
       "splash": {
         "backgroundColor": "#FF7A3B",
         "image": "./assets/splash-icon.png",
@@ -53,6 +53,7 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      "expo-apple-authentication",
       [
         "expo-camera",
         {

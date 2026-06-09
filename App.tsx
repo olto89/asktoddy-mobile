@@ -14,6 +14,7 @@ export type RootStackParamList = {
   ForgotPassword: { email?: string };
   EmailVerification: { email: string; password: string };
   VerificationSuccess: undefined;
+  ResetPassword: undefined;
   Main: undefined;
   SiteNotes: undefined;
   TaskList: { siteNotes: any; savedQuote?: any };

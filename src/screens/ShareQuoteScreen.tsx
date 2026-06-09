@@ -16,9 +16,11 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import designTokens from '../styles/designTokens';
 import { AppIcons, IconSize } from '../styles/iconRegistry';
+import { calculateVAT, calculateIncVAT, formatGBP } from '../utils/vat';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { useAuth } from '../contexts/AuthContext';
+import { DEFAULT_QUOTE_VALIDITY_DAYS, DEFAULT_LEGAL_NOTICE } from '../constants/quoteDefaults';
 
 export default function ShareQuoteScreen({ navigation, route }: any) {
   const { quote } = route.params;
@@ -27,6 +29,18 @@ export default function ShareQuoteScreen({ navigation, route }: any) {
 
   const companyName = freemiumUser.companyName;
   const companyLogoUrl = freemiumUser.companyLogoUrl;
+  const quoteValidityDays = freemiumUser.quoteValidityDays ?? DEFAULT_QUOTE_VALIDITY_DAYS;
+  const businessAddress = freemiumUser.businessAddress;
+  const businessPhone = freemiumUser.businessPhone;
+  const businessEmail = freemiumUser.businessEmail;
+  const businessWebsite = freemiumUser.businessWebsite;
+  const legalNotice = freemiumUser.legalNotice ?? DEFAULT_LEGAL_NOTICE;
+  const hasBusinessContact = !!(
+    businessAddress ||
+    businessPhone ||
+    businessEmail ||
+    businessWebsite
+  );
 
   const formatQuoteText = () => {
     let quoteText = `📋 QUOTE: ${quote.quoteName || 'Construction Quote'}\n\n`;
@@ -36,22 +50,26 @@ export default function ShareQuoteScreen({ navigation, route }: any) {
     }
 
     quoteText += `📍 Property: ${quote.siteNotes?.address || 'Not specified'}\n`;
-    quoteText += `🏗️ Job Type: ${quote.siteNotes?.jobType || 'General'}\n\n`;
-
-    // Show Your Quote Total (finalCost) prominently
-    if (quote.finalCost) {
-      quoteText += `💰 YOUR QUOTE TOTAL: £${quote.finalCost.toLocaleString()}\n\n`;
-    } else {
-      quoteText += `💰 ESTIMATED TOTAL: £${quote.totalCost?.min?.toLocaleString() || 0} - £${quote.totalCost?.max?.toLocaleString() || 0}\n\n`;
-    }
+    const jobType = quote.siteNotes?.jobType || 'General';
+    const capitalisedJobType = jobType.charAt(0).toUpperCase() + jobType.slice(1);
+    quoteText += `🏗️ Job Type: ${capitalisedJobType}\n\n`;
 
     quoteText += `📋 BREAKDOWN:\n`;
     quote.tasks?.forEach((task: any, index: number) => {
       quoteText += `${index + 1}. ${task.description}\n`;
-      // Show Your Price per line item
       const yourPrice = task.finalPrice || task.estimatedCost?.max || 0;
-      quoteText += `   Your Price: £${yourPrice.toLocaleString()}\n\n`;
+      quoteText += `   Price (exc. VAT): £${formatGBP(yourPrice)}\n\n`;
     });
+
+    // Show VAT breakdown or range
+    if (quote.finalCost) {
+      quoteText += `💰 Subtotal (exc. VAT): £${formatGBP(quote.finalCost)}\n`;
+      quoteText += `   VAT (20%): £${formatGBP(calculateVAT(quote.finalCost))}\n`;
+      quoteText += `   TOTAL (inc. VAT): £${formatGBP(calculateIncVAT(quote.finalCost))}\n\n`;
+    } else {
+      quoteText += `💰 ESTIMATED RANGE: £${quote.totalCost?.min?.toLocaleString() || 0} - £${quote.totalCost?.max?.toLocaleString() || 0}\n`;
+      quoteText += `   VAT at 20% will be added\n\n`;
+    }
 
     if (quote.projectNotes) {
       quoteText += `📝 Notes:\n${quote.projectNotes}\n\n`;
@@ -60,8 +78,17 @@ export default function ShareQuoteScreen({ navigation, route }: any) {
     if (companyName) {
       quoteText += `🏢 ${companyName}\n`;
     }
+    if (hasBusinessContact) {
+      if (businessAddress) quoteText += `📍 ${businessAddress}\n`;
+      if (businessPhone) quoteText += `📞 ${businessPhone}\n`;
+      if (businessEmail) quoteText += `📧 ${businessEmail}\n`;
+      if (businessWebsite) quoteText += `🌐 ${businessWebsite}\n`;
+      quoteText += `\n`;
+    }
     quoteText += `⚡ Generated with AskToddy - Professional Quotes in Minutes\n`;
-    quoteText += `📅 Quote Date: ${new Date(quote.timestamp || Date.now()).toLocaleDateString()}`;
+    quoteText += `📅 Quote Date: ${new Date(quote.timestamp || Date.now()).toLocaleDateString()}\n`;
+    quoteText += `⏳ Valid for ${quoteValidityDays} days from date of issue\n\n`;
+    quoteText += `📜 Terms & Conditions:\n${legalNotice}`;
 
     return quoteText;
   };
@@ -84,23 +111,61 @@ export default function ShareQuoteScreen({ navigation, route }: any) {
       year: 'numeric',
     });
 
-    const totalAmount = quote.finalCost
-      ? `£${quote.finalCost.toLocaleString()}`
-      : `£${quote.totalCost?.min?.toLocaleString() || 0} - £${quote.totalCost?.max?.toLocaleString() || 0}`;
+    const jobType = quote.siteNotes?.jobType || 'General Construction';
+    const capitalisedJobType = jobType.charAt(0).toUpperCase() + jobType.slice(1);
+
+    const hasFinalCost = !!quote.finalCost;
+    const subtotalAmount = hasFinalCost ? quote.finalCost : 0;
+    const vatAmount = hasFinalCost ? calculateVAT(subtotalAmount) : 0;
+    const totalIncVAT = hasFinalCost ? calculateIncVAT(subtotalAmount) : 0;
+
+    const escapeHTML = (str: string) =>
+      str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
 
     const tasksHTML =
       quote.tasks
         ?.map((task: any, index: number) => {
           const price = task.finalPrice || task.estimatedCost?.max || 0;
+          const laborDays = task.laborDays;
+          const laborText = laborDays
+            ? `<div style="font-size: 11px; color: #9ca3af; margin-top: 2px;">Est. ${laborDays} day${laborDays !== 1 ? 's' : ''}</div>`
+            : '';
           return `
         <tr>
           <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${index + 1}</td>
-          <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${task.description || 'Item'}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${task.description || 'Item'}${laborText}</td>
           <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 500;">£${price.toLocaleString()}</td>
         </tr>
       `;
         })
         .join('') || '';
+
+    const businessDetailsHTML = hasBusinessContact
+      ? `
+          <div class="section">
+            <div class="section-title">From</div>
+            <div class="customer-details">
+              ${businessAddress ? `<div class="detail-row"><span class="detail-label">Address:</span><span class="detail-value">${escapeHTML(businessAddress)}</span></div>` : ''}
+              ${businessPhone ? `<div class="detail-row"><span class="detail-label">Phone:</span><span class="detail-value">${escapeHTML(businessPhone)}</span></div>` : ''}
+              ${businessEmail ? `<div class="detail-row"><span class="detail-label">Email:</span><span class="detail-value">${escapeHTML(businessEmail)}</span></div>` : ''}
+              ${businessWebsite ? `<div class="detail-row"><span class="detail-label">Website:</span><span class="detail-value">${escapeHTML(businessWebsite)}</span></div>` : ''}
+            </div>
+          </div>
+    `
+      : '';
+
+    const legalNoticeHTML = `
+          <div class="section">
+            <div class="section-title">Terms &amp; Conditions</div>
+            <div style="background: #f9fafb; padding: 20px; border-radius: 8px; white-space: pre-line; font-size: 13px; color: #4b5563; line-height: 1.6;">
+              ${escapeHTML(legalNotice)}
+            </div>
+          </div>
+    `;
 
     return `
       <!DOCTYPE html>
@@ -251,10 +316,12 @@ export default function ShareQuoteScreen({ navigation, route }: any) {
               </div>
             </div>
             <div class="quote-info">
-              <div class="quote-title">QUOTE</div>
+              <div class="quote-title">${quote.quoteName || 'QUOTE'}</div>
               <div class="quote-date">${quoteDate}</div>
             </div>
           </div>
+
+          ${businessDetailsHTML}
 
           <div class="section">
             <div class="section-title">Customer Details</div>
@@ -275,7 +342,7 @@ export default function ShareQuoteScreen({ navigation, route }: any) {
               </div>
               <div class="detail-row">
                 <span class="detail-label">Job Type:</span>
-                <span class="detail-value">${quote.siteNotes?.jobType || 'General Construction'}</span>
+                <span class="detail-value">${capitalisedJobType}</span>
               </div>
             </div>
           </div>
@@ -287,15 +354,37 @@ export default function ShareQuoteScreen({ navigation, route }: any) {
                 <tr>
                   <th style="width: 50px;">#</th>
                   <th>Description</th>
-                  <th style="width: 120px;">Amount</th>
+                  <th style="width: 150px;">Amount (exc. VAT)</th>
                 </tr>
               </thead>
               <tbody>
                 ${tasksHTML}
-                <tr class="total-row">
-                  <td colspan="2">TOTAL</td>
-                  <td style="text-align: right;">${totalAmount}</td>
+                ${
+                  hasFinalCost
+                    ? `
+                <tr>
+                  <td colspan="2" style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 500;">Subtotal (exc. VAT)</td>
+                  <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 500;">£${formatGBP(subtotalAmount)}</td>
                 </tr>
+                <tr>
+                  <td colspan="2" style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 500;">VAT (20%)</td>
+                  <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 500;">£${formatGBP(vatAmount)}</td>
+                </tr>
+                <tr class="total-row">
+                  <td colspan="2">TOTAL (inc. VAT)</td>
+                  <td style="text-align: right;">£${formatGBP(totalIncVAT)}</td>
+                </tr>
+                `
+                    : `
+                <tr class="total-row">
+                  <td colspan="2">ESTIMATED TOTAL</td>
+                  <td style="text-align: right;">£${quote.totalCost?.min?.toLocaleString() || 0} - £${quote.totalCost?.max?.toLocaleString() || 0}</td>
+                </tr>
+                <tr>
+                  <td colspan="3" style="padding: 12px; text-align: center; font-size: 13px; color: #6b7280; font-style: italic;">VAT at 20% will be added to the final quote</td>
+                </tr>
+                `
+                }
               </tbody>
             </table>
           </div>
@@ -314,8 +403,10 @@ export default function ShareQuoteScreen({ navigation, route }: any) {
           }
 
           <div class="validity">
-            <p>This quote is valid for 30 days from the date of issue.</p>
+            <p>This quote is valid for ${quoteValidityDays} days from the date of issue.</p>
           </div>
+
+          ${legalNoticeHTML}
 
           <div class="footer">
             ${
@@ -392,10 +483,33 @@ export default function ShareQuoteScreen({ navigation, route }: any) {
           <View style={{ width: 24 }} />
         </View>
 
-        {/* Quote Preview */}
+        {/* Quote Summary */}
         <Card style={styles.previewCard}>
-          <Text style={styles.previewTitle}>Quote Preview</Text>
-          <Text style={styles.previewText}>{formatQuoteText()}</Text>
+          <Text style={styles.previewTitle}>{quote.quoteName || 'Quote Summary'}</Text>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Property</Text>
+            <Text style={styles.summaryValue}>{quote.siteNotes?.address || 'Not specified'}</Text>
+          </View>
+          {quote.customerName ? (
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Customer</Text>
+              <Text style={styles.summaryValue}>{quote.customerName}</Text>
+            </View>
+          ) : null}
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Items</Text>
+            <Text style={styles.summaryValue}>{quote.tasks?.length || 0} line items</Text>
+          </View>
+          <View style={[styles.summaryRow, { borderBottomWidth: 0, paddingBottom: 0 }]}>
+            <Text style={[styles.summaryLabel, { fontWeight: '600' as any }]}>
+              Total (inc. VAT)
+            </Text>
+            <Text style={styles.summaryTotal}>
+              {quote.finalCost
+                ? `£${formatGBP(calculateIncVAT(quote.finalCost))}`
+                : `£${quote.totalCost?.min?.toLocaleString() || 0} - £${quote.totalCost?.max?.toLocaleString() || 0}`}
+            </Text>
+          </View>
         </Card>
 
         {/* Share Options */}
@@ -456,16 +570,8 @@ export default function ShareQuoteScreen({ navigation, route }: any) {
           </TouchableOpacity>
         </View>
 
-        {/* Action Buttons */}
-        <View style={styles.actions}>
-          <Button
-            title="Share Now"
-            onPress={handleShare}
-            variant="primary"
-            fullWidth
-            icon={<Ionicons name="share" size={20} color="white" />}
-          />
-        </View>
+        {/* Bottom spacing */}
+        <View style={{ height: designTokens.spacing.lg }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -503,11 +609,30 @@ const styles = StyleSheet.create({
     color: designTokens.colors.text.primary,
     marginBottom: designTokens.spacing.md,
   },
-  previewText: {
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: designTokens.spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: designTokens.colors.border.primary,
+  },
+  summaryLabel: {
+    fontSize: designTokens.typography.fontSize.sm,
+    color: designTokens.colors.text.secondary,
+  },
+  summaryValue: {
     fontSize: designTokens.typography.fontSize.sm,
     color: designTokens.colors.text.primary,
-    lineHeight: 20,
-    fontFamily: 'monospace',
+    fontWeight: designTokens.typography.fontWeight.medium as any,
+    flexShrink: 1,
+    textAlign: 'right' as any,
+    maxWidth: '60%' as any,
+  },
+  summaryTotal: {
+    fontSize: designTokens.typography.fontSize.lg,
+    color: designTokens.colors.primary[600],
+    fontWeight: designTokens.typography.fontWeight.bold as any,
   },
   shareOptions: {
     paddingHorizontal: designTokens.spacing.md,
@@ -552,9 +677,5 @@ const styles = StyleSheet.create({
     fontSize: designTokens.typography.fontSize.sm,
     color: designTokens.colors.text.secondary,
     marginTop: 2,
-  },
-  actions: {
-    paddingHorizontal: designTokens.spacing.md,
-    paddingVertical: designTokens.spacing.lg,
   },
 });

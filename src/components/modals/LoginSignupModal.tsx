@@ -20,6 +20,7 @@ import designTokens from '../../styles/designTokens';
 import { AppIcons, IconSize } from '../../styles/iconRegistry';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
+import AppleSignInButton from '../AppleSignInButton';
 import { logger } from '../../services/Logger';
 
 interface LoginSignupModalProps {
@@ -296,6 +297,21 @@ export default function LoginSignupModal({
                     </Card>
                   )}
 
+                  {/* Apple Sign-In */}
+                  <AppleSignInButton
+                    onSuccess={() => {
+                      handleClose();
+                      onSuccess?.();
+                    }}
+                  />
+
+                  {/* Divider */}
+                  <View style={styles.dividerRow}>
+                    <View style={styles.dividerLine} />
+                    <Text style={styles.dividerText}>or use email</Text>
+                    <View style={styles.dividerLine} />
+                  </View>
+
                   {/* Form */}
                   <Card style={styles.formCard}>
                     <Text style={styles.fieldLabel}>Email</Text>
@@ -483,6 +499,21 @@ const styles = StyleSheet.create({
     fontSize: designTokens.typography.fontSize.base,
     color: designTokens.colors.text.primary,
     flex: 1,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: designTokens.spacing.lg,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: designTokens.colors.border.primary,
+  },
+  dividerText: {
+    paddingHorizontal: designTokens.spacing.md,
+    fontSize: designTokens.typography.fontSize.sm,
+    color: designTokens.colors.text.tertiary,
   },
   formCard: {
     padding: designTokens.spacing.lg,

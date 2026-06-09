@@ -24,6 +24,23 @@ interface FreemiumUser {
   anonymousId?: string; // For anonymous users
   companyName?: string;
   companyLogoUrl?: string;
+  quoteValidityDays?: number;
+  businessAddress?: string;
+  businessPhone?: string;
+  businessEmail?: string;
+  businessWebsite?: string;
+  legalNotice?: string;
+}
+
+export interface BusinessProfileUpdates {
+  companyName?: string;
+  companyLogoUrl?: string | null;
+  quoteValidityDays?: number;
+  businessAddress?: string;
+  businessPhone?: string;
+  businessEmail?: string;
+  businessWebsite?: string;
+  legalNotice?: string;
 }
 
 interface AuthContextType {
@@ -42,7 +59,7 @@ interface AuthContextType {
   incrementQuoteUsage: () => Promise<void>;
   upgradeUser: (tier: UserTier) => Promise<void>;
   refreshPremiumStatus: () => Promise<void>;
-  updateCompanyProfile: (companyName?: string, companyLogoUrl?: string | null) => Promise<void>;
+  updateCompanyProfile: (updates: BusinessProfileUpdates) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -73,16 +90,25 @@ const createAnonymousUser = (): FreemiumUser => ({
   anonymousId: generateAnonymousId(),
 });
 
-const createFreeUser = (user: User): FreemiumUser => ({
-  id: user.id,
-  email: user.email,
-  tier: 'free',
-  quotesUsed: 0,
-  quotesLimit: 5, // Free tier limit
-  createdAt: user.created_at || new Date().toISOString(),
-  companyName: (user.user_metadata as any)?.company_name,
-  companyLogoUrl: (user.user_metadata as any)?.company_logo_url,
-});
+const createFreeUser = (user: User): FreemiumUser => {
+  const meta = user.user_metadata as any;
+  return {
+    id: user.id,
+    email: user.email,
+    tier: 'free',
+    quotesUsed: 0,
+    quotesLimit: 5, // Free tier limit
+    createdAt: user.created_at || new Date().toISOString(),
+    companyName: meta?.company_name,
+    companyLogoUrl: meta?.company_logo_url,
+    quoteValidityDays: meta?.quote_validity_days,
+    businessAddress: meta?.business_address,
+    businessPhone: meta?.business_phone,
+    businessEmail: meta?.business_email,
+    businessWebsite: meta?.business_website,
+    legalNotice: meta?.legal_notice,
+  };
+};
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
@@ -287,7 +313,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
           supabase.auth
             .setSession({ access_token: tokens.access_token, refresh_token: tokens.refresh_token })
             .then(() => {
-              if (tokens.type === 'signup' || tokens.type === 'email_change') {
+              if (tokens.type === 'recovery') {
+                logger.debug('Password recovery deep link — navigating to ResetPassword');
+                setTimeout(() => {
+                  navigate('ResetPassword');
+                }, 1000);
+              } else if (tokens.type === 'signup' || tokens.type === 'email_change') {
                 logger.debug('Email verification successful, user is now logged in');
                 // Navigate to main app - session is already set, user is authenticated
                 setTimeout(() => {
@@ -624,16 +655,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw error;
       }
 
-      // On success: same cleanup as signOut
+      // Clean up RevenueCat and local quote storage
       await revenueCatService.clearUserId();
-      setUser(null);
-      setSession(null);
       await quoteStorage.clear();
-      await AsyncStorage.removeItem('freemium_user');
 
-      const anonymousUser = createAnonymousUser();
-      setFreemiumUser(anonymousUser);
-      await saveFreemiumUserToStorage(anonymousUser);
+      // Sign out properly through Supabase auth — this fires the SIGNED_OUT event
+      // which the auth listener handles (clears session, reverts to anonymous user)
+      await authHelpers.signOut();
 
       logger.debug('✅ Account deleted successfully');
     } finally {
@@ -731,21 +759,36 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const updateCompanyProfile = async (
-    companyName?: string,
-    companyLogoUrl?: string | null
-  ): Promise<void> => {
+  const updateCompanyProfile = async (updates: BusinessProfileUpdates): Promise<void> => {
     const metadata: Record<string, any> = {};
-    if (companyName !== undefined) metadata.company_name = companyName;
-    if (companyLogoUrl !== undefined) metadata.company_logo_url = companyLogoUrl;
+    const fieldMap: Record<keyof BusinessProfileUpdates, string> = {
+      companyName: 'company_name',
+      companyLogoUrl: 'company_logo_url',
+      quoteValidityDays: 'quote_validity_days',
+      businessAddress: 'business_address',
+      businessPhone: 'business_phone',
+      businessEmail: 'business_email',
+      businessWebsite: 'business_website',
+      legalNotice: 'legal_notice',
+    };
+
+    for (const [key, metaKey] of Object.entries(fieldMap)) {
+      const value = updates[key as keyof BusinessProfileUpdates];
+      if (value !== undefined) {
+        metadata[metaKey] = value;
+      }
+    }
 
     const { error } = await supabase.auth.updateUser({ data: metadata });
     if (error) throw error;
 
     const updatedUser: FreemiumUser = {
       ...freemiumUser,
-      ...(companyName !== undefined && { companyName }),
-      ...(companyLogoUrl !== undefined && { companyLogoUrl: companyLogoUrl ?? undefined }),
+      ...Object.fromEntries(
+        Object.entries(updates)
+          .filter(([_, v]) => v !== undefined)
+          .map(([k, v]) => [k, v === null ? undefined : v])
+      ),
     };
     setFreemiumUser(updatedUser);
     await saveFreemiumUserToStorage(updatedUser);

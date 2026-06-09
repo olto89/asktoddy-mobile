@@ -20,11 +20,14 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase, dbHelpers } from '../services/supabase';
 import { useNavigation } from '@react-navigation/native';
 import { useImagePicker } from '../hooks/useImagePicker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import designTokens from '../styles/designTokens';
 import { AppIcons } from '../styles/iconRegistry';
+import { DEFAULT_QUOTE_VALIDITY_DAYS, DEFAULT_LEGAL_NOTICE } from '../constants/quoteDefaults';
+import UpgradePromptModal from '../components/modals/UpgradePromptModal';
 
 export default function AccountScreen() {
-  const { user, signOut, deleteAccount, freemiumUser, updateCompanyProfile } = useAuth();
+  const { user, signOut, deleteAccount, freemiumUser, updateCompanyProfile, isPremium } = useAuth();
   const navigation = useNavigation();
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
@@ -39,11 +42,25 @@ export default function AccountScreen() {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [removingLogo, setRemovingLogo] = useState(false);
 
+  // Premium quote settings state
+  const [quoteValidityDays, setQuoteValidityDays] = useState(
+    String(freemiumUser.quoteValidityDays ?? DEFAULT_QUOTE_VALIDITY_DAYS)
+  );
+  const [businessAddress, setBusinessAddress] = useState(freemiumUser.businessAddress || '');
+  const [businessPhone, setBusinessPhone] = useState(freemiumUser.businessPhone || '');
+  const [businessEmail, setBusinessEmail] = useState(freemiumUser.businessEmail || '');
+  const [businessWebsite, setBusinessWebsite] = useState(freemiumUser.businessWebsite || '');
+  const [legalNotice, setLegalNotice] = useState(freemiumUser.legalNotice || DEFAULT_LEGAL_NOTICE);
+  const [savingQuoteSettings, setSavingQuoteSettings] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
   // Inline "Saved!" acknowledgement timers
   const [nameSaved, setNameSaved] = useState(false);
   const [logoSaved, setLogoSaved] = useState(false);
+  const [quoteSettingsSaved, setQuoteSettingsSaved] = useState(false);
   const nameSavedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const logoSavedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const quoteSettingsSavedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showNameSaved = () => {
     setNameSaved(true);
@@ -57,19 +74,33 @@ export default function AccountScreen() {
     logoSavedTimer.current = setTimeout(() => setLogoSaved(false), 2500);
   };
 
-  const { showImagePicker } = useImagePicker({
+  const showQuoteSettingsSaved = () => {
+    setQuoteSettingsSaved(true);
+    if (quoteSettingsSavedTimer.current) clearTimeout(quoteSettingsSavedTimer.current);
+    quoteSettingsSavedTimer.current = setTimeout(() => setQuoteSettingsSaved(false), 2500);
+  };
+
+  const { pickFromLibrary } = useImagePicker({
     aspect: [1, 1],
     quality: 0.8,
     onImageSelected: async (uri: string) => {
       try {
         setUploadingLogo(true);
+        // Convert any format (HEIC, WEBP, PNG, etc.) to JPEG for consistent storage
+        const manipulated = await ImageManipulator.manipulateAsync(
+          uri,
+          [{ resize: { width: 512 } }],
+          { compress: 0.85, format: ImageManipulator.SaveFormat.JPEG }
+        );
         const logoPath = `${user?.id}/logo.jpg`;
-        const result = await dbHelpers.uploadImage(uri, logoPath, 'company-logos');
+        // Delete any old PNG version to avoid stale files
+        await dbHelpers.deleteStorageFile('company-logos', `${user?.id}/logo.png`).catch(() => {});
+        const result = await dbHelpers.uploadImage(manipulated.uri, logoPath, 'company-logos');
         if (result.error) throw result.error;
-        await updateCompanyProfile(undefined, result.data!.publicUrl);
+        await updateCompanyProfile({ companyLogoUrl: result.data!.publicUrl });
         showLogoSaved();
       } catch (err) {
-        Alert.alert('Error', 'Failed to upload logo. Please try again.');
+        Alert.alert('Upload Failed', 'Could not process that image. Please try a different one.');
       } finally {
         setUploadingLogo(false);
       }
@@ -79,7 +110,7 @@ export default function AccountScreen() {
   const handleSaveCompanyName = async () => {
     try {
       setSavingName(true);
-      await updateCompanyProfile(companyName);
+      await updateCompanyProfile({ companyName });
       showNameSaved();
     } catch (err) {
       Alert.alert('Error', 'Failed to save company name. Please try again.');
@@ -91,14 +122,41 @@ export default function AccountScreen() {
   const handleRemoveLogo = async () => {
     try {
       setRemovingLogo(true);
-      const logoPath = `${user?.id}/logo.jpg`;
-      await dbHelpers.deleteStorageFile('company-logos', logoPath);
-      await updateCompanyProfile(undefined, null);
+      // Clean up both possible extensions (jpg and png)
+      await dbHelpers.deleteStorageFile('company-logos', `${user?.id}/logo.jpg`);
+      await dbHelpers.deleteStorageFile('company-logos', `${user?.id}/logo.png`);
+      await updateCompanyProfile({ companyLogoUrl: null });
       showLogoSaved();
     } catch (err) {
       Alert.alert('Error', 'Failed to remove logo. Please try again.');
     } finally {
       setRemovingLogo(false);
+    }
+  };
+
+  const handleSaveQuoteSettings = async () => {
+    try {
+      setSavingQuoteSettings(true);
+      const days = parseInt(quoteValidityDays, 10);
+      await updateCompanyProfile({
+        quoteValidityDays: isNaN(days) ? DEFAULT_QUOTE_VALIDITY_DAYS : days,
+        businessAddress,
+        businessPhone,
+        businessEmail,
+        businessWebsite,
+        legalNotice,
+      });
+      showQuoteSettingsSaved();
+    } catch (err) {
+      Alert.alert('Error', 'Failed to save quote settings. Please try again.');
+    } finally {
+      setSavingQuoteSettings(false);
+    }
+  };
+
+  const handlePremiumFieldPress = () => {
+    if (!isPremium) {
+      setShowUpgradeModal(true);
     }
   };
 
@@ -223,20 +281,7 @@ export default function AccountScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account Settings</Text>
 
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => Alert.alert('Coming Soon', 'Profile management coming in next update!')}
-          >
-            <View style={styles.menuItemLeft}>
-              <Ionicons
-                name="person-outline"
-                size={20}
-                color={designTokens.colors.text.secondary}
-              />
-              <Text style={styles.menuItemText}>Edit Profile</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color={designTokens.colors.text.tertiary} />
-          </TouchableOpacity>
+          {/* Edit Profile — removed pending implementation */}
 
           {/* Company Branding */}
           <TouchableOpacity
@@ -298,10 +343,13 @@ export default function AccountScreen() {
               <Text style={[styles.brandingLabel, { marginTop: designTokens.spacing.md }]}>
                 Company Logo
               </Text>
+              <Text style={styles.logoHintText}>
+                Select a PNG or JPEG image from your photo library
+              </Text>
               <View style={styles.brandingLogoRow}>
                 <TouchableOpacity
                   style={styles.logoContainer}
-                  onPress={showImagePicker}
+                  onPress={pickFromLibrary}
                   disabled={uploadingLogo}
                   testID="logo-picker-button"
                 >
@@ -324,7 +372,7 @@ export default function AccountScreen() {
                 <View style={styles.logoActions}>
                   <TouchableOpacity
                     style={styles.logoActionButton}
-                    onPress={showImagePicker}
+                    onPress={pickFromLibrary}
                     disabled={uploadingLogo}
                   >
                     <Text style={styles.logoActionText}>
@@ -356,8 +404,186 @@ export default function AccountScreen() {
                   Saved!
                 </Text>
               )}
+
+              {/* Premium Quote Settings */}
+              <View style={styles.premiumDivider} testID="premium-quote-settings-section">
+                <View style={styles.premiumSectionHeader}>
+                  <Text style={styles.premiumSectionLabel}>Premium Quote Settings</Text>
+                  {!isPremium && (
+                    <View style={styles.premiumBadge} testID="pro-badge">
+                      <Text style={styles.premiumBadgeText}>PRO</Text>
+                    </View>
+                  )}
+                </View>
+
+                {/* Quote Validity Days */}
+                <Text style={styles.brandingLabel}>Quote Validity (days)</Text>
+                <TouchableOpacity
+                  onPress={handlePremiumFieldPress}
+                  disabled={isPremium}
+                  activeOpacity={isPremium ? 1 : 0.7}
+                >
+                  <TextInput
+                    style={[styles.brandingInput, !isPremium && styles.lockedInput]}
+                    value={quoteValidityDays}
+                    onChangeText={setQuoteValidityDays}
+                    keyboardType="numeric"
+                    editable={isPremium}
+                    placeholder={String(DEFAULT_QUOTE_VALIDITY_DAYS)}
+                    placeholderTextColor={designTokens.colors.text.tertiary}
+                    testID="quote-validity-input"
+                  />
+                </TouchableOpacity>
+
+                {/* Business Address */}
+                <Text style={[styles.brandingLabel, { marginTop: designTokens.spacing.md }]}>
+                  Business Address
+                </Text>
+                <TouchableOpacity
+                  onPress={handlePremiumFieldPress}
+                  disabled={isPremium}
+                  activeOpacity={isPremium ? 1 : 0.7}
+                >
+                  <TextInput
+                    style={[
+                      styles.brandingInput,
+                      !isPremium && styles.lockedInput,
+                      { minHeight: 60, textAlignVertical: 'top' },
+                    ]}
+                    value={businessAddress}
+                    onChangeText={setBusinessAddress}
+                    editable={isPremium}
+                    multiline
+                    placeholder="Enter business address"
+                    placeholderTextColor={designTokens.colors.text.tertiary}
+                    testID="business-address-input"
+                  />
+                </TouchableOpacity>
+
+                {/* Business Phone */}
+                <Text style={[styles.brandingLabel, { marginTop: designTokens.spacing.md }]}>
+                  Phone
+                </Text>
+                <TouchableOpacity
+                  onPress={handlePremiumFieldPress}
+                  disabled={isPremium}
+                  activeOpacity={isPremium ? 1 : 0.7}
+                >
+                  <TextInput
+                    style={[styles.brandingInput, !isPremium && styles.lockedInput]}
+                    value={businessPhone}
+                    onChangeText={setBusinessPhone}
+                    editable={isPremium}
+                    keyboardType="phone-pad"
+                    placeholder="Enter phone number"
+                    placeholderTextColor={designTokens.colors.text.tertiary}
+                    testID="business-phone-input"
+                  />
+                </TouchableOpacity>
+
+                {/* Business Email */}
+                <Text style={[styles.brandingLabel, { marginTop: designTokens.spacing.md }]}>
+                  Email
+                </Text>
+                <TouchableOpacity
+                  onPress={handlePremiumFieldPress}
+                  disabled={isPremium}
+                  activeOpacity={isPremium ? 1 : 0.7}
+                >
+                  <TextInput
+                    style={[styles.brandingInput, !isPremium && styles.lockedInput]}
+                    value={businessEmail}
+                    onChangeText={setBusinessEmail}
+                    editable={isPremium}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    placeholder="Enter email address"
+                    placeholderTextColor={designTokens.colors.text.tertiary}
+                    testID="business-email-input"
+                  />
+                </TouchableOpacity>
+
+                {/* Business Website */}
+                <Text style={[styles.brandingLabel, { marginTop: designTokens.spacing.md }]}>
+                  Website
+                </Text>
+                <TouchableOpacity
+                  onPress={handlePremiumFieldPress}
+                  disabled={isPremium}
+                  activeOpacity={isPremium ? 1 : 0.7}
+                >
+                  <TextInput
+                    style={[styles.brandingInput, !isPremium && styles.lockedInput]}
+                    value={businessWebsite}
+                    onChangeText={setBusinessWebsite}
+                    editable={isPremium}
+                    keyboardType="url"
+                    autoCapitalize="none"
+                    placeholder="Enter website URL"
+                    placeholderTextColor={designTokens.colors.text.tertiary}
+                    testID="business-website-input"
+                  />
+                </TouchableOpacity>
+
+                {/* Legal Notice */}
+                <Text style={[styles.brandingLabel, { marginTop: designTokens.spacing.md }]}>
+                  Legal Notice / Terms
+                </Text>
+                <TouchableOpacity
+                  onPress={handlePremiumFieldPress}
+                  disabled={isPremium}
+                  activeOpacity={isPremium ? 1 : 0.7}
+                >
+                  <TextInput
+                    style={[
+                      styles.brandingInput,
+                      styles.legalInput,
+                      !isPremium && styles.lockedInput,
+                    ]}
+                    value={legalNotice}
+                    onChangeText={setLegalNotice}
+                    editable={isPremium}
+                    multiline
+                    numberOfLines={6}
+                    placeholder="Enter legal terms and conditions"
+                    placeholderTextColor={designTokens.colors.text.tertiary}
+                    testID="legal-notice-input"
+                  />
+                </TouchableOpacity>
+
+                {/* Save Quote Settings Button */}
+                {isPremium && (
+                  <TouchableOpacity
+                    style={[
+                      styles.changePasswordButton,
+                      { marginTop: designTokens.spacing.md },
+                      savingQuoteSettings && styles.changePasswordButtonDisabled,
+                    ]}
+                    onPress={handleSaveQuoteSettings}
+                    disabled={savingQuoteSettings}
+                    testID="save-quote-settings-button"
+                  >
+                    {savingQuoteSettings ? (
+                      <ActivityIndicator size="small" color={designTokens.colors.text.inverse} />
+                    ) : (
+                      <Text style={styles.changePasswordButtonText}>Save Quote Settings</Text>
+                    )}
+                  </TouchableOpacity>
+                )}
+                {quoteSettingsSaved && (
+                  <Text style={styles.savedText} testID="quote-settings-saved-indicator">
+                    Saved!
+                  </Text>
+                )}
+              </View>
             </View>
           )}
+
+          <UpgradePromptModal
+            visible={showUpgradeModal}
+            onClose={() => setShowUpgradeModal(false)}
+            reason="premium_feature"
+          />
 
           <TouchableOpacity
             style={styles.menuItem}
@@ -684,6 +910,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minWidth: 60,
   },
+  logoHintText: {
+    fontSize: designTokens.typography.fontSize.xs,
+    color: designTokens.colors.text.tertiary,
+    marginBottom: designTokens.spacing.sm,
+  },
   brandingLogoRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -722,6 +953,42 @@ const styles = StyleSheet.create({
     fontWeight: designTokens.typography.fontWeight.medium as any,
     color: (designTokens.colors as any).success || '#22c55e',
     marginTop: designTokens.spacing.xs,
+  },
+  premiumDivider: {
+    marginTop: designTokens.spacing.lg,
+    paddingTop: designTokens.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: designTokens.colors.border.primary,
+  },
+  premiumSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: designTokens.spacing.md,
+    gap: designTokens.spacing.sm,
+  },
+  premiumSectionLabel: {
+    fontSize: designTokens.typography.fontSize.md,
+    fontWeight: designTokens.typography.fontWeight.semibold as any,
+    color: designTokens.colors.text.primary,
+  },
+  premiumBadge: {
+    backgroundColor: designTokens.colors.primary[500],
+    paddingHorizontal: designTokens.spacing.sm,
+    paddingVertical: 2,
+    borderRadius: designTokens.borderRadius.sm,
+  },
+  premiumBadgeText: {
+    fontSize: designTokens.typography.fontSize.xs,
+    fontWeight: designTokens.typography.fontWeight.bold as any,
+    color: designTokens.colors.text.inverse,
+  },
+  lockedInput: {
+    backgroundColor: designTokens.colors.background.secondary,
+    opacity: 0.7,
+  },
+  legalInput: {
+    minHeight: 120,
+    textAlignVertical: 'top' as any,
   },
   logoutButton: {
     flexDirection: 'row',

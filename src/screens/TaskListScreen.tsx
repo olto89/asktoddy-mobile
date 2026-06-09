@@ -21,6 +21,7 @@ import { AIService } from '../services/ai/AIServiceEdge';
 import { useAuth } from '../contexts/AuthContext';
 import LoginSignupModal from '../components/modals/LoginSignupModal';
 import UpgradePromptModal from '../components/modals/UpgradePromptModal';
+import { calculateVAT, calculateIncVAT, formatGBP } from '../utils/vat';
 import { logger } from '../services/Logger';
 import {
   Task,
@@ -379,6 +380,7 @@ ${images.length > 0 ? '• ANALYZE THE ATTACHED PHOTOS to assess the current con
 ${audioFiles.length > 0 ? '• LISTEN TO THE ATTACHED VOICE RECORDINGS for verbal descriptions and requirements' : ''}
 ${siteNotes.constructionMethod ? `• IMPORTANT: Apply ${siteNotes.constructionMethodMultiplier}x price adjustment for ${siteNotes.constructionMethodLabel} construction method` : ''}
 
+All costs must EXCLUDE VAT (VAT is added separately).
 Provide detailed cost breakdown with materials, labor, and realistic price ranges based on current UK market rates.`;
 
       // Call AI service with images and audio if available
@@ -633,7 +635,8 @@ Provide detailed cost breakdown with materials, labor, and realistic price range
 
               <View style={styles.taskCost}>
                 <Text style={[styles.yourPrice, !task.selected && styles.costRangeInactive]}>
-                  Your Price: £{(task.finalPrice || task.estimatedCost.max).toLocaleString()}
+                  Your Price (exc. VAT): £
+                  {(task.finalPrice || task.estimatedCost.max).toLocaleString()}
                 </Text>
                 <Text style={[styles.costRange, !task.selected && styles.costRangeInactive]}>
                   AI estimate: £{task.estimatedCost.min.toLocaleString()} - £
@@ -657,13 +660,25 @@ Provide detailed cost breakdown with materials, labor, and realistic price range
           ))}
         </View>
 
-        {/* Total Cost with Confidence */}
+        {/* Total Cost with VAT Breakdown */}
         <Card style={styles.totalCard}>
-          {/* Final Cost (if set) */}
+          {/* VAT Breakdown */}
           {finalCost !== null && (
             <View style={styles.finalCostDisplay}>
-              <Text style={styles.finalCostDisplayLabel}>Your Quote Price</Text>
-              <Text style={styles.finalCostDisplayAmount}>£{finalCost.toLocaleString()}</Text>
+              <View style={styles.vatRow}>
+                <Text style={styles.vatLabel}>Subtotal (exc. VAT)</Text>
+                <Text style={styles.vatValue}>£{formatGBP(finalCost)}</Text>
+              </View>
+              <View style={styles.vatRow}>
+                <Text style={styles.vatLabel}>VAT (20%)</Text>
+                <Text style={styles.vatValue}>£{formatGBP(calculateVAT(finalCost))}</Text>
+              </View>
+              <View style={[styles.vatRow, styles.vatTotalRow]}>
+                <Text style={styles.vatTotalLabel}>Total (inc. VAT)</Text>
+                <Text style={styles.finalCostDisplayAmount}>
+                  £{formatGBP(calculateIncVAT(finalCost))}
+                </Text>
+              </View>
             </View>
           )}
 
@@ -673,7 +688,9 @@ Provide detailed cost breakdown with materials, labor, and realistic price range
           <Text style={[styles.totalAmount, finalCost !== null && styles.totalAmountSmall]}>
             £{totalCost.min.toLocaleString()} - £{totalCost.max.toLocaleString()}
           </Text>
-          <Text style={styles.totalNote}>*Prices include materials and labor</Text>
+          <Text style={styles.totalNote}>
+            *Prices include materials and labor. VAT at 20% added to total.
+          </Text>
 
           {/* Confidence & Adjustments Indicator */}
           {aiAnalysis && (
@@ -757,6 +774,19 @@ Provide detailed cost breakdown with materials, labor, and realistic price range
               icon={<Ionicons name="share-outline" size={20} color="white" />}
             />
           </View>
+
+          {/* New Assessment link */}
+          <TouchableOpacity
+            style={styles.newAssessmentLink}
+            onPress={() => navigation.navigate('SiteNotes')}
+          >
+            <Ionicons
+              name="add-circle-outline"
+              size={20}
+              color={designTokens.colors.primary[500]}
+            />
+            <Text style={styles.newAssessmentText}>Start New Assessment</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
@@ -780,8 +810,7 @@ Provide detailed cost breakdown with materials, labor, and realistic price range
         onClose={() => setShowUpgradeModal(false)}
         onUpgrade={() => {
           setShowUpgradeModal(false);
-          // TODO: Navigate to payment flow
-          Alert.alert('Coming Soon', 'Payment integration coming in next update');
+          navigation.navigate('Pricing');
         }}
         reason="quota_exceeded"
       />
@@ -970,16 +999,37 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: designTokens.colors.primary[200],
   },
-  finalCostDisplayLabel: {
-    fontSize: designTokens.typography.fontSize.sm,
-    color: designTokens.colors.text.secondary,
-    fontWeight: designTokens.typography.fontWeight.medium as any,
-  },
   finalCostDisplayAmount: {
-    fontSize: designTokens.typography.fontSize['3xl'],
+    fontSize: designTokens.typography.fontSize['2xl'],
     fontWeight: designTokens.typography.fontWeight.bold as any,
     color: designTokens.colors.primary[600],
-    marginTop: designTokens.spacing.xs,
+  },
+  vatRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: designTokens.spacing.xs,
+  },
+  vatLabel: {
+    fontSize: designTokens.typography.fontSize.sm,
+    color: designTokens.colors.text.secondary,
+  },
+  vatValue: {
+    fontSize: designTokens.typography.fontSize.sm,
+    fontWeight: designTokens.typography.fontWeight.medium as any,
+    color: designTokens.colors.text.primary,
+  },
+  vatTotalRow: {
+    marginTop: designTokens.spacing.sm,
+    paddingTop: designTokens.spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: designTokens.colors.primary[200],
+    marginBottom: 0,
+  },
+  vatTotalLabel: {
+    fontSize: designTokens.typography.fontSize.base,
+    fontWeight: designTokens.typography.fontWeight.semibold as any,
+    color: designTokens.colors.text.primary,
   },
   totalNote: {
     fontSize: designTokens.typography.fontSize.sm,
@@ -1011,6 +1061,18 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
+  },
+  newAssessmentLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: designTokens.spacing.md,
+    gap: designTokens.spacing.xs,
+  },
+  newAssessmentText: {
+    fontSize: designTokens.typography.fontSize.sm,
+    color: designTokens.colors.primary[500],
+    fontWeight: designTokens.typography.fontWeight.medium as any,
   },
   menuLink: {
     alignSelf: 'center',

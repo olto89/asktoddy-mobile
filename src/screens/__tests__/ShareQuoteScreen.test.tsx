@@ -67,13 +67,16 @@ describe('ShareQuoteScreen', () => {
       expect(getByText('Export PDF')).toBeTruthy();
     });
 
-    it('shows quote preview with quote data', () => {
+    it('shows quote summary with key details', () => {
       const { getByText } = renderWithProviders(
         <ShareQuoteScreen navigation={createNavigation()} route={createRoute()} />,
         { authContext: { freemiumUser: mockFreeUser, isAuthenticated: true, isAnonymous: false } }
       );
 
-      expect(getByText('Quote Preview')).toBeTruthy();
+      expect(getByText('Kitchen Renovation')).toBeTruthy();
+      expect(getByText('123 Test Street')).toBeTruthy();
+      expect(getByText('John Smith')).toBeTruthy();
+      expect(getByText('3 line items')).toBeTruthy();
     });
   });
 
@@ -310,6 +313,282 @@ describe('ShareQuoteScreen', () => {
       await waitFor(() => {
         const htmlArg = (Print.printToFileAsync as jest.Mock).mock.calls[0][0].html;
         expect(htmlArg).toContain('Access via rear garden');
+      });
+    });
+  });
+
+  describe('PDF polish', () => {
+    it('capitalises job type in PDF', async () => {
+      const { getByText } = renderWithProviders(
+        <ShareQuoteScreen navigation={createNavigation()} route={createRoute()} />,
+        { authContext: { freemiumUser: mockFreeUser, isAuthenticated: true, isAnonymous: false } }
+      );
+
+      (Sharing.isAvailableAsync as jest.Mock).mockResolvedValue(true);
+      (Print.printToFileAsync as jest.Mock).mockResolvedValue({ uri: 'file:///test.pdf' });
+
+      fireEvent.press(getByText('Export PDF'));
+
+      await waitFor(() => {
+        const htmlArg = (Print.printToFileAsync as jest.Mock).mock.calls[0][0].html;
+        expect(htmlArg).toContain('Kitchen');
+        expect(htmlArg).not.toMatch(/"detail-value">kitchen</);
+      });
+    });
+
+    it('uses quote name as PDF title when set', async () => {
+      const { getByText } = renderWithProviders(
+        <ShareQuoteScreen
+          navigation={createNavigation()}
+          route={createRoute({ quoteName: 'Smith Kitchen Refit' })}
+        />,
+        { authContext: { freemiumUser: mockFreeUser, isAuthenticated: true, isAnonymous: false } }
+      );
+
+      (Sharing.isAvailableAsync as jest.Mock).mockResolvedValue(true);
+      (Print.printToFileAsync as jest.Mock).mockResolvedValue({ uri: 'file:///test.pdf' });
+
+      fireEvent.press(getByText('Export PDF'));
+
+      await waitFor(() => {
+        const htmlArg = (Print.printToFileAsync as jest.Mock).mock.calls[0][0].html;
+        expect(htmlArg).toContain('Smith Kitchen Refit');
+      });
+    });
+
+    it('falls back to QUOTE when no quote name', async () => {
+      const { getByText } = renderWithProviders(
+        <ShareQuoteScreen
+          navigation={createNavigation()}
+          route={createRoute({ quoteName: undefined })}
+        />,
+        { authContext: { freemiumUser: mockFreeUser, isAuthenticated: true, isAnonymous: false } }
+      );
+
+      (Sharing.isAvailableAsync as jest.Mock).mockResolvedValue(true);
+      (Print.printToFileAsync as jest.Mock).mockResolvedValue({ uri: 'file:///test.pdf' });
+
+      fireEvent.press(getByText('Export PDF'));
+
+      await waitFor(() => {
+        const htmlArg = (Print.printToFileAsync as jest.Mock).mock.calls[0][0].html;
+        expect(htmlArg).toContain('>QUOTE</div>');
+      });
+    });
+
+    it('includes labor days per task in PDF', async () => {
+      const tasksWithLabor = [
+        {
+          description: 'Foundations',
+          finalPrice: 5000,
+          estimatedCost: { min: 4000, max: 6000 },
+          laborDays: 5,
+        },
+        {
+          description: 'Walls',
+          finalPrice: 8000,
+          estimatedCost: { min: 6000, max: 10000 },
+          laborDays: 1,
+        },
+      ];
+
+      const { getByText } = renderWithProviders(
+        <ShareQuoteScreen
+          navigation={createNavigation()}
+          route={createRoute({ tasks: tasksWithLabor, finalCost: 13000 })}
+        />,
+        { authContext: { freemiumUser: mockFreeUser, isAuthenticated: true, isAnonymous: false } }
+      );
+
+      (Sharing.isAvailableAsync as jest.Mock).mockResolvedValue(true);
+      (Print.printToFileAsync as jest.Mock).mockResolvedValue({ uri: 'file:///test.pdf' });
+
+      fireEvent.press(getByText('Export PDF'));
+
+      await waitFor(() => {
+        const htmlArg = (Print.printToFileAsync as jest.Mock).mock.calls[0][0].html;
+        expect(htmlArg).toContain('Est. 5 days');
+        expect(htmlArg).toContain('Est. 1 day');
+      });
+    });
+  });
+
+  describe('premium quote customisation in PDF', () => {
+    it('uses custom validity days in PDF when set', async () => {
+      const premiumUserCustom = {
+        ...mockPremiumUser,
+        quoteValidityDays: 14,
+      };
+
+      const { getByText } = renderWithProviders(
+        <ShareQuoteScreen navigation={createNavigation()} route={createRoute()} />,
+        {
+          authContext: {
+            freemiumUser: premiumUserCustom,
+            isAuthenticated: true,
+            isAnonymous: false,
+          },
+        }
+      );
+
+      (Sharing.isAvailableAsync as jest.Mock).mockResolvedValue(true);
+      (Print.printToFileAsync as jest.Mock).mockResolvedValue({ uri: 'file:///test.pdf' });
+
+      fireEvent.press(getByText('Export PDF'));
+
+      await waitFor(() => {
+        const htmlArg = (Print.printToFileAsync as jest.Mock).mock.calls[0][0].html;
+        expect(htmlArg).toContain('valid for 14 days');
+        expect(htmlArg).not.toContain('valid for 30 days');
+      });
+    });
+
+    it('defaults to 30 days validity when not set', async () => {
+      const { getByText } = renderWithProviders(
+        <ShareQuoteScreen navigation={createNavigation()} route={createRoute()} />,
+        { authContext: { freemiumUser: mockFreeUser, isAuthenticated: true, isAnonymous: false } }
+      );
+
+      (Sharing.isAvailableAsync as jest.Mock).mockResolvedValue(true);
+      (Print.printToFileAsync as jest.Mock).mockResolvedValue({ uri: 'file:///test.pdf' });
+
+      fireEvent.press(getByText('Export PDF'));
+
+      await waitFor(() => {
+        const htmlArg = (Print.printToFileAsync as jest.Mock).mock.calls[0][0].html;
+        expect(htmlArg).toContain('valid for 30 days');
+      });
+    });
+
+    it('includes business contact details in PDF when set', async () => {
+      const { getByText } = renderWithProviders(
+        <ShareQuoteScreen navigation={createNavigation()} route={createRoute()} />,
+        {
+          authContext: { freemiumUser: mockPremiumUser, isAuthenticated: true, isAnonymous: false },
+        }
+      );
+
+      (Sharing.isAvailableAsync as jest.Mock).mockResolvedValue(true);
+      (Print.printToFileAsync as jest.Mock).mockResolvedValue({ uri: 'file:///test.pdf' });
+
+      fireEvent.press(getByText('Export PDF'));
+
+      await waitFor(() => {
+        const htmlArg = (Print.printToFileAsync as jest.Mock).mock.calls[0][0].html;
+        expect(htmlArg).toContain('From');
+        expect(htmlArg).toContain('123 Builder Street, London');
+        expect(htmlArg).toContain('020 1234 5678');
+        expect(htmlArg).toContain('info@premiumbuilders.co.uk');
+        expect(htmlArg).toContain('https://premiumbuilders.co.uk');
+      });
+    });
+
+    it('omits business details section when no contact fields set', async () => {
+      const { getByText } = renderWithProviders(
+        <ShareQuoteScreen navigation={createNavigation()} route={createRoute()} />,
+        { authContext: { freemiumUser: mockFreeUser, isAuthenticated: true, isAnonymous: false } }
+      );
+
+      (Sharing.isAvailableAsync as jest.Mock).mockResolvedValue(true);
+      (Print.printToFileAsync as jest.Mock).mockResolvedValue({ uri: 'file:///test.pdf' });
+
+      fireEvent.press(getByText('Export PDF'));
+
+      await waitFor(() => {
+        const htmlArg = (Print.printToFileAsync as jest.Mock).mock.calls[0][0].html;
+        expect(htmlArg).not.toContain('>From</div>');
+      });
+    });
+
+    it('includes legal notice in PDF', async () => {
+      const { getByText } = renderWithProviders(
+        <ShareQuoteScreen navigation={createNavigation()} route={createRoute()} />,
+        {
+          authContext: { freemiumUser: mockPremiumUser, isAuthenticated: true, isAnonymous: false },
+        }
+      );
+
+      (Sharing.isAvailableAsync as jest.Mock).mockResolvedValue(true);
+      (Print.printToFileAsync as jest.Mock).mockResolvedValue({ uri: 'file:///test.pdf' });
+
+      fireEvent.press(getByText('Export PDF'));
+
+      await waitFor(() => {
+        const htmlArg = (Print.printToFileAsync as jest.Mock).mock.calls[0][0].html;
+        expect(htmlArg).toContain('Terms &amp; Conditions');
+        expect(htmlArg).toContain('Custom premium legal terms apply.');
+      });
+    });
+
+    it('uses default legal notice when not customised', async () => {
+      const { getByText } = renderWithProviders(
+        <ShareQuoteScreen navigation={createNavigation()} route={createRoute()} />,
+        { authContext: { freemiumUser: mockFreeUser, isAuthenticated: true, isAnonymous: false } }
+      );
+
+      (Sharing.isAvailableAsync as jest.Mock).mockResolvedValue(true);
+      (Print.printToFileAsync as jest.Mock).mockResolvedValue({ uri: 'file:///test.pdf' });
+
+      fireEvent.press(getByText('Export PDF'));
+
+      await waitFor(() => {
+        const htmlArg = (Print.printToFileAsync as jest.Mock).mock.calls[0][0].html;
+        expect(htmlArg).toContain('50% deposit');
+        expect(htmlArg).toContain('Variations');
+      });
+    });
+  });
+
+  describe('premium quote customisation in text', () => {
+    it('includes business contact details in text when set', async () => {
+      const { getByText } = renderWithProviders(
+        <ShareQuoteScreen navigation={createNavigation()} route={createRoute()} />,
+        {
+          authContext: { freemiumUser: mockPremiumUser, isAuthenticated: true, isAnonymous: false },
+        }
+      );
+
+      fireEvent.press(getByText('Copy to Clipboard'));
+
+      await waitFor(() => {
+        const copiedText = (Clipboard.setStringAsync as jest.Mock).mock.calls[0][0];
+        expect(copiedText).toContain('123 Builder Street, London');
+        expect(copiedText).toContain('020 1234 5678');
+        expect(copiedText).toContain('info@premiumbuilders.co.uk');
+        expect(copiedText).toContain('https://premiumbuilders.co.uk');
+      });
+    });
+
+    it('includes validity period in text', async () => {
+      const { getByText } = renderWithProviders(
+        <ShareQuoteScreen navigation={createNavigation()} route={createRoute()} />,
+        {
+          authContext: { freemiumUser: mockPremiumUser, isAuthenticated: true, isAnonymous: false },
+        }
+      );
+
+      fireEvent.press(getByText('Copy to Clipboard'));
+
+      await waitFor(() => {
+        const copiedText = (Clipboard.setStringAsync as jest.Mock).mock.calls[0][0];
+        expect(copiedText).toContain('Valid for 14 days');
+      });
+    });
+
+    it('includes legal notice in text', async () => {
+      const { getByText } = renderWithProviders(
+        <ShareQuoteScreen navigation={createNavigation()} route={createRoute()} />,
+        {
+          authContext: { freemiumUser: mockPremiumUser, isAuthenticated: true, isAnonymous: false },
+        }
+      );
+
+      fireEvent.press(getByText('Copy to Clipboard'));
+
+      await waitFor(() => {
+        const copiedText = (Clipboard.setStringAsync as jest.Mock).mock.calls[0][0];
+        expect(copiedText).toContain('Terms & Conditions');
+        expect(copiedText).toContain('Custom premium legal terms apply.');
       });
     });
   });

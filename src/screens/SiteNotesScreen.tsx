@@ -29,6 +29,12 @@ import { quoteStorage } from '../services/QuoteStorageService';
 import type { SiteNote, DraftFormData } from '../types/Quote';
 import { logger } from '../services/Logger';
 import { AIService } from '../services/ai/AIServiceEdge';
+import {
+  persistImage,
+  persistImages,
+  deletePersistedImage,
+  filterValidPhotos,
+} from '../utils/imageStorage';
 
 // Job type templates for guided capture
 const JOB_TYPES = [
@@ -305,6 +311,18 @@ export default function SiteNotesScreen({ navigation, route }: any) {
     onRecordingRemoved: () => setHasUnsavedChanges(true),
   });
 
+  // On mount: validate that restored photo files still exist on disk
+  useEffect(() => {
+    if (quote?.photos && quote.photos.length > 0) {
+      filterValidPhotos(quote.photos).then(valid => {
+        if (valid.length !== quote.photos.length) {
+          setPhotos(valid);
+        }
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Track all form data in a ref so unmount cleanup can read current values
   const formDataRef = useRef<DraftFormData>({
     currentQuoteId,
@@ -548,7 +566,8 @@ export default function SiteNotesScreen({ navigation, route }: any) {
     });
 
     if (!result.canceled && result.assets[0]) {
-      setPhotos(prev => [...prev, result.assets[0].uri]);
+      const permanentUri = await persistImage(result.assets[0].uri);
+      setPhotos(prev => [...prev, permanentUri]);
       setHasUnsavedChanges(true);
     }
   };
@@ -588,15 +607,22 @@ export default function SiteNotesScreen({ navigation, route }: any) {
     });
 
     if (!result.canceled && result.assets) {
-      const newPhotos = result.assets.map(asset => asset.uri);
-      setPhotos(prev => [...prev, ...newPhotos]);
+      const tempUris = result.assets.map(asset => asset.uri);
+      const permanentUris = await persistImages(tempUris);
+      setPhotos(prev => [...prev, ...permanentUris]);
       setHasUnsavedChanges(true);
     }
   };
 
-  // Remove a specific photo
+  // Remove a specific photo and clean up persisted file
   const removePhoto = (index: number) => {
-    setPhotos(prev => prev.filter((_, i) => i !== index));
+    setPhotos(prev => {
+      const removed = prev[index];
+      if (removed) {
+        deletePersistedImage(removed); // fire-and-forget cleanup
+      }
+      return prev.filter((_, i) => i !== index);
+    });
     setHasUnsavedChanges(true);
   };
 
@@ -766,6 +792,15 @@ export default function SiteNotesScreen({ navigation, route }: any) {
       m => m.id === selectedConstructionMethod
     );
 
+    // Build a size string that always includes structured dimensions when available
+    let resolvedSize = size;
+    if (sizeLength && sizeWidth) {
+      const area = (parseFloat(sizeLength) * parseFloat(sizeWidth)).toFixed(1);
+      resolvedSize = `${sizeLength}m x ${sizeWidth}m (${area}m²)`;
+    } else if (sizeLength) {
+      resolvedSize = `${sizeLength}m length`;
+    }
+
     // Prepare notes data
     const siteNotes = {
       id: quoteId,
@@ -775,7 +810,7 @@ export default function SiteNotesScreen({ navigation, route }: any) {
       constructionMethodLabel: selectedMethodData?.label || undefined,
       constructionMethodMultiplier: selectedMethodData?.multiplier || 1.0,
       propertyType: selectedPropertyType,
-      size,
+      size: resolvedSize,
       sizeLength: sizeLength || undefined,
       sizeWidth: sizeWidth || undefined,
       specLevel: specLevel || undefined,
@@ -840,17 +875,8 @@ export default function SiteNotesScreen({ navigation, route }: any) {
                   </Text>
                 </View>
               )}
-              <TouchableOpacity
-                onPress={() =>
-                  Alert.alert('Coming Soon', 'Saved notes feature will be added in next update')
-                }
-              >
-                <Ionicons
-                  name="folder-outline"
-                  size={24}
-                  color={designTokens.colors.text.primary}
-                />
-              </TouchableOpacity>
+              {/* Spacer to balance header layout */}
+              <View style={{ width: 24 }} />
             </View>
           </View>
 
@@ -872,25 +898,16 @@ export default function SiteNotesScreen({ navigation, route }: any) {
               />
               <Text style={styles.sectionTitle}>Property Address</Text>
             </View>
-            <View style={styles.addressRow}>
-              <TextInput
-                style={styles.addressInput}
-                placeholder="Enter property address..."
-                value={address}
-                onChangeText={text => {
-                  setAddress(text);
-                  setHasUnsavedChanges(true);
-                }}
-                placeholderTextColor={designTokens.colors.text.tertiary}
-              />
-              <TouchableOpacity style={styles.photoButton} onPress={handleTakePhoto}>
-                <Ionicons
-                  name="camera-outline"
-                  size={24}
-                  color={designTokens.colors.primary[500]}
-                />
-              </TouchableOpacity>
-            </View>
+            <TextInput
+              style={styles.addressInput}
+              placeholder="Enter property address..."
+              value={address}
+              onChangeText={text => {
+                setAddress(text);
+                setHasUnsavedChanges(true);
+              }}
+              placeholderTextColor={designTokens.colors.text.tertiary}
+            />
           </Card>
 
           {/* Job Type Selection */}

@@ -11,6 +11,7 @@ import LoginScreen from '../screens/LoginScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import EmailVerificationScreen from '../screens/EmailVerificationScreen';
 import VerificationSuccessScreen from '../screens/VerificationSuccessScreen';
+import ResetPasswordScreen from '../screens/ResetPasswordScreen';
 
 // App screens
 import HomeScreen from '../screens/HomeScreen';
@@ -78,6 +79,11 @@ export default function AuthNavigator() {
         <Stack.Screen
           name="VerificationSuccess"
           component={VerificationSuccessScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ResetPassword"
+          component={ResetPasswordScreen}
           options={{ headerShown: false }}
         />
       </Stack.Group>

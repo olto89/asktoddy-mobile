@@ -1,9 +1,10 @@
 import React from 'react';
 import { Alert } from 'react-native';
-import { fireEvent, waitFor } from '@testing-library/react-native';
-import { renderWithProviders, mockFreeUser } from '../../../jest/test-utils';
+import { fireEvent, waitFor, act } from '@testing-library/react-native';
+import { renderWithProviders, mockFreeUser, mockPremiumUser } from '../../../jest/test-utils';
 import AccountScreen from '../AccountScreen';
 import { dbHelpers } from '../../services/supabase';
+import * as ImageManipulator from 'expo-image-manipulator';
 
 jest.spyOn(Alert, 'alert');
 
@@ -91,7 +92,7 @@ describe('AccountScreen', () => {
     fireEvent.press(getByTestId('save-company-name-button'));
 
     await waitFor(() => {
-      expect(mockAuth.updateCompanyProfile).toHaveBeenCalledWith('New Company');
+      expect(mockAuth.updateCompanyProfile).toHaveBeenCalledWith({ companyName: 'New Company' });
     });
   });
 
@@ -155,7 +156,32 @@ describe('AccountScreen', () => {
     expect(queryByTestId('remove-logo-button')).toBeNull();
   });
 
-  it('calls deleteStorageFile then updateCompanyProfile when removing logo', async () => {
+  it('calls deleteAccount when user confirms deletion', async () => {
+    const { getByTestId, mockAuth } = renderWithProviders(<AccountScreen />, {
+      authContext: {
+        user: mockUser,
+        freemiumUser: mockFreeUser,
+        isAuthenticated: true,
+        isAnonymous: false,
+      },
+    });
+
+    fireEvent.press(getByTestId('delete-account-button'));
+
+    // Simulate pressing the destructive "Delete Account" button in the alert
+    const alertCall = (Alert.alert as jest.Mock).mock.calls[0];
+    const buttons = alertCall[2];
+    const deleteButton = buttons.find((b: any) => b.text === 'Delete Account');
+    await act(async () => {
+      await deleteButton.onPress();
+    });
+
+    await waitFor(() => {
+      expect(mockAuth.deleteAccount).toHaveBeenCalled();
+    });
+  });
+
+  it('calls deleteStorageFile for both formats then updateCompanyProfile when removing logo', async () => {
     const { getByTestId, mockAuth } = renderWithProviders(<AccountScreen />, {
       authContext: {
         user: mockUser,
@@ -176,7 +202,185 @@ describe('AccountScreen', () => {
         'company-logos',
         `${mockUser.id}/logo.jpg`
       );
-      expect(mockAuth.updateCompanyProfile).toHaveBeenCalledWith(undefined, null);
+      expect(dbHelpers.deleteStorageFile).toHaveBeenCalledWith(
+        'company-logos',
+        `${mockUser.id}/logo.png`
+      );
+      expect(mockAuth.updateCompanyProfile).toHaveBeenCalledWith({ companyLogoUrl: null });
+    });
+  });
+
+  it('converts picked image to JPEG via ImageManipulator before uploading', async () => {
+    const { getByTestId } = renderWithProviders(<AccountScreen />, {
+      authContext: {
+        user: mockUser,
+        freemiumUser: mockFreeUser,
+        isAuthenticated: true,
+        isAnonymous: false,
+      },
+    });
+
+    fireEvent.press(getByTestId('company-branding-toggle'));
+    fireEvent.press(getByTestId('logo-picker-button'));
+
+    await waitFor(() => {
+      expect(ImageManipulator.manipulateAsync).toHaveBeenCalledWith(
+        'mock://image.jpg',
+        [{ resize: { width: 512 } }],
+        { compress: 0.85, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      // Should always upload as .jpg regardless of source format
+      expect(dbHelpers.uploadImage).toHaveBeenCalledWith(
+        'mock://manipulated.jpeg',
+        `${mockUser.id}/logo.jpg`,
+        'company-logos'
+      );
+    });
+  });
+
+  describe('premium quote settings', () => {
+    it('shows PRO badge for free users', () => {
+      const { getByTestId } = renderWithProviders(<AccountScreen />, {
+        authContext: {
+          user: mockUser,
+          freemiumUser: mockFreeUser,
+          isAuthenticated: true,
+          isAnonymous: false,
+          isPremium: false,
+        },
+      });
+
+      fireEvent.press(getByTestId('company-branding-toggle'));
+
+      expect(getByTestId('pro-badge')).toBeTruthy();
+      expect(getByTestId('quote-validity-input')).toBeTruthy();
+    });
+
+    it('does not show PRO badge for premium users', () => {
+      const { getByTestId, queryByTestId } = renderWithProviders(<AccountScreen />, {
+        authContext: {
+          user: mockUser,
+          freemiumUser: mockPremiumUser,
+          isAuthenticated: true,
+          isAnonymous: false,
+          isPremium: true,
+        },
+      });
+
+      fireEvent.press(getByTestId('company-branding-toggle'));
+
+      expect(queryByTestId('pro-badge')).toBeNull();
+    });
+
+    it('locks inputs for free users', () => {
+      const { getByTestId } = renderWithProviders(<AccountScreen />, {
+        authContext: {
+          user: mockUser,
+          freemiumUser: mockFreeUser,
+          isAuthenticated: true,
+          isAnonymous: false,
+          isPremium: false,
+        },
+      });
+
+      fireEvent.press(getByTestId('company-branding-toggle'));
+
+      expect(getByTestId('quote-validity-input').props.editable).toBe(false);
+      expect(getByTestId('business-address-input').props.editable).toBe(false);
+      expect(getByTestId('business-phone-input').props.editable).toBe(false);
+      expect(getByTestId('business-email-input').props.editable).toBe(false);
+      expect(getByTestId('business-website-input').props.editable).toBe(false);
+      expect(getByTestId('legal-notice-input').props.editable).toBe(false);
+    });
+
+    it('unlocks inputs for premium users', () => {
+      const { getByTestId } = renderWithProviders(<AccountScreen />, {
+        authContext: {
+          user: mockUser,
+          freemiumUser: mockPremiumUser,
+          isAuthenticated: true,
+          isAnonymous: false,
+          isPremium: true,
+        },
+      });
+
+      fireEvent.press(getByTestId('company-branding-toggle'));
+
+      expect(getByTestId('quote-validity-input').props.editable).toBe(true);
+      expect(getByTestId('business-address-input').props.editable).toBe(true);
+    });
+
+    it('does not show save button for free users', () => {
+      const { getByTestId, queryByTestId } = renderWithProviders(<AccountScreen />, {
+        authContext: {
+          user: mockUser,
+          freemiumUser: mockFreeUser,
+          isAuthenticated: true,
+          isAnonymous: false,
+          isPremium: false,
+        },
+      });
+
+      fireEvent.press(getByTestId('company-branding-toggle'));
+
+      expect(queryByTestId('save-quote-settings-button')).toBeNull();
+    });
+
+    it('shows save button for premium users and saves settings', async () => {
+      const { getByTestId, mockAuth } = renderWithProviders(<AccountScreen />, {
+        authContext: {
+          user: mockUser,
+          freemiumUser: mockPremiumUser,
+          isAuthenticated: true,
+          isAnonymous: false,
+          isPremium: true,
+        },
+      });
+
+      fireEvent.press(getByTestId('company-branding-toggle'));
+
+      const saveButton = getByTestId('save-quote-settings-button');
+      expect(saveButton).toBeTruthy();
+
+      fireEvent.press(saveButton);
+
+      await waitFor(() => {
+        expect(mockAuth.updateCompanyProfile).toHaveBeenCalledWith(
+          expect.objectContaining({
+            quoteValidityDays: 14,
+            businessAddress: '123 Builder Street, London',
+            businessPhone: '020 1234 5678',
+            businessEmail: 'info@premiumbuilders.co.uk',
+            businessWebsite: 'https://premiumbuilders.co.uk',
+            legalNotice: 'Custom premium legal terms apply.',
+          })
+        );
+      });
+    });
+
+    it('pre-fills premium fields from freemiumUser', () => {
+      const { getByTestId } = renderWithProviders(<AccountScreen />, {
+        authContext: {
+          user: mockUser,
+          freemiumUser: mockPremiumUser,
+          isAuthenticated: true,
+          isAnonymous: false,
+          isPremium: true,
+        },
+      });
+
+      fireEvent.press(getByTestId('company-branding-toggle'));
+
+      expect(getByTestId('quote-validity-input').props.value).toBe('14');
+      expect(getByTestId('business-address-input').props.value).toBe('123 Builder Street, London');
+      expect(getByTestId('business-phone-input').props.value).toBe('020 1234 5678');
+      expect(getByTestId('business-email-input').props.value).toBe('info@premiumbuilders.co.uk');
+      expect(getByTestId('business-website-input').props.value).toBe(
+        'https://premiumbuilders.co.uk'
+      );
+      expect(getByTestId('legal-notice-input').props.value).toBe(
+        'Custom premium legal terms apply.'
+      );
     });
   });
 });

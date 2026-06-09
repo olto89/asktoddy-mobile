@@ -11,6 +11,34 @@ jest.mock('expo-constants', () => ({
   },
 }));
 
+// ─── expo-apple-authentication ───────────────────────────────────
+jest.mock('expo-apple-authentication', () => ({
+  signInAsync: jest.fn(),
+  AppleAuthenticationScope: {
+    FULL_NAME: 0,
+    EMAIL: 1,
+  },
+  AppleAuthenticationButtonType: {
+    SIGN_IN: 0,
+    CONTINUE: 1,
+    SIGN_UP: 2,
+  },
+  AppleAuthenticationButtonStyle: {
+    WHITE: 0,
+    WHITE_OUTLINE: 1,
+    BLACK: 2,
+  },
+  AppleAuthenticationButton: ({ onPress, ...props }: any) => {
+    const React = require('react');
+    const { TouchableOpacity, Text } = require('react-native');
+    return React.createElement(
+      TouchableOpacity,
+      { onPress, testID: 'apple-sign-in-button', ...props },
+      React.createElement(Text, null, 'Sign in with Apple')
+    );
+  },
+}));
+
 // ─── AsyncStorage (in-memory) ────────────────────────────────────
 jest.mock('@react-native-async-storage/async-storage', () => {
   const store: Record<string, string> = {};
@@ -114,6 +142,14 @@ jest.mock('expo-image-picker', () => ({
   MediaTypeOptions: { Images: 'Images', All: 'All' },
 }));
 
+// ─── expo-image-manipulator ─────────────────────────────────────
+jest.mock('expo-image-manipulator', () => ({
+  manipulateAsync: jest.fn((_uri: string, _actions: any[], options: any) =>
+    Promise.resolve({ uri: `mock://manipulated.${options?.format || 'jpeg'}` })
+  ),
+  SaveFormat: { JPEG: 'jpeg', PNG: 'png' },
+}));
+
 // ─── expo-location ───────────────────────────────────────────────
 jest.mock('expo-location', () => ({
   requestForegroundPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted' })),
@@ -166,6 +202,8 @@ jest.mock(
     deleteAsync: jest.fn(() => Promise.resolve()),
     getInfoAsync: jest.fn(() => Promise.resolve({ exists: true, isDirectory: false })),
     makeDirectoryAsync: jest.fn(() => Promise.resolve()),
+    copyAsync: jest.fn(() => Promise.resolve()),
+    moveAsync: jest.fn(() => Promise.resolve()),
     documentDirectory: 'file:///mock/documents/',
     cacheDirectory: 'file:///mock/cache/',
     EncodingType: { UTF8: 'utf8', Base64: 'base64' },
@@ -249,6 +287,9 @@ jest.mock('@supabase/supabase-js', () => ({
       ),
       signUp: jest.fn(() => Promise.resolve({ data: { user: null, session: null }, error: null })),
       signOut: jest.fn(() => Promise.resolve({ error: null })),
+      signInWithIdToken: jest.fn(() =>
+        Promise.resolve({ data: { user: null, session: null }, error: null })
+      ),
       onAuthStateChange: jest.fn(() => ({
         data: { subscription: { unsubscribe: jest.fn() } },
       })),
@@ -298,6 +339,9 @@ jest.mock('../src/services/supabase', () => ({
     signUp: jest.fn(() => Promise.resolve({ data: { user: null, session: null }, error: null })),
     signOut: jest.fn(() => Promise.resolve({ error: null })),
     resetPassword: jest.fn(() => Promise.resolve({ data: {}, error: null })),
+    signInWithApple: jest.fn(() =>
+      Promise.resolve({ data: { user: null, session: null }, error: null })
+    ),
   },
   dbHelpers: {
     uploadImage: jest.fn(() =>

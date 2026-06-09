@@ -77,8 +77,20 @@ export const authHelpers = {
   },
 
   // Reset password
+  // Sign in with Apple ID token
+  signInWithApple: async (identityToken: string, nonce?: string) => {
+    const { data, error } = await supabase.auth.signInWithIdToken({
+      provider: 'apple',
+      token: identityToken,
+      nonce,
+    });
+    return { data, error };
+  },
+
   resetPassword: async (email: string) => {
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email);
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: 'asktoddy://auth/callback',
+    });
     return { data, error };
   },
 };
