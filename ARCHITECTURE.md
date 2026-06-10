@@ -10,10 +10,22 @@
 
 ### 2. **Environment Isolation**
 
-- **Staging Environment**: `asktoddy-staging` (iezmuqawughmwsxlqrim.supabase.co)
-- **Production Environment**: `asktoddy-production` (tggvoqhewfmczyjoxrqu.supabase.co)
-- Complete data isolation between environments
+- **Staging** (`com.asktoddy.staging`) — TestFlight internal testing
+- **Production** (`com.asktoddy.prod`) — App Store
+- Separate Supabase projects; complete data isolation
 - Parallel TestFlight distribution
+- Project refs / keys live in the team secret store and `.env.*` files — not in
+  docs. See `DEPLOYMENT.md` and `ENVIRONMENT_CONFIG.md`.
+
+### 3. **Single AI Provider (with fallback)**
+
+- Quoting uses a **single provider: Google Gemini 2.5 Flash**, called from the
+  `analyze-construction` edge function with a deterministic generation config
+  (low temperature + seed + native JSON).
+- A **template fallback** produces a quote when the AI is unavailable.
+- No multi-provider switching and no static pricing engine in the live flow —
+  older docs describing those are in `docs/archive/` (see ADR-002, ADR-016,
+  ADR-017 in `.claude-context/decisions.md`).
 
 ### 3. **Domain-Driven Structure**
 
@@ -92,8 +104,8 @@ import type { AnalysisRequest } from '../types';
 ### 1. **Before Starting Work**
 
 ```bash
-npm run session:start    # Updates context and docs
-git pull origin main     # Get latest changes
+npm run session:start     # Updates context and docs
+git pull origin staging   # Get latest changes (active branch: staging)
 ```
 
 ### 2. **During Development**
@@ -251,12 +263,14 @@ describe('useCamera', () => {
 ### 1. **Environment Strategy**
 
 #### **Staging Environment**
+
 - **Purpose**: Safe testing of new features
 - **Supabase**: `asktoddy-staging` (iezmuqawughmwsxlqrim.supabase.co)
 - **Bundle ID**: `com.asktoddy.staging`
 - **TestFlight**: Separate staging app for internal testing
 
 #### **Production Environment**
+
 - **Purpose**: Live user-facing application
 - **Supabase**: `asktoddy-production` (tggvoqhewfmczyjoxrqu.supabase.co)
 - **Bundle ID**: `com.asktoddy.prod`
@@ -321,4 +335,4 @@ npm run deploy:testflight
 
 ---
 
-_This document is updated automatically. Last updated: 2025-10-21_
+_This document is updated automatically. Last updated: 2026-06-09_
