@@ -8,6 +8,7 @@ import { AnalysisRequest, ContextualAnalysisRequest, ProjectAnalysis } from './t
 import { config } from '../../config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { logger } from '../Logger';
+import { supabase } from '../supabase';
 
 interface AnalysisResponse {
   success: boolean;
@@ -82,6 +83,24 @@ class AIServiceEdge {
   }
 
   /**
+   * Get the bearer token for an authenticated request. Returns the logged-in
+   * user's access token when a session exists, so the edge function can verify
+   * identity and enforce per-user limits. Falls back to the anon key (which the
+   * edge function rejects for quote generation) when there is no session.
+   */
+  private async getAuthToken(): Promise<string> {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      return session?.access_token ?? config.supabase.anonKey;
+    } catch (error) {
+      logger.warn('⚠️ Failed to read auth session, falling back to anon key:', error);
+      return config.supabase.anonKey;
+    }
+  }
+
+  /**
    * Initialize the AI service (now just validates endpoint)
    */
   async initialize(): Promise<void> {
@@ -144,18 +163,39 @@ class AIServiceEdge {
         sessionId: this.currentSessionId!,
       };
 
+      // Send the logged-in user's JWT so the edge function can verify identity
+      // and enforce per-user usage limits.
+      const accessToken = await this.getAuthToken();
+
       const response = await fetch(this.baseUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           apikey: config.supabase.anonKey,
-          Authorization: `Bearer ${config.supabase.anonKey}`,
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify(contextualRequest),
         signal: controller.signal,
       });
 
       clearTimeout(timeoutId);
+
+      // Handle 401: authentication required (must be signed in to generate)
+      if (response.status === 401) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error?.message || 'Please sign in to generate a quote.');
+      }
+
+      // Handle 429: monthly free-tier quota reached
+      if (response.status === 429) {
+        const body = await response.json().catch(() => ({}));
+        const limitError = new Error(
+          body.error?.message ||
+            "You've reached your free quote limit this month. Upgrade to Pro for unlimited quotes."
+        );
+        (limitError as Error & { code?: string }).code = body.error?.code || 'USAGE_LIMIT_REACHED';
+        throw limitError;
+      }
 
       // Handle 503: AI unavailable but fallback data provided
       if (response.status === 503) {

@@ -698,3 +698,78 @@ Apple requires account deletion to cleanly sign the user out. Fixed `deleteAccou
 ---
 
 _Last Updated: June 4, 2026 - Delete Account Auto-Logout Fix_
+
+---
+
+## 📅 June 10–11, 2026 — PRE-LAUNCH HARDENING SPRINT (Tier 1 + cleanup)
+
+### 🎯 Launch-readiness review → prioritised Tier 1–4 work
+
+Ran a grounded audit of the staging app (security, incomplete features, general
+readiness) and produced a tiered backlog (T1–T14). Worked through the unblocked
+items. Full plan + cutover doc: `PRODUCTION_CUTOVER.md`.
+
+### 🔎 CRITICAL FINDING — production backend is severely behind / dormant
+
+Probed the prod Supabase project (`tggvoqhewfmczyjoxrqu`):
+
+- **Prod project appears PAUSED** — REST/storage hosts don't resolve, while the
+  management API still works (classic paused free-tier signature; last activity
+  2025-10-23). Must be un-paused from the dashboard before any deploy.
+- **Edge functions:** prod has only 3 (analyze-construction, generate-document,
+  get-pricing) at **version 7 (2025-10-23)**; staging is ~v107. Five functions
+  missing entirely (delete-account, get-session-quote, scheduled-tasks,
+  sync-quotes, update-ons-cache).
+- **DB schema:** effectively empty/stale — `quotes`, `conversation_sessions`,
+  pricing caches, `company-logos` bucket almost certainly absent.
+- No real users in prod → treat cutover as "deploy everything," not a delta.
+
+→ Wrote `PRODUCTION_CUTOVER.md` (topology, drift snapshot, ordered cutover
+checklist, parity rule). Plan: **bring prod + staging level in one combined
+effort later**, alongside the larger test-coverage push.
+
+### ✅ Completed (all on staging, tested)
+
+- **T1 — Edge auth + verified identity.** New `_shared/auth.ts` `verifyUser()`.
+  `analyze-construction` now rejects unauthenticated POSTs (401) and derives the
+  user id from the verified JWT, never the request body. Client (`AIServiceEdge`)
+  now sends the logged-in user's access token (was sending the anon key) and
+  handles 401/429 with clear messages. **Quote generation now requires login**
+  (matches freemium model — verify in QA run-through).
+- **T2 — Server-side free-tier usage limiting.** New `quote_usage` table +
+  atomic `increment_quote_usage` RPC (migration `20260610_quote_usage.sql`) and
+  `usage.ts`. Edge function enforces 5 quotes/month before any AI work (429 when
+  exceeded), counts only successful generations. `getUserTier()` returns 'free'
+  for everyone for now — RevenueCat entitlement slots in here later (fails OPEN
+  on tracking errors). Replaces the bypassable client-only AsyncStorage gate.
+- **T4 — Prompt-injection hardening.** Added Gemini `systemInstruction` with an
+  anti-injection guard + wrapped the user brief in untrusted-data delimiters.
+- **T5 — Removed `'mock'` from `fallbackProviders`** (unimplemented; real
+  fallback is the server-side template).
+- **T6 — Fixed `SubscriptionService` logger bug** (referenced `logger` without
+  importing it → swallowed init). Kept the file (PaywallModal uses it); added a
+  doc note that RevenueCat is the entitlement source of truth + first test suite.
+- **T8 — Auto-save failure banner.** TaskListScreen now surfaces a retryable
+  banner instead of silently swallowing save errors.
+- **T11 — Empty states:** verified already covered (ChatMenuSidebar,
+  EditQuoteScreen, ChatScreen seeded greeting) — no change needed.
+
+**📊 TESTS:** 329/329 passing, 39 suites (added AIServiceEdge auth, usage,
+SubscriptionService, TaskListScreen save-fail). No regressions.
+**⚠️ Pre-existing:** `tsc --noEmit` has many pre-existing errors (Deno edge files
+
+- legacy app typing). No new ones introduced — folded into T10.
+
+### Deferred / remaining
+
+- **Decisions:** T7 (hide vs finish refinement tabs), T9 (Sentry project/DSN).
+- **User actions:** T3 Gemini cost caps, T12 metadata, T13 landing page +
+  public privacy/support URLs, T14 rotate Gemini key.
+- **Combined later effort:** T10 test coverage + prod/staging parity cutover.
+
+**🚀 BUILD:** Staging build #50 → TestFlight (auth + usage limiting + injection
+hardening live on staging backend) for a UI run-through.
+
+---
+
+_Last Updated: June 11, 2026 - Pre-launch hardening sprint (Tier 1)_

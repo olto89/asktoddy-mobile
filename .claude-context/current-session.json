@@ -142,13 +142,13 @@
     },
     "per_user_rate_limiting": {
       "priority": "HIGH",
-      "status": "TODO",
+      "status": "DONE on staging (T2, June 10) — needs prod cutover",
+      "notes": "quote_usage table + increment_quote_usage RPC (migration 20260610). Edge function enforces 5/month (429), counts successful generations only. getUserTier()='free' for all until RevenueCat entitlement sync. Fails open on tracking errors. Also requires auth (T1/ADR-018).",
       "actions": [
-        "Build database-backed per-user usage tracking in Edge Function",
-        "Enforce free tier: 5 quotes/month",
-        "Enforce pro tier: unlimited but 20/day abuse cap",
-        "Replace in-memory UsageTracker with Supabase table",
-        "Return clear error to frontend when limit hit"
+        "DONE: DB-backed per-user usage tracking in edge function",
+        "DONE: Enforce free tier 5 quotes/month with clear 429 error",
+        "LATER: Pro exemption via getUserTier() once RevenueCat entitlement synced",
+        "LATER: optional pro 20/day abuse cap"
       ]
     },
     "coming_soon_placeholders": {
@@ -194,14 +194,21 @@
     },
     "security_hardening": {
       "priority": "MEDIUM",
-      "status": "TODO",
+      "status": "PARTIAL",
       "actions": [
-        "Rotate Gemini API key before launch",
-        "Verify all .env files are gitignored",
-        "Confirm RLS policies on all Supabase tables",
-        "Review edge function for injection vulnerabilities"
+        "TODO: Rotate Gemini API key before launch (T14)",
+        "DONE: .env files gitignored (audit confirmed only .env.example committed)",
+        "DONE: RLS confirmed on all user-data tables (audit)",
+        "DONE: edge function injection hardened via systemInstruction + delimiters (T4/ADR-020)",
+        "DONE: edge function now requires verified auth, derives userId from JWT (T1/ADR-018)"
       ]
     }
+  },
+  "production_drift": {
+    "status": "Prod backend dormant/paused and ~100 versions behind — see PRODUCTION_CUTOVER.md",
+    "prod_project_ref": "tggvoqhewfmczyjoxrqu",
+    "findings": "REST/storage hosts don't resolve (likely paused since 2025-10-23); functions at v7 (3 of 8 present); DB schema + company-logos bucket effectively absent; no real users.",
+    "plan": "One-shot cutover later (ADR-021), combined with the test-coverage push. Bring prod + staging level together."
   },
   "revenuecat_setup_status": {
     "step1": "✅ DONE - Created RevenueCat account",
@@ -215,15 +222,15 @@
     "step9": "PENDING - Build development client and test purchases"
   },
   "latest_build": {
-    "build_number": "49",
+    "build_number": "50",
     "version": "1.2.4",
-    "submitted": "2026-06-05",
+    "submitted": "2026-06-11",
     "platform": "iOS",
     "profile": "staging",
-    "status": "Submitted to TestFlight — delete-account auto-logout fix + Sign in with Apple capability"
+    "status": "TestFlight — Tier 1 hardening: edge auth (T1), server-side usage limiting (T2), prompt-injection hardening (T4), mock-provider removal (T5), SubscriptionService fix (T6), auto-save failure banner (T8). For UI run-through."
   },
-  "edge_function_version": "107",
-  "lastUpdated": "2026-06-09T11:06:28.317Z",
+  "edge_function_version": "staging redeployed June 11 (analyze-construction with auth + usage limiting + injection hardening)",
+  "lastUpdated": "2026-06-11T00:00:00.000Z",
   "project": {
     "name": "asktoddy-mobile",
     "version": "1.2.4",
@@ -235,9 +242,9 @@
   },
   "git": {
     "branch": "staging",
-    "lastCommit": "3197301 feat: Design token expansion, parallel image compression, edge function prewarm, and company branding",
+    "lastCommit": "cf5eab2 feat: Quote consistency & quality improvements (edge function)",
     "hasUncommittedChanges": true,
-    "changedFiles": 36
+    "changedFiles": 55
   },
   "environment": {
     "nodeVersion": "v24.3.0",
@@ -245,9 +252,6 @@
   },
   "runningProcesses": [],
   "recentFiles": [
-    "src/contexts/AuthContext.tsx",
-    "src/constants/quoteDefaults.ts",
-    "src/constants/__tests__/quoteDefaults.test.ts",
     "src/utils/__tests__/imageStorage.test.ts",
     "src/utils/__tests__/vat.test.ts",
     "src/utils/vat.ts",

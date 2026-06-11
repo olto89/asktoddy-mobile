@@ -43,6 +43,8 @@ export default function TaskListScreen({ navigation, route }: any) {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [isFallback, setIsFallback] = useState(false);
+  const [saveError, setSaveError] = useState(false);
+  const lastSaveArgsRef = useRef<{ generatedTasks: Task[]; aiResponse: any } | null>(null);
   const [pendingQuoteGeneration, setPendingQuoteGeneration] = useState(false);
   const [previousAuthState, setPreviousAuthState] = useState(isAnonymous);
   const [processingStage, setProcessingStage] = useState<
@@ -137,6 +139,8 @@ export default function TaskListScreen({ navigation, route }: any) {
   };
 
   const autoSaveGeneratedQuote = async (generatedTasks: Task[], aiResponse: any) => {
+    // Remember the inputs so the user can retry if the save fails.
+    lastSaveArgsRef.current = { generatedTasks, aiResponse };
     try {
       // Calculate total cost
       const calculatedTotal = generatedTasks
@@ -172,9 +176,19 @@ export default function TaskListScreen({ navigation, route }: any) {
       await quoteStorage.save(generatedQuote);
 
       setCurrentQuote(generatedQuote);
+      setSaveError(false);
       logger.debug('💾 Auto-saved generated quote:', generatedQuote.id);
     } catch (error) {
       console.error('Error auto-saving generated quote:', error);
+      // Surface the failure so the user knows their quote wasn't saved and can retry.
+      setSaveError(true);
+    }
+  };
+
+  const handleRetrySave = () => {
+    const args = lastSaveArgsRef.current;
+    if (args) {
+      autoSaveGeneratedQuote(args.generatedTasks, args.aiResponse);
     }
   };
 
@@ -597,6 +611,34 @@ Provide detailed cost breakdown with materials, labor, and realistic price range
                 ) : undefined
               }
               style={styles.fallbackRetryButton}
+            />
+          </View>
+        )}
+
+        {/* Auto-save failure banner */}
+        {saveError && (
+          <View style={[styles.fallbackBanner, styles.saveErrorBanner]}>
+            <View style={styles.fallbackBannerContent}>
+              <Ionicons name="warning-outline" size={20} color="#842029" />
+              <Text style={[styles.fallbackBannerText, styles.saveErrorText]}>
+                Couldn&apos;t save this quote to your device. Tap retry — if it keeps failing, take
+                a screenshot so you don&apos;t lose your work.
+              </Text>
+            </View>
+            <Button
+              title="Retry save"
+              onPress={handleRetrySave}
+              variant="outline"
+              size="sm"
+              icon={
+                <Ionicons
+                  name="refresh-outline"
+                  size={16}
+                  color="#842029"
+                  style={{ marginRight: 6 }}
+                />
+              }
+              style={styles.saveErrorRetryButton}
             />
           </View>
         )}
@@ -1155,6 +1197,17 @@ const styles = StyleSheet.create({
     fontSize: designTokens.typography.fontSize.sm,
     color: '#856404',
     lineHeight: 20,
+  },
+  saveErrorBanner: {
+    backgroundColor: '#f8d7da',
+    borderColor: '#dc3545',
+  },
+  saveErrorText: {
+    color: '#842029',
+  },
+  saveErrorRetryButton: {
+    alignSelf: 'flex-start',
+    borderColor: '#842029',
   },
   // Skeleton loading styles
   skeletonBar: {

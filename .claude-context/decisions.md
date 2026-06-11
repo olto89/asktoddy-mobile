@@ -424,4 +424,101 @@ Covered by `analyze-construction/__tests__/quoteQuality.test.ts` (16 cases). Def
 
 ---
 
-_Last Updated: June 9, 2026_
+## ADR-018: Authenticated, Identity-Verified Quote Generation
+
+**Date**: June 10, 2026
+**Status**: Accepted
+
+**Context**: The `analyze-construction` edge function read `userId` straight from
+the request body and the client sent the Supabase anon key as the bearer token —
+so anyone could call it unauthenticated and claim any user id. This blocked any
+trustworthy per-user limiting and was an abuse/cost hole.
+
+**Decision**: Verify the caller's JWT server-side (`_shared/auth.ts` `verifyUser()`,
+reusing the delete-account pattern). Quote generation (POST) now requires a real
+logged-in user (401 otherwise) and the user id is derived from the verified token,
+never the body. The client (`AIServiceEdge`) sends the logged-in user's
+`access_token` (anon fallback for GET health checks only). Aligns with the
+freemium model (anonymous browse, login to generate).
+
+**Consequences**:
+✅ Trustworthy identity for limiting/analytics; closes the spoofing hole
+✅ Matches the freemium product flow
+❌ Generation now hard-requires login — must be verified in QA (no anonymous "try")
+❌ Auth helper + this behaviour must be deployed to prod during cutover
+
+---
+
+## ADR-019: Server-Side Free-Tier Usage Limiting (isPro hook)
+
+**Date**: June 10, 2026
+**Status**: Accepted
+
+**Context**: The 5-quote/month free limit was enforced only client-side in
+AsyncStorage — clearing app data reset it. No server-side source of truth. Also
+no server-side entitlement data (RevenueCat is client/blocked on Apple account).
+
+**Decision**: Move enforcement into the edge function backed by a `quote_usage`
+table + atomic `increment_quote_usage` RPC (migration `20260610_quote_usage.sql`).
+Check before any AI work (429 when exceeded); count only successful generations.
+Tier resolved via `getUserTier()` which returns `'free'` for everyone now, with a
+clean seam to read RevenueCat entitlement later (no other code changes needed).
+Fails OPEN on tracking errors so a DB hiccup never blocks a legitimate user.
+
+**Consequences**:
+✅ Real, non-bypassable monthly limit; unblocked (no RevenueCat dependency)
+✅ Pro exemption is a one-function change once entitlement is synced
+✅ Atomic increment avoids races; fail-open avoids false denials
+❌ Until RevenueCat sync exists, a (future) Pro user would be capped — acceptable
+since payments aren't live yet
+❌ Client-side AsyncStorage gate now redundant (kept as UX hint; counts may diverge)
+
+---
+
+## ADR-020: Prompt-Injection Defence via systemInstruction
+
+**Date**: June 10, 2026
+**Status**: Accepted
+
+**Context**: The full user `message` was interpolated raw into the Gemini prompt,
+so a crafted brief could try to override the rules, output format, or prices.
+
+**Decision**: Send the authoritative rules as Gemini `systemInstruction` (weighted
+above user content) containing an explicit anti-injection guard, and wrap the
+user brief in BEGIN/END "untrusted data" delimiters in the user prompt. JSON mode
+
+- low temperature retained. Kept the existing JSON output format intact (no parser
+  risk).
+
+**Consequences**:
+✅ Meaningfully reduces injection risk with defence-in-depth
+✅ No change to the response schema / parser
+❌ Not a hard guarantee — LLM-level mitigation, not sandboxing
+
+---
+
+## ADR-021: Bring Production Backend Level via One-Shot Cutover (not deltas)
+
+**Date**: June 11, 2026
+**Status**: Accepted
+
+**Context**: The prod Supabase project (`tggvoqhewfmczyjoxrqu`) is dormant/paused
+and ~100 edge-function versions behind, missing five functions and effectively the
+entire post-Oct-2025 schema. It has no real users.
+
+**Decision**: Do not try to incrementally sync prod as staging changes. Keep all
+work on staging, and bring prod fully level in one combined cutover effort later
+(alongside the larger test-coverage push), following `PRODUCTION_CUTOVER.md`:
+un-pause → `supabase db push` → `npm run deploy:production` → set secrets → merge
+`staging`→`main` → prod build. Establish a parity rule afterwards so drift can't
+silently reopen.
+
+**Consequences**:
+✅ Avoids fiddly per-change prod deploys while prod has no users
+✅ Single, checklist-driven cutover is easier to verify
+❌ Prod stays non-functional until the cutover — must happen before any prod build
+❌ Manual step; relies on the checklist being followed
+
+---
+
+_Last Updated: June 11, 2026_

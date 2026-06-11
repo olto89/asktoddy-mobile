@@ -1,7 +1,14 @@
 /**
- * SubscriptionService - Manages premium subscription and paywall logic
- * Handles feature flags and subscription status
+ * SubscriptionService - paywall copy + plan metadata.
+ *
+ * NB: RevenueCatService is the source of truth for real entitlements/purchases.
+ * This service provides the plan catalogue (SUBSCRIPTION_PLANS), paywall copy
+ * (getPaywallMessage / getUpgradeCTA), and a lightweight in-memory subscription
+ * state used for display. The trial/activation methods are NOT wired to real
+ * payments — purchases flow through RevenueCat. Do not treat this as billing.
  */
+
+import { logger } from './Logger';
 
 export interface SubscriptionPlan {
   id: string;

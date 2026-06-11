@@ -1,10 +1,14 @@
 export const config = {
   // AI Configuration
+  // NB: the client does not switch AI providers — all AI runs in the
+  // analyze-construction edge function, which falls back to UK pricing
+  // templates server-side when Gemini is unavailable. There is no 'mock'
+  // provider implemented, so it must not be listed here.
   ai: {
     geminiApiKey: process.env.EXPO_PUBLIC_GEMINI_API_KEY || '',
     primaryProvider: 'gemini',
     enableFallback: true,
-    fallbackProviders: ['mock'],
+    fallbackProviders: [] as string[],
     timeoutMs: 30000,
   },
 
