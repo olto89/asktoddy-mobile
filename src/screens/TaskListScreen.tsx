@@ -21,15 +21,10 @@ import { AIService } from '../services/ai/AIServiceEdge';
 import { useAuth } from '../contexts/AuthContext';
 import LoginSignupModal from '../components/modals/LoginSignupModal';
 import UpgradePromptModal from '../components/modals/UpgradePromptModal';
+import OriginalBriefCard from '../components/OriginalBriefCard';
 import { calculateVAT, calculateIncVAT, formatGBP } from '../utils/vat';
 import { logger } from '../services/Logger';
-import {
-  Task,
-  isFallbackResponse,
-  parseAIResponseToTasks,
-  getTaskTemplates,
-  generateTemplateTasksFromType,
-} from './taskListHelpers';
+import { Task, parseAIResponseToTasks } from './taskListHelpers';
 
 export default function TaskListScreen({ navigation, route }: any) {
   const { siteNotes, savedQuote, isViewingGenerated } = route.params;
@@ -42,7 +37,10 @@ export default function TaskListScreen({ navigation, route }: any) {
   const [currentQuote, setCurrentQuote] = useState<any>(savedQuote || null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [isFallback, setIsFallback] = useState(false);
+  // True when we couldn't produce a genuine AI quote (offline, server fallback,
+  // or an unparseable response). We then prompt the user to retry rather than
+  // showing misleading hardcoded template figures.
+  const [generationFailed, setGenerationFailed] = useState(false);
   const [saveError, setSaveError] = useState(false);
   const lastSaveArgsRef = useRef<{ generatedTasks: Task[]; aiResponse: any } | null>(null);
   const [pendingQuoteGeneration, setPendingQuoteGeneration] = useState(false);
@@ -157,6 +155,11 @@ export default function TaskListScreen({ navigation, route }: any) {
         id: siteNotes.id || `generated_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         timestamp: siteNotes.timestamp || Date.now(),
         lastModified: Date.now(),
+        // Headline fields captured on the assessment form — kept at top level so
+        // the PDF/share header (which reads quote.quoteName / quote.customerName)
+        // picks them up without an edit-screen round-trip.
+        quoteName: siteNotes.quoteName,
+        customerName: siteNotes.customerName,
         address: siteNotes.address,
         jobType: siteNotes.jobType,
         propertyType: siteNotes.propertyType,
@@ -420,15 +423,21 @@ Provide detailed cost breakdown with materials, labor, and realistic price range
       setProcessingStage('finalising');
       logger.debug('🤖 AI Response received:', response);
 
-      // Detect fallback responses
-      if (isFallbackResponse(response)) {
-        setIsFallback(true);
+      // Only an EXPLICIT server fallback (Gemini failed server-side) or an
+      // unparseable/empty response counts as "no real quote". A genuine AI quote
+      // with modest confidence is still a real quote and IS shown — we must not
+      // discard it. (isFallbackResponse() also flags low confidence, which is too
+      // broad for this routing decision.)
+      const fallbackMarkers = response as { _isFallback?: boolean; provider?: string };
+      const isServerFallback =
+        fallbackMarkers?._isFallback === true || fallbackMarkers?.provider === 'fallback-template';
+      const parsedTasks = isServerFallback ? [] : parseAIResponseToTasksInternal(response);
+
+      if (parsedTasks.length === 0) {
+        setGenerationFailed(true);
+        return;
       }
 
-      setAiAnalysis(response);
-
-      // Parse AI response into structured tasks
-      const parsedTasks = parseAIResponseToTasksInternal(response);
       setTasks(parsedTasks);
 
       // Auto-save the generated quote (safe even if unmounted — only writes to storage)
@@ -436,12 +445,19 @@ Provide detailed cost breakdown with materials, labor, and realistic price range
 
       // Increment quote usage for tracking
       await incrementQuoteUsage();
-    } catch (error) {
-      console.error('Error generating tasks:', error);
+    } catch (error: any) {
       if (!mountedRef.current) return;
-      // Fallback to template-based tasks
-      setIsFallback(true);
-      generateTemplateTasks();
+      // Route auth / quota errors to their proper prompts — NOT the connectivity
+      // retry screen. Only genuine connection/timeout/server errors get that.
+      if (error?.code === 'USAGE_LIMIT_REACHED') {
+        setShowUpgradeModal(true);
+      } else if (error?.code === 'AUTH_REQUIRED') {
+        setPendingQuoteGeneration(true);
+        setShowLoginModal(true);
+      } else {
+        console.error('Error generating tasks:', error);
+        setGenerationFailed(true);
+      }
     } finally {
       if (mountedRef.current) {
         setIsProcessing(false);
@@ -465,10 +481,8 @@ Provide detailed cost breakdown with materials, labor, and realistic price range
       });
     }
 
-    // Fallback only if no structured data
     if (tasks.length === 0) {
-      logger.debug('⚠️ No structured data, using fallback');
-      generateTemplateTasks();
+      logger.debug('⚠️ No structured data in AI response');
       return [];
     }
 
@@ -476,12 +490,8 @@ Provide detailed cost breakdown with materials, labor, and realistic price range
     return tasks;
   };
 
-  const generateTemplateTasks = () => {
-    setTasks(generateTemplateTasksFromType(siteNotes.jobType));
-  };
-
   const handleRetryAnalysis = () => {
-    setIsFallback(false);
+    setGenerationFailed(false);
     setTasks([]);
     setProcessingStage('preparing');
     setIsProcessing(true);
@@ -572,6 +582,57 @@ Provide detailed cost breakdown with materials, labor, and realistic price range
     );
   }
 
+  // Couldn't produce a genuine AI quote — show a retry prompt rather than
+  // misleading template numbers.
+  if (generationFailed) {
+    return (
+      <SafeAreaView style={styles.container} edges={['bottom']}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <Card style={styles.summaryCard}>
+            <Text style={styles.summaryTitle}>{siteNotes.address}</Text>
+            <Text style={styles.summarySubtitle}>
+              {siteNotes.jobType.charAt(0).toUpperCase() + siteNotes.jobType.slice(1)} •{' '}
+              {siteNotes.propertyType || 'Property'}
+            </Text>
+          </Card>
+
+          <Card style={styles.connectionErrorCard}>
+            <Ionicons
+              name="cloud-offline-outline"
+              size={48}
+              color={designTokens.colors.primary[500]}
+            />
+            <Text style={styles.connectionErrorTitle}>We couldn&apos;t build your quote</Text>
+            <Text style={styles.connectionErrorText}>
+              We want to give you an accurate cost breakdown, but couldn&apos;t connect on this
+              occasion. Please check your Wi-Fi or mobile data and try again.
+            </Text>
+            <Button
+              title="Try Again"
+              onPress={handleRetryAnalysis}
+              variant="primary"
+              style={styles.connectionErrorButton}
+              icon={
+                <Ionicons
+                  name="refresh-outline"
+                  size={18}
+                  color="white"
+                  style={{ marginRight: 6 }}
+                />
+              }
+            />
+            <TouchableOpacity onPress={() => navigation.navigate('SiteNotes')}>
+              <Text style={styles.connectionErrorLink}>Back to assessment</Text>
+            </TouchableOpacity>
+          </Card>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -584,36 +645,9 @@ Provide detailed cost breakdown with materials, labor, and realistic price range
           </Text>
         </Card>
 
-        {/* Fallback Banner */}
-        {isFallback && (
-          <View style={styles.fallbackBanner}>
-            <View style={styles.fallbackBannerContent}>
-              <Ionicons name="information-circle-outline" size={20} color="#856404" />
-              <Text style={styles.fallbackBannerText}>
-                AI analysis temporarily unavailable. Showing estimated costs based on typical UK
-                projects.
-              </Text>
-            </View>
-            <Button
-              title="Retry with AI"
-              onPress={handleRetryAnalysis}
-              variant="outline"
-              size="sm"
-              loading={isProcessing}
-              icon={
-                !isProcessing ? (
-                  <Ionicons
-                    name="refresh-outline"
-                    size={16}
-                    color={designTokens.colors.primary[500]}
-                    style={{ marginRight: 6 }}
-                  />
-                ) : undefined
-              }
-              style={styles.fallbackRetryButton}
-            />
-          </View>
-        )}
+        {/* Read-only original brief — only when viewing an already-generated
+            quote, so users can look back on what they submitted. */}
+        {isViewingGenerated && <OriginalBriefCard siteNotes={siteNotes} />}
 
         {/* Auto-save failure banner */}
         {saveError && (
@@ -1208,6 +1242,35 @@ const styles = StyleSheet.create({
   saveErrorRetryButton: {
     alignSelf: 'flex-start',
     borderColor: '#842029',
+  },
+  connectionErrorCard: {
+    padding: designTokens.spacing.lg,
+    alignItems: 'center',
+    marginTop: designTokens.spacing.md,
+  },
+  connectionErrorTitle: {
+    fontSize: designTokens.typography.fontSize.lg,
+    fontWeight: designTokens.typography.fontWeight.bold as any,
+    color: designTokens.colors.text.primary,
+    marginTop: designTokens.spacing.md,
+    marginBottom: designTokens.spacing.sm,
+    textAlign: 'center',
+  },
+  connectionErrorText: {
+    fontSize: designTokens.typography.fontSize.base,
+    color: designTokens.colors.text.secondary,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: designTokens.spacing.lg,
+  },
+  connectionErrorButton: {
+    width: '100%',
+  },
+  connectionErrorLink: {
+    fontSize: designTokens.typography.fontSize.sm,
+    color: designTokens.colors.primary[500],
+    fontWeight: designTokens.typography.fontWeight.medium as any,
+    marginTop: designTokens.spacing.md,
   },
   // Skeleton loading styles
   skeletonBar: {

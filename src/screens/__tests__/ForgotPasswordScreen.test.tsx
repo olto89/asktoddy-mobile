@@ -91,10 +91,10 @@ describe('ForgotPasswordScreen', () => {
     });
   });
 
-  it('shows error alert when resetPassword fails', async () => {
+  it('shows a friendly error alert when resetPassword fails with a real error', async () => {
     (authHelpers.resetPassword as jest.Mock).mockResolvedValueOnce({
       data: null,
-      error: { message: 'User not found' },
+      error: { message: 'Internal server error', status: 500 },
     });
     const navigation = createMockNavigation();
 
@@ -106,8 +106,34 @@ describe('ForgotPasswordScreen', () => {
     fireEvent.press(getByText('Send Reset Link'));
 
     await waitFor(() => {
-      expect(Alert.alert).toHaveBeenCalledWith('Error', 'User not found');
+      // Friendly mapped message, not the raw error string
+      expect(Alert.alert).toHaveBeenCalledWith('Something went wrong', expect.any(String));
     });
+  });
+
+  it('treats a rate-limit as success (email already sent) — no error alert', async () => {
+    (authHelpers.resetPassword as jest.Mock).mockResolvedValueOnce({
+      data: null,
+      error: {
+        message: 'For security purposes, you can only request this after 49 seconds',
+        status: 429,
+      },
+    });
+    const navigation = createMockNavigation();
+
+    const { getByPlaceholderText, getByText } = renderWithProviders(
+      <ForgotPasswordScreen navigation={navigation as any} route={{ params: {} } as any} />
+    );
+
+    fireEvent.changeText(getByPlaceholderText('your@email.com'), 'user@example.com');
+    fireEvent.press(getByText('Send Reset Link'));
+
+    // Shows the reassuring success state instead of an alarming error
+    await waitFor(() => {
+      expect(getByText(/check your email/i)).toBeTruthy();
+      expect(getByText('Back to Sign In')).toBeTruthy();
+    });
+    expect(Alert.alert).not.toHaveBeenCalled();
   });
 
   it('navigates back to Login when "Back to Sign In" is pressed', async () => {

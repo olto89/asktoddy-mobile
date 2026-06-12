@@ -183,7 +183,9 @@ class AIServiceEdge {
       // Handle 401: authentication required (must be signed in to generate)
       if (response.status === 401) {
         const body = await response.json().catch(() => ({}));
-        throw new Error(body.error?.message || 'Please sign in to generate a quote.');
+        const authError = new Error(body.error?.message || 'Please sign in to generate a quote.');
+        (authError as Error & { code?: string }).code = 'AUTH_REQUIRED';
+        throw authError;
       }
 
       // Handle 429: monthly free-tier quota reached

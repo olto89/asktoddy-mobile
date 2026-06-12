@@ -83,6 +83,26 @@ describe('LoginSignupModal', () => {
     expect(navigate).toHaveBeenCalledWith('ForgotPassword', { email: 'user@example.com' });
   });
 
+  // 7 - Forgot Password tears down a surrounding overlay (the drawer menu bug)
+  it('calls onNavigateAway so a parent overlay (drawer menu) closes too', () => {
+    const onClose = jest.fn();
+    const onNavigateAway = jest.fn();
+    const { getByText } = renderWithProviders(
+      <LoginSignupModal
+        {...defaultProps}
+        mode="login"
+        onClose={onClose}
+        onNavigateAway={onNavigateAway}
+      />
+    );
+
+    fireEvent.press(getByText('Forgot Password?'));
+
+    expect(onClose).toHaveBeenCalled();
+    expect(onNavigateAway).toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith('ForgotPassword', { email: undefined });
+  });
+
   // ─── Signup verification flow tests ─────────────────────────────
   describe('signup verification flow', () => {
     const fillSignupForm = (getByPlaceholderText: (text: string) => any) => {

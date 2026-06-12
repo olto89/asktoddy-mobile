@@ -77,12 +77,31 @@ const successResponse = {
   summary: { confidence: 85, location_multiplier: 1.1, size_multiplier: 1.0 },
 };
 
+const authContext = {
+  freemiumUser: mockFreeUser,
+  isAuthenticated: true,
+  isAnonymous: false,
+  canGenerateQuote: jest.fn(() => true),
+  incrementQuoteUsage: jest.fn(() => Promise.resolve()),
+};
+
+function renderScreen() {
+  return renderWithProviders(
+    <TaskListScreen
+      navigation={mockNavigation}
+      route={{ params: { siteNotes: baseSiteNotes, isViewingGenerated: false } }}
+    />,
+    { authContext }
+  );
+}
+
 beforeEach(() => {
   jest.clearAllMocks();
+  (AIService.analyzeImage as jest.Mock).mockReset();
 });
 
 describe('TaskListScreen retry button', () => {
-  it('shows retry button when AI falls back to templates', async () => {
+  it('shows a no-numbers retry prompt when AI returns a fallback', async () => {
     (AIService.analyzeImage as jest.Mock).mockResolvedValueOnce(fallbackResponse);
 
     const { getByText, queryByText } = renderWithProviders(
@@ -107,13 +126,15 @@ describe('TaskListScreen retry button', () => {
     );
 
     await waitFor(() => {
-      expect(getByText(/AI analysis temporarily unavailable/)).toBeTruthy();
+      expect(getByText(/We couldn't build your quote/i)).toBeTruthy();
     });
 
-    expect(getByText('Retry with AI')).toBeTruthy();
+    // Shows a retry prompt, NOT misleading template numbers
+    expect(getByText('Try Again')).toBeTruthy();
+    expect(queryByText(/Template task/i)).toBeNull();
   });
 
-  it('does not show retry button when AI succeeds', async () => {
+  it('does not show retry prompt when AI succeeds', async () => {
     (AIService.analyzeImage as jest.Mock).mockResolvedValueOnce(successResponse);
 
     const { queryByText } = renderWithProviders(
@@ -138,7 +159,7 @@ describe('TaskListScreen retry button', () => {
     );
 
     await waitFor(() => {
-      expect(queryByText('Retry with AI')).toBeNull();
+      expect(queryByText('Try Again')).toBeNull();
     });
   });
 
@@ -169,22 +190,76 @@ describe('TaskListScreen retry button', () => {
       }
     );
 
-    // Wait for fallback banner
+    // Wait for the retry prompt
     await waitFor(() => {
-      expect(getByText('Retry with AI')).toBeTruthy();
+      expect(getByText('Try Again')).toBeTruthy();
     });
 
     // Press retry
-    fireEvent.press(getByText('Retry with AI'));
+    fireEvent.press(getByText('Try Again'));
 
     // AI should be called again
     await waitFor(() => {
       expect(AIService.analyzeImage).toHaveBeenCalledTimes(2);
     });
 
-    // Fallback banner should be gone after successful retry
+    // Retry prompt should be gone after successful retry
     await waitFor(() => {
-      expect(queryByText(/AI analysis temporarily unavailable/)).toBeNull();
+      expect(queryByText(/We couldn't build your quote/i)).toBeNull();
     });
+  });
+
+  // Scoping guards: the retry screen must ONLY appear for genuine
+  // connectivity/timeout/server errors — not for valid quotes or auth/quota.
+
+  it('shows a genuine low-confidence AI quote (does NOT treat it as a failure)', async () => {
+    (AIService.analyzeImage as jest.Mock).mockResolvedValueOnce({
+      provider: 'gemini-json',
+      confidence: 55, // modest confidence, but a REAL quote
+      tasks: [
+        {
+          description: 'Real low-confidence task',
+          category: 'General',
+          min_cost: 1000,
+          max_cost: 2000,
+          materials: [],
+          labor_days: 1,
+        },
+      ],
+      summary: { confidence: 55 },
+    });
+
+    const { getByText, queryByText } = renderScreen();
+
+    await waitFor(() => {
+      expect(getByText('Real low-confidence task')).toBeTruthy();
+    });
+    expect(queryByText(/We couldn't build your quote/i)).toBeNull();
+  });
+
+  it('routes a usage-limit (429) error to the upgrade modal, not the retry screen', async () => {
+    const limitError = Object.assign(new Error('limit reached'), {
+      code: 'USAGE_LIMIT_REACHED',
+    });
+    (AIService.analyzeImage as jest.Mock).mockRejectedValueOnce(limitError);
+
+    const { getByText, queryByText } = renderScreen();
+
+    await waitFor(() => {
+      expect(getByText('Quote Limit Reached')).toBeTruthy();
+    });
+    expect(queryByText(/We couldn't build your quote/i)).toBeNull();
+  });
+
+  it('routes an auth (401) error to the login modal, not the retry screen', async () => {
+    const authError = Object.assign(new Error('please sign in'), { code: 'AUTH_REQUIRED' });
+    (AIService.analyzeImage as jest.Mock).mockRejectedValueOnce(authError);
+
+    const { getByText, queryByText } = renderScreen();
+
+    await waitFor(() => {
+      expect(getByText('Sign Up to Generate Your Quote')).toBeTruthy();
+    });
+    expect(queryByText(/We couldn't build your quote/i)).toBeNull();
   });
 });

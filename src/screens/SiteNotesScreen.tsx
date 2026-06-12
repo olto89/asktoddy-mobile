@@ -237,6 +237,8 @@ async function saveDraftToStorage(formData: DraftFormData): Promise<string> {
     id: quoteId,
     timestamp: formData.currentQuoteId ? formData.existingTimestamp || Date.now() : Date.now(),
     lastModified: Date.now(),
+    quoteName: formData.quoteName || undefined,
+    customerName: formData.customerName || undefined,
     address: formData.address,
     jobType: formData.selectedJobType,
     constructionMethod: formData.selectedConstructionMethod || undefined,
@@ -270,6 +272,10 @@ export default function SiteNotesScreen({ navigation, route }: any) {
   const quote = isNewAssessment ? null : existingQuote;
 
   const [currentQuoteId, setCurrentQuoteId] = useState<string | null>(quote?.id || null);
+  // Headline fields for an official-looking quote: a quote title (PDF heading)
+  // and the customer/client name. Both optional — they don't gate generation.
+  const [quoteName, setQuoteName] = useState(quote?.quoteName || '');
+  const [customerName, setCustomerName] = useState(quote?.customerName || '');
   const [address, setAddress] = useState(quote?.address || '');
   const [selectedJobType, setSelectedJobType] = useState(quote?.jobType || '');
   const [selectedConstructionMethod, setSelectedConstructionMethod] = useState(
@@ -326,6 +332,8 @@ export default function SiteNotesScreen({ navigation, route }: any) {
   // Track all form data in a ref so unmount cleanup can read current values
   const formDataRef = useRef<DraftFormData>({
     currentQuoteId,
+    quoteName,
+    customerName,
     address,
     selectedJobType,
     selectedConstructionMethod,
@@ -348,6 +356,8 @@ export default function SiteNotesScreen({ navigation, route }: any) {
   useEffect(() => {
     formDataRef.current = {
       currentQuoteId,
+      quoteName,
+      customerName,
       address,
       selectedJobType,
       selectedConstructionMethod,
@@ -368,6 +378,8 @@ export default function SiteNotesScreen({ navigation, route }: any) {
     };
   }, [
     currentQuoteId,
+    quoteName,
+    customerName,
     address,
     selectedJobType,
     selectedConstructionMethod,
@@ -804,6 +816,8 @@ export default function SiteNotesScreen({ navigation, route }: any) {
     // Prepare notes data
     const siteNotes = {
       id: quoteId,
+      quoteName: quoteName || undefined,
+      customerName: customerName || undefined,
       address,
       jobType: selectedJobType,
       constructionMethod: selectedConstructionMethod || undefined,
@@ -887,6 +901,52 @@ export default function SiteNotesScreen({ navigation, route }: any) {
               <Text style={styles.offlineBannerText}>Offline — your work is saved locally</Text>
             </View>
           )}
+
+          {/* Quote Name — becomes the headline/title on the PDF */}
+          <Card style={styles.section}>
+            <View style={styles.sectionTitleRow}>
+              <Ionicons
+                name="document-text-outline"
+                size={IconSize.medium}
+                color={designTokens.colors.text.primary}
+              />
+              <Text style={styles.sectionTitle}>Quote Name</Text>
+            </View>
+            <TextInput
+              testID="quote-name-input"
+              style={styles.addressInput}
+              placeholder="e.g. Kitchen Extension – Smith"
+              value={quoteName}
+              onChangeText={text => {
+                setQuoteName(text);
+                setHasUnsavedChanges(true);
+              }}
+              placeholderTextColor={designTokens.colors.text.tertiary}
+            />
+          </Card>
+
+          {/* Customer Name — who the quote is for */}
+          <Card style={styles.section}>
+            <View style={styles.sectionTitleRow}>
+              <Ionicons
+                name="person-outline"
+                size={IconSize.medium}
+                color={designTokens.colors.text.primary}
+              />
+              <Text style={styles.sectionTitle}>Customer Name</Text>
+            </View>
+            <TextInput
+              testID="customer-name-input"
+              style={styles.addressInput}
+              placeholder="e.g. Jane Smith"
+              value={customerName}
+              onChangeText={text => {
+                setCustomerName(text);
+                setHasUnsavedChanges(true);
+              }}
+              placeholderTextColor={designTokens.colors.text.tertiary}
+            />
+          </Card>
 
           {/* Address Input */}
           <Card style={styles.section}>

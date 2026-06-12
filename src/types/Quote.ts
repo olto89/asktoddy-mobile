@@ -39,6 +39,8 @@ export interface SiteNote {
 
 export interface DraftFormData {
   currentQuoteId: string | null;
+  quoteName?: string;
+  customerName?: string;
   address: string;
   selectedJobType: string;
   selectedConstructionMethod: string;

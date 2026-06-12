@@ -27,6 +27,11 @@ interface LoginSignupModalProps {
   visible: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  // Called when the modal navigates to another screen (Forgot Password, Terms,
+  // Privacy). Lets a parent tear down any surrounding overlay it sits inside
+  // (e.g. the drawer menu modal) so the user lands on the target screen instead
+  // of back on that overlay.
+  onNavigateAway?: () => void;
   mode?: 'login' | 'signup';
   title?: string;
   subtitle?: string;
@@ -36,6 +41,7 @@ export default function LoginSignupModal({
   visible,
   onClose,
   onSuccess,
+  onNavigateAway,
   mode: initialMode = 'signup',
   title = 'Sign Up Free',
   subtitle = 'Get 5 free AI quotes per month',
@@ -131,10 +137,16 @@ export default function LoginSignupModal({
     }
   };
 
-  const handleForgotPassword = () => {
-    // Close the modal and navigate to the dedicated ForgotPassword screen
+  // Close this modal (and any surrounding overlay, e.g. the drawer menu) before
+  // navigating, so the user lands on the target screen — not back on the menu.
+  const navigateAway = (screen: string, params?: object) => {
     handleClose();
-    navigate('ForgotPassword', { email: email.trim() || undefined });
+    onNavigateAway?.();
+    navigate(screen, params);
+  };
+
+  const handleForgotPassword = () => {
+    navigateAway('ForgotPassword', { email: email.trim() || undefined });
   };
 
   const switchMode = () => {
@@ -384,22 +396,13 @@ export default function LoginSignupModal({
                   {mode === 'signup' && (
                     <Text style={styles.privacyNote}>
                       By signing up, you agree to our{' '}
-                      <Text
-                        style={styles.privacyLink}
-                        onPress={() => {
-                          handleClose();
-                          navigate('Terms');
-                        }}
-                      >
+                      <Text style={styles.privacyLink} onPress={() => navigateAway('Terms')}>
                         Terms of Service
                       </Text>{' '}
                       and{' '}
                       <Text
                         style={styles.privacyLink}
-                        onPress={() => {
-                          handleClose();
-                          navigate('PrivacyPolicy');
-                        }}
+                        onPress={() => navigateAway('PrivacyPolicy')}
                       >
                         Privacy Policy
                       </Text>

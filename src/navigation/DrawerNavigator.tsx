@@ -383,6 +383,12 @@ function MenuModal({ visible, onClose, navigation }: any) {
       <LoginSignupModal
         visible={showLoginModal}
         onClose={() => setShowLoginModal(false)}
+        onNavigateAway={() => {
+          // Navigating to another screen (Forgot Password / Terms / Privacy):
+          // also close the menu modal so the user isn't dropped back on it.
+          setShowLoginModal(false);
+          onClose();
+        }}
         onSuccess={() => {
           // Don't close both modals at once - let auth state settle
           setTimeout(() => {

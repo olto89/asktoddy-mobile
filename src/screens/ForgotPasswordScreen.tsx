@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { authHelpers } from '../services/supabase';
+import { getAuthErrorMessage } from '../utils/authErrors';
 import designTokens from '../styles/designTokens';
 import { AppIcons, IconSize } from '../styles/iconRegistry';
 import Button from '../components/ui/Button';
@@ -28,8 +29,27 @@ export default function ForgotPasswordScreen({ navigation, route }: Props) {
   const [email, setEmail] = useState(prefillEmail);
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  // Synchronous guard against a fast double-tap — `disabled={loading}` alone can
+  // miss it because setState is async, which fires duplicate requests and trips
+  // Supabase's email rate limit.
+  const submittingRef = useRef(false);
+
+  // A rate-limit from Supabase here does NOT mean failure: a reset email was
+  // very likely already sent on a recent attempt. We treat it like success.
+  const isRateLimited = (error: any): boolean => {
+    const msg = (error?.message || '').toLowerCase();
+    return (
+      error?.status === 429 ||
+      error?.code === 'over_email_send_rate_limit' ||
+      msg.includes('rate limit') ||
+      msg.includes('too many') ||
+      msg.includes('security purposes') // "you can only request this after N seconds"
+    );
+  };
 
   const handleSubmit = async () => {
+    if (submittingRef.current) return;
+
     const trimmed = email.trim();
 
     if (!trimmed) {
@@ -44,18 +64,23 @@ export default function ForgotPasswordScreen({ navigation, route }: Props) {
     }
 
     try {
+      submittingRef.current = true;
       setLoading(true);
       const { error } = await authHelpers.resetPassword(trimmed);
 
-      if (error) {
-        Alert.alert('Error', error.message || 'Failed to send reset email. Please try again.');
-      } else {
+      // Show the same reassuring "check your email" state on success OR on a
+      // rate-limit (the email was already sent). Only surface other errors.
+      if (!error || isRateLimited(error)) {
         setSent(true);
+      } else {
+        const friendly = getAuthErrorMessage(error);
+        Alert.alert(friendly.message, friendly.suggestion);
       }
     } catch {
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      Alert.alert('Something went wrong', 'Please try again in a moment.');
     } finally {
       setLoading(false);
+      submittingRef.current = false;
     }
   };
 
@@ -83,7 +108,7 @@ export default function ForgotPasswordScreen({ navigation, route }: Props) {
             <Text style={styles.title}>{sent ? 'Check Your Email' : 'Reset Password'}</Text>
             <Text style={styles.subtitle}>
               {sent
-                ? `We've sent a password reset link to`
+                ? 'If an account exists for this email, a password reset link is on its way to'
                 : "Enter your email address and we'll send you a link to reset your password."}
             </Text>
             {sent && <Text style={styles.emailHighlight}>{email.trim()}</Text>}
@@ -98,10 +123,11 @@ export default function ForgotPasswordScreen({ navigation, route }: Props) {
                   color={designTokens.colors.success[500]}
                 />
               </View>
-              <Text style={styles.successTitle}>Reset Link Sent</Text>
+              <Text style={styles.successTitle}>Check Your Inbox</Text>
               <Text style={styles.successText}>
-                Check your inbox and click the link to create a new password. The link will expire
-                in 24 hours.
+                Check your inbox (and spam folder) and click the link to create a new password. The
+                link will expire in 24 hours. If you&apos;ve requested this a few times, only the
+                most recent link will work.
               </Text>
               <Button
                 title="Back to Sign In"
