@@ -78,7 +78,8 @@ describe('AccountScreen', () => {
     const { getByTestId, mockAuth } = renderWithProviders(<AccountScreen />, {
       authContext: {
         user: mockUser,
-        freemiumUser: mockFreeUser,
+        freemiumUser: mockPremiumUser,
+        isPremium: true,
         isAuthenticated: true,
         isAnonymous: false,
       },
@@ -186,9 +187,10 @@ describe('AccountScreen', () => {
       authContext: {
         user: mockUser,
         freemiumUser: {
-          ...mockFreeUser,
+          ...mockPremiumUser,
           companyLogoUrl: 'https://example.com/logo.jpg',
         },
+        isPremium: true,
         isAuthenticated: true,
         isAnonymous: false,
       },
@@ -219,7 +221,8 @@ describe('AccountScreen', () => {
     const { getByTestId } = renderWithProviders(<AccountScreen />, {
       authContext: {
         user: mockUser,
-        freemiumUser: mockFreeUser,
+        freemiumUser: mockPremiumUser,
+        isPremium: true,
         isAuthenticated: true,
         isAnonymous: false,
       },
@@ -259,7 +262,8 @@ describe('AccountScreen', () => {
     const { getByTestId, mockAuth } = renderWithProviders(<AccountScreen />, {
       authContext: {
         user: mockUser,
-        freemiumUser: mockFreeUser,
+        freemiumUser: mockPremiumUser,
+        isPremium: true,
         isAuthenticated: true,
         isAnonymous: false,
       },
@@ -277,10 +281,13 @@ describe('AccountScreen', () => {
   });
 
   it('does not upload and prompts to sign in when there is no user session', async () => {
+    // Premium so the picker actually fires (logo is gated); the session guard is
+    // what we're exercising here.
     const { getByTestId } = renderWithProviders(<AccountScreen />, {
       authContext: {
         user: null,
-        freemiumUser: mockFreeUser,
+        freemiumUser: mockPremiumUser,
+        isPremium: true,
         isAuthenticated: false,
         isAnonymous: true,
       },
@@ -304,7 +311,8 @@ describe('AccountScreen', () => {
     const { getByTestId } = renderWithProviders(<AccountScreen />, {
       authContext: {
         user: mockUser,
-        freemiumUser: mockFreeUser,
+        freemiumUser: mockPremiumUser,
+        isPremium: true,
         isAuthenticated: true,
         isAnonymous: false,
       },
@@ -318,6 +326,66 @@ describe('AccountScreen', () => {
         'Upload Failed',
         expect.stringContaining('row-level security')
       );
+    });
+  });
+
+  describe('company branding is premium-gated', () => {
+    it('locks logo + company name and shows a PRO badge for free users', () => {
+      const { getByTestId, queryByTestId } = renderWithProviders(<AccountScreen />, {
+        authContext: {
+          user: mockUser,
+          freemiumUser: mockFreeUser,
+          isPremium: false,
+          isAuthenticated: true,
+          isAnonymous: false,
+        },
+      });
+
+      fireEvent.press(getByTestId('company-branding-toggle'));
+
+      expect(getByTestId('branding-pro-badge')).toBeTruthy();
+      // Name input is locked and the save button is hidden for free users.
+      expect(getByTestId('company-name-input').props.editable).toBe(false);
+      expect(queryByTestId('save-company-name-button')).toBeNull();
+    });
+
+    it('opens the upgrade prompt (not the picker) when a free user taps the logo', async () => {
+      const { getByTestId, queryByTestId } = renderWithProviders(<AccountScreen />, {
+        authContext: {
+          user: mockUser,
+          freemiumUser: mockFreeUser,
+          isPremium: false,
+          isAuthenticated: true,
+          isAnonymous: false,
+        },
+      });
+
+      fireEvent.press(getByTestId('company-branding-toggle'));
+      // Modal starts hidden (the Modal mock renders null when not visible).
+      expect(queryByTestId('upgrade-prompt-modal')).toBeNull();
+
+      fireEvent.press(getByTestId('logo-picker-button'));
+
+      // No upload happens — the gate intercepts and the upgrade modal opens.
+      expect(dbHelpers.uploadImage).not.toHaveBeenCalled();
+      await waitFor(() => {
+        expect(getByTestId('upgrade-prompt-modal')).toBeTruthy();
+      });
+    });
+
+    it('debug toggle (staging) flips the tier via upgradeUser', () => {
+      const { getByTestId, mockAuth } = renderWithProviders(<AccountScreen />, {
+        authContext: {
+          user: mockUser,
+          freemiumUser: mockFreeUser,
+          isPremium: false,
+          isAuthenticated: true,
+          isAnonymous: false,
+        },
+      });
+
+      fireEvent.press(getByTestId('debug-toggle-premium-button'));
+      expect(mockAuth.upgradeUser).toHaveBeenCalledWith('premium');
     });
   });
 

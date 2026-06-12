@@ -119,6 +119,7 @@ export default function UpgradePromptModal({
 
   return (
     <Modal
+      testID="upgrade-prompt-modal"
       visible={visible}
       animationType="slide"
       presentationStyle="pageSheet"

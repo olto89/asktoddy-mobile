@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, dbHelpers } from '../services/supabase';
 import { logger } from '../services/Logger';
+import { config } from '../config';
 import { useNavigation } from '@react-navigation/native';
 import { useImagePicker } from '../hooks/useImagePicker';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -28,7 +29,15 @@ import { DEFAULT_QUOTE_VALIDITY_DAYS, DEFAULT_LEGAL_NOTICE } from '../constants/
 import UpgradePromptModal from '../components/modals/UpgradePromptModal';
 
 export default function AccountScreen() {
-  const { user, signOut, deleteAccount, freemiumUser, updateCompanyProfile, isPremium } = useAuth();
+  const {
+    user,
+    signOut,
+    deleteAccount,
+    freemiumUser,
+    updateCompanyProfile,
+    isPremium,
+    upgradeUser,
+  } = useAuth();
   const navigation = useNavigation();
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
@@ -328,6 +337,14 @@ export default function AccountScreen() {
                 color={designTokens.colors.text.secondary}
               />
               <Text style={styles.menuItemText}>Company Branding</Text>
+              {!isPremium && (
+                <View
+                  style={[styles.premiumBadge, { marginLeft: designTokens.spacing.sm }]}
+                  testID="branding-pro-badge"
+                >
+                  <Text style={styles.premiumBadgeText}>PRO</Text>
+                </View>
+              )}
             </View>
             <Ionicons
               name={showCompanyBranding ? 'chevron-down' : 'chevron-forward'}
@@ -338,32 +355,42 @@ export default function AccountScreen() {
 
           {showCompanyBranding && (
             <View style={styles.brandingForm} testID="company-branding-section">
-              {/* Company Name */}
+              {/* Company Name (premium) */}
               <Text style={styles.brandingLabel}>Company Name</Text>
               <View style={styles.brandingNameRow}>
-                <TextInput
-                  style={styles.brandingInput}
-                  placeholder="Enter company name"
-                  placeholderTextColor={designTokens.colors.text.tertiary}
-                  value={companyName}
-                  onChangeText={setCompanyName}
-                  testID="company-name-input"
-                />
                 <TouchableOpacity
-                  style={[
-                    styles.brandingSaveButton,
-                    savingName && styles.changePasswordButtonDisabled,
-                  ]}
-                  onPress={handleSaveCompanyName}
-                  disabled={savingName}
-                  testID="save-company-name-button"
+                  style={{ flex: 1 }}
+                  onPress={handlePremiumFieldPress}
+                  disabled={isPremium}
+                  activeOpacity={isPremium ? 1 : 0.7}
                 >
-                  {savingName ? (
-                    <ActivityIndicator size="small" color={designTokens.colors.text.inverse} />
-                  ) : (
-                    <Text style={styles.changePasswordButtonText}>Save</Text>
-                  )}
+                  <TextInput
+                    style={[styles.brandingInput, !isPremium && styles.lockedInput]}
+                    placeholder="Enter company name"
+                    placeholderTextColor={designTokens.colors.text.tertiary}
+                    value={companyName}
+                    onChangeText={setCompanyName}
+                    editable={isPremium}
+                    testID="company-name-input"
+                  />
                 </TouchableOpacity>
+                {isPremium && (
+                  <TouchableOpacity
+                    style={[
+                      styles.brandingSaveButton,
+                      savingName && styles.changePasswordButtonDisabled,
+                    ]}
+                    onPress={handleSaveCompanyName}
+                    disabled={savingName}
+                    testID="save-company-name-button"
+                  >
+                    {savingName ? (
+                      <ActivityIndicator size="small" color={designTokens.colors.text.inverse} />
+                    ) : (
+                      <Text style={styles.changePasswordButtonText}>Save</Text>
+                    )}
+                  </TouchableOpacity>
+                )}
                 {nameSaved && (
                   <Text style={styles.savedText} testID="name-saved-indicator">
                     Saved!
@@ -380,8 +407,8 @@ export default function AccountScreen() {
               </Text>
               <View style={styles.brandingLogoRow}>
                 <TouchableOpacity
-                  style={styles.logoContainer}
-                  onPress={pickFromLibrary}
+                  style={[styles.logoContainer, !isPremium && styles.lockedInput]}
+                  onPress={isPremium ? pickFromLibrary : handlePremiumFieldPress}
                   disabled={uploadingLogo}
                   testID="logo-picker-button"
                 >
@@ -404,7 +431,7 @@ export default function AccountScreen() {
                 <View style={styles.logoActions}>
                   <TouchableOpacity
                     style={styles.logoActionButton}
-                    onPress={pickFromLibrary}
+                    onPress={isPremium ? pickFromLibrary : handlePremiumFieldPress}
                     disabled={uploadingLogo}
                   >
                     <Text style={styles.logoActionText}>
@@ -414,7 +441,7 @@ export default function AccountScreen() {
                   {freemiumUser.companyLogoUrl && (
                     <TouchableOpacity
                       style={styles.logoActionButton}
-                      onPress={handleRemoveLogo}
+                      onPress={isPremium ? handleRemoveLogo : handlePremiumFieldPress}
                       disabled={removingLogo}
                       testID="remove-logo-button"
                     >
@@ -616,6 +643,28 @@ export default function AccountScreen() {
             onClose={() => setShowUpgradeModal(false)}
             reason="premium_feature"
           />
+
+          {/* Staging-only tier toggle for testing premium features end-to-end
+              (RevenueCat purchases need the live Apple account). Gated on the env
+              so it can NEVER appear in a production build. */}
+          {!config.app.isProduction && (
+            <View style={styles.debugBox} testID="debug-tier-toggle">
+              <Text style={styles.debugLabel}>🛠 Debug (staging only)</Text>
+              <Text style={styles.debugSubtext}>
+                Current tier: {freemiumUser.tier}
+                {isPremium ? ' (premium)' : ''}
+              </Text>
+              <TouchableOpacity
+                style={styles.debugButton}
+                onPress={() => upgradeUser(isPremium ? 'free' : 'premium')}
+                testID="debug-toggle-premium-button"
+              >
+                <Text style={styles.debugButtonText}>
+                  {isPremium ? 'Switch to FREE' : 'Switch to PREMIUM'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           <TouchableOpacity
             style={styles.menuItem}
@@ -1017,6 +1066,37 @@ const styles = StyleSheet.create({
   lockedInput: {
     backgroundColor: designTokens.colors.background.secondary,
     opacity: 0.7,
+  },
+  debugBox: {
+    marginTop: designTokens.spacing.md,
+    padding: designTokens.spacing.md,
+    borderRadius: designTokens.borderRadius.md,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: designTokens.colors.text.tertiary,
+    backgroundColor: designTokens.colors.background.secondary,
+  },
+  debugLabel: {
+    fontSize: designTokens.typography.fontSize.sm,
+    fontWeight: designTokens.typography.fontWeight.bold as any,
+    color: designTokens.colors.text.secondary,
+  },
+  debugSubtext: {
+    fontSize: designTokens.typography.fontSize.xs,
+    color: designTokens.colors.text.tertiary,
+    marginTop: 2,
+    marginBottom: designTokens.spacing.sm,
+  },
+  debugButton: {
+    backgroundColor: designTokens.colors.primary[500],
+    paddingVertical: designTokens.spacing.sm,
+    borderRadius: designTokens.borderRadius.md,
+    alignItems: 'center',
+  },
+  debugButtonText: {
+    color: designTokens.colors.text.inverse,
+    fontWeight: designTokens.typography.fontWeight.semibold as any,
+    fontSize: designTokens.typography.fontSize.sm,
   },
   legalInput: {
     minHeight: 120,
