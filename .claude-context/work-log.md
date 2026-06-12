@@ -6,6 +6,99 @@
 
 ---
 
+## 📅 June 12, 2026 — UX (read-only brief) + Logo upload diagnosis + staging migration-drift finding
+
+### ✅ Piece C — Read-only "Original brief" on a completed quote (SHIPPED)
+
+- New `src/components/OriginalBriefCard.tsx`: collapsible, **view-only** card on the
+  viewed-quote screen showing the original notes (split into bullets), selected
+  work, property details, photo thumbnails, and a voice-notes indicator. Hides
+  empty sections; renders nothing if the brief is empty. No data-model change —
+  reads the `siteNotes` already stored on every saved quote.
+- Wired into `TaskListScreen.tsx` under the summary card, gated on
+  `isViewingGenerated` (never shows during generation).
+- Tests: `src/components/__tests__/OriginalBriefCard.test.tsx` (6 cases incl. a
+  read-only assertion).
+- Decision recorded in `SITE_NOTES_UX_PLAN.md`. **Piece A+B (note-chips +
+  suggestion chips) deferred to backlog as ASK-208** — reworks the most-used input
+  screen + its auto-save (regression risk pre-launch); validate elicitation gain
+  with real users post-launch. Build via Option-1 data shape; mind the
+  uncommitted-input-buffer risk.
+
+### 🐞 Company logo upload from camera roll — hardened + made diagnosable
+
+- **Symptom:** logo picked from camera roll "won't save"; reported as persisting.
+- **Findings:** `company-logos` bucket **exists on staging and is public**
+  (verified via storage REST), so display works and it's not a missing-bucket
+  issue. `dbHelpers.uploadImage` is the **only** consumer of the storage-bucket
+  upload path (site photos go to the edge function as base64), so it was never
+  proven to work. Client path is otherwise correct for a logged-in user
+  (`user` = session user ⇒ `user.id` = `auth.uid()`, satisfying the folder-scoped
+  RLS). **Root blocker to diagnosis: the error was fully swallowed** at
+  `AccountScreen.tsx` with a generic "Could not process that image" and no log.
+- **Fix (client, `AccountScreen.tsx` + `services/supabase.ts`):**
+  - Surface the real error (`logger.error` + show the actual reason in the alert)
+    — RLS denials / read failures are now visible.
+  - Guard a missing session (`user?.id`) → clear "sign in needed" instead of
+    uploading to `undefined/`.
+  - Request `base64: true` from ImageManipulator and pass it straight to
+    `uploadImage` (new optional 4th arg) — avoids a second file read of a
+    camera-roll asset that can return empty.
+  - `uploadImage` now **fails loudly on empty image data** (no silent 0-byte
+    upload) and accepts pre-read base64.
+  - Tests: `services/__tests__/supabase.test.ts` (+2), `screens/__tests__/AccountScreen.test.tsx` (+2).
+- **RLS re-asserted on staging (done June 12).** Ran
+  `20260612_reassert_company_logos_rls.sql` via the dashboard SQL editor (raw-SQL
+  auth wasn't available locally — DB password is in the keychain, not on disk; CLI
+  route would've needed a broad migration-history repair, so chose the narrow
+  dashboard path). New migration is idempotent (scoped own-folder write policies +
+  public SELECT, with an explicit `WITH CHECK` on UPDATE that `20260326` lacked —
+  matters for upsert). Committed to `supabase/migrations/`, so the prod cutover
+  `db push` picks it up automatically.
+- **⚠️ Still needs ONE confirmation step:** device retest of the camera-roll logo
+  upload on a staging build. If it still fails, the client change now surfaces the
+  REAL error in the alert — capture that text.
+
+### ✨ Headline fields on the assessment form (quote name + customer name)
+
+- Added **Quote Name** + **Customer Name** inputs at the TOP of SiteNotesScreen,
+  above Property Address (both optional — they do NOT gate generation).
+- Key finding: `quoteName`/`customerName` already existed on the `SiteNote` type and
+  were **already rendered on the PDF + share text** (`ShareQuoteScreen`) — they were
+  just captured late (EditQuoteScreen, post-generation). So this was a threading job,
+  not new PDF work.
+- Threaded through: `DraftFormData` type → `formDataRef` (init + sync effect + deps)
+  → `saveDraftToStorage` draft → `siteNotes` object → TaskListScreen `generatedQuote`
+  (top level, where the PDF/share header reads them). EditQuoteScreen already
+  pre-fills both from `savedQuote`, so form values survive an edit round-trip.
+- Tests: `SiteNotesScreen.headlineFields.test.tsx` (+3: render empty, pre-fill from
+  existing, persist edits to draft) and `TaskListScreen.headlineFields.test.tsx` (+1:
+  top-level on generated quote). PDF auto-includes them (no template change).
+
+### 🚨 Staging migration tracking is OUT OF SYNC (matters for prod cutover — ADR-021)
+
+- `supabase migration list` (linked to **staging** `iezmuqawughmwsxlqrim`) shows
+  several local migrations as **NOT on remote**: `20260316` (quotes), `20260320`
+  (logo bucket), `20260326` (logo RLS), `20260610` (quote_usage) — yet
+  `quote_usage` and the `company-logos` bucket **demonstrably exist** on staging.
+- Conclusion: these were applied **out-of-band** (dashboard SQL editor / direct),
+  not via `supabase db push`, so the `supabase_migrations` history table is
+  incomplete. **`migration list` cannot be trusted as parity source of truth.**
+- **Cutover impact:** the PRODUCTION_CUTOVER plan's `supabase db push` step may
+  try to re-apply migrations prod already has, or skip ones it lacks, depending on
+  prod's (also unknown) history table. Before cutover, **reconcile staging's
+  migration history** (e.g. `supabase migration repair --status applied <ts>` for
+  each out-of-band one) so staging→prod parity is mechanical, not guesswork.
+
+**📊 TESTS:** 348/348 passing, 42 suites (+14 since June 11 across OriginalBriefCard,
+supabase upload, AccountScreen logo, SiteNotes/TaskList headline fields).
+**🚀 BUILD:** none yet this session — staging-only changes; will ride the next
+TestFlight build + the combined prod cutover (ADR-021).
+
+_Last Updated: June 12, 2026_
+
+---
+
 ## 📅 June 9, 2026 — Quote Quality + ONS Investigation + Professional Quote Enhancements
 
 ### 🔎 Third-party pricing / ONS investigation

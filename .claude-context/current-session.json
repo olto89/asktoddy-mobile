@@ -210,6 +210,19 @@
     "findings": "REST/storage hosts don't resolve (likely paused since 2025-10-23); functions at v7 (3 of 8 present); DB schema + company-logos bucket effectively absent; no real users.",
     "plan": "One-shot cutover later (ADR-021), combined with the test-coverage push. Bring prod + staging level together."
   },
+  "staging_migration_drift": {
+    "status": "DISCOVERED June 12 — staging supabase_migrations history is INCOMPLETE",
+    "detail": "supabase migration list shows 20260316/20260320/20260326/20260610 as NOT on remote, yet quote_usage + company-logos bucket demonstrably exist on staging. Applied out-of-band (dashboard SQL), not via db push.",
+    "impact": "migration list is NOT a trustworthy parity source for the cutover. Reconcile staging history (supabase migration repair --status applied <ts>) BEFORE the prod db push, else cutover may re-apply or skip migrations.",
+    "relates_to": "ADR-021 / PRODUCTION_CUTOVER.md"
+  },
+  "logo_upload_bug": {
+    "status": "Client hardened + RLS re-asserted on staging June 12 — awaiting device retest",
+    "findings": "company-logos bucket exists & public on staging; uploadImage is the only storage-upload consumer; error was swallowed with a generic message.",
+    "fix": "AccountScreen surfaces real error + guards no-session + passes ImageManipulator base64 through; uploadImage fails loudly on empty data. Tests added.",
+    "rls_reassert": "Ran 20260612_reassert_company_logos_rls.sql via staging SQL editor (dashboard route — CLI/raw-SQL auth not available locally). Migration file committed so prod gets it at cutover db push. Idempotent: scoped own-folder write policies + public SELECT.",
+    "next": "DEVICE RETEST camera-roll logo upload on staging build. If still failing, the client change now surfaces the REAL error in the alert — capture that text."
+  },
   "revenuecat_setup_status": {
     "step1": "✅ DONE - Created RevenueCat account",
     "step2": "✅ DONE - Created project 'AskToddy'",
@@ -230,7 +243,7 @@
     "status": "TestFlight — Tier 1 hardening: edge auth (T1), server-side usage limiting (T2), prompt-injection hardening (T4), mock-provider removal (T5), SubscriptionService fix (T6), auto-save failure banner (T8). For UI run-through."
   },
   "edge_function_version": "staging redeployed June 11 (analyze-construction with auth + usage limiting + injection hardening)",
-  "lastUpdated": "2026-06-11T00:00:00.000Z",
+  "lastUpdated": "2026-06-12T11:21:12.520Z",
   "project": {
     "name": "asktoddy-mobile",
     "version": "1.2.4",
@@ -242,9 +255,9 @@
   },
   "git": {
     "branch": "staging",
-    "lastCommit": "cf5eab2 feat: Quote consistency & quality improvements (edge function)",
+    "lastCommit": "a6e5f8c fix: company logo upload reliability + re-assert storage RLS",
     "hasUncommittedChanges": true,
-    "changedFiles": 55
+    "changedFiles": 20
   },
   "environment": {
     "nodeVersion": "v24.3.0",
@@ -252,17 +265,20 @@
   },
   "runningProcesses": [],
   "recentFiles": [
-    "src/utils/__tests__/imageStorage.test.ts",
-    "src/utils/__tests__/vat.test.ts",
-    "src/utils/vat.ts",
+    "src/types/Quote.ts",
     "src/screens/AccountScreen.tsx",
     "src/screens/SiteNotesScreen.tsx",
-    "src/screens/ShareQuoteScreen.tsx",
-    "src/screens/EditQuoteScreen.tsx",
-    "src/screens/__tests__/ShareQuoteScreen.test.tsx",
-    "src/screens/__tests__/ResetPasswordScreen.test.tsx",
+    "src/screens/__tests__/TaskListScreen.retry.test.tsx",
+    "src/screens/__tests__/SiteNotesScreen.headlineFields.test.tsx",
+    "src/screens/__tests__/TaskListScreen.headlineFields.test.tsx",
+    "src/screens/__tests__/ForgotPasswordScreen.test.tsx",
     "src/screens/__tests__/AccountScreen.test.tsx",
     "src/screens/TaskListScreen.tsx",
-    "src/screens/ResetPasswordScreen.tsx"
+    "src/components/modals/LoginSignupModal.tsx",
+    "src/components/OriginalBriefCard.tsx",
+    "src/components/__tests__/OriginalBriefCard.test.tsx",
+    "src/services/__tests__/supabase.test.ts",
+    "src/services/ai/AIServiceEdge.ts",
+    "src/services/supabase.ts"
   ]
 }

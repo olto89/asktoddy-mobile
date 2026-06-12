@@ -50,7 +50,20 @@ Production is **far** behind and appears to be a near-fresh backend:
 
 1. **Un-pause the prod Supabase project** (`tggvoqhewfmczyjoxrqu`) in the
    dashboard. Confirm REST host resolves: `curl -I https://tggvoqhewfmczyjoxrqu.supabase.co/rest/v1/`.
-2. **Apply all migrations to prod.** Link to prod and push:
+2. **⚠️ FIRST reconcile staging's migration history (drift discovered 2026-06-12).**
+   `supabase migration list` (staging) shows `20260316`, `20260320`, `20260326`,
+   `20260610` — and `20260612` (company-logos RLS re-assert, run via the dashboard
+   SQL editor on 2026-06-12) — as NOT in staging's history, yet `quote_usage`, the
+   `company-logos` bucket, and those policies demonstrably exist. They were applied
+   out-of-band via the dashboard SQL editor, so the `supabase_migrations` history is
+   incomplete. **`migration list` is NOT a trustworthy parity source.** Before
+   pushing to prod, repair staging's history so it reflects reality:
+   `supabase migration repair --status applied 20260316 20260320 20260326 20260610 20260612`
+   (verify each against the actual schema first). Otherwise the prod `db push` below
+   may re-apply or skip migrations unpredictably. NOTE: prod is unaffected by this
+   staging-history gap — prod reads its own history, and `20260612` is a committed
+   migration file, so the push applies it to prod automatically (idempotent).
+   **Apply all migrations to prod.** Link to prod and push:
    `supabase link --project-ref tggvoqhewfmczyjoxrqu && supabase db push`.
    Then re-link to staging (`supabase link --project-ref iezmuqawughmwsxlqrim`).
    Verify the `quotes`, `conversation_sessions`, and pricing-cache tables exist.
@@ -65,12 +78,20 @@ Production is **far** behind and appears to be a near-fresh backend:
 6. **Set edge function secrets in prod** (Supabase dashboard or
    `supabase secrets set --project-ref tggvoqhewfmczyjoxrqu`) — Gemini key etc.
    These do NOT come from `.env.production` automatically.
-7. **Merge code:** `git checkout main && git merge staging && git push origin main`.
-8. **Build + submit prod app:** bump `ios.buildNumber`, then
+7. **Sign in with Apple (T15) — fix or hide.** Client code is correct; the
+   failure is account config. On the own account: enable the Sign in with Apple
+   capability on the App ID, create a Services ID + .p8 key, and configure the
+   Supabase Apple provider with the correct **bundle ID(s) in authorized Client
+   IDs** (audience mismatch is the usual cause). Verify `ios.usesAppleSignIn`
+   puts the entitlement in the build. If not fixing for v1, **hide the Apple
+   button** (email-only is compliant since there are no other 3rd-party logins).
+   A visible-but-broken button is a rejection risk.
+8. **Merge code:** `git checkout main && git merge staging && git push origin main`.
+9. **Build + submit prod app:** bump `ios.buildNumber`, then
    `eas build --profile production --platform ios --auto-submit --non-interactive`.
    (Prod ASC App ID: `6754278089`.)
-9. **Smoke-test prod end to end:** sign up, generate a quote (real AI), save,
-   share PDF, delete account, restore purchases.
+10. **Smoke-test prod end to end:** sign up, generate a quote (real AI), save,
+    share PDF, delete account, restore purchases, **Sign in with Apple**.
 
 ## Parity rule going forward
 

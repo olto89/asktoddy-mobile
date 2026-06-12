@@ -122,6 +122,24 @@
       "effort": "Large",
       "sprint": "June 2026",
       "blocker": null
+    },
+    {
+      "id": "ASK-208",
+      "title": "Site Notes — chip entry + suggestion chips (Piece A+B)",
+      "status": "Backlog",
+      "priority": "Low",
+      "description": "Replace the single free-text notes blob with discrete add/delete note chips, plus job-type-aware suggestion chips to elicit high-value facts (access, listed status, condition, hazards, waste). Accuracy win is elicitation, not format. Deferred from pre-launch (June 12, 2026) — reworks the most-used input screen + its auto-save (regression risk during launch crunch); validate with real users post-launch. See SITE_NOTES_UX_PLAN.md (Piece A+B).",
+      "acceptance_criteria": [
+        "Notes entered as discrete chips with add/delete; soft cap ~10 guidance, ~15 hard ceiling",
+        "Job-type-aware suggestion chips pre-fill the input (not auto-commit)",
+        "Option-1 data shape: persist notes as joined string (no migration, backwards-compatible)",
+        "Prompt renders notes as a bulleted list under DETAILED NOTES",
+        "Auto-save persists the uncommitted input buffer (no data loss vs the blob) — KEY RISK",
+        "Colocated tests for add/delete, soft cap, suggestion pre-fill, join-on-save, uncommitted-buffer persistence"
+      ],
+      "effort": "Medium",
+      "sprint": "Post-launch backlog",
+      "blocker": null
     }
   ],
   "completed_from_previous": [
@@ -163,10 +181,11 @@
     }
   ],
   "summary": {
-    "total_tickets": 7,
+    "total_tickets": 8,
     "completed": 0,
     "blocked": 2,
     "todo": 4,
-    "deferred": 1
+    "deferred": 1,
+    "backlog": 1
   }
 }
