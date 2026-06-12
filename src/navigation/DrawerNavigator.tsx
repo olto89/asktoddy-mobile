@@ -472,30 +472,48 @@ function SimpleNavigator() {
         <Stack.Screen
           name="TaskList"
           component={TaskListScreen}
-          options={({ navigation }) => ({
-            headerTitle: () => (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Ionicons name={AppIcons.quoteComplete} size={IconSize.medium} color="white" />
-                <Text style={{ color: 'white', fontWeight: '700', fontSize: 18 }}>
-                  Quote Generated
-                </Text>
-              </View>
-            ),
-            headerShown: true,
-            headerLeft: () => null,
-            gestureEnabled: false,
-            headerRight: () => (
-              <TouchableOpacity
-                onPress={() => {
-                  setCurrentNavigation(navigation);
-                  setMenuVisible(true);
-                }}
-                style={{ marginRight: 15 }}
-              >
-                <Ionicons name="menu" size={24} color="white" />
-              </TouchableOpacity>
-            ),
-          })}
+          options={({ navigation, route }) => {
+            // The screen drives this via setParams as generation progresses, so
+            // the title isn't prematurely "Quote Generated" while the AI is still
+            // working (or after a failure).
+            const headerState = (route.params as any)?.headerState;
+            const isGenerating = headerState === 'generating';
+            const hasFailed = headerState === 'failed';
+            const titleLabel = isGenerating
+              ? 'Building Your Quote…'
+              : hasFailed
+                ? 'Quote'
+                : 'Quote Generated';
+            const titleIcon = isGenerating
+              ? AppIcons.pendingGeneration
+              : hasFailed
+                ? 'document-text-outline'
+                : AppIcons.quoteComplete;
+            return {
+              headerTitle: () => (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Ionicons name={titleIcon} size={IconSize.medium} color="white" />
+                  <Text style={{ color: 'white', fontWeight: '700', fontSize: 18 }}>
+                    {titleLabel}
+                  </Text>
+                </View>
+              ),
+              headerShown: true,
+              headerLeft: () => null,
+              gestureEnabled: false,
+              headerRight: () => (
+                <TouchableOpacity
+                  onPress={() => {
+                    setCurrentNavigation(navigation);
+                    setMenuVisible(true);
+                  }}
+                  style={{ marginRight: 15 }}
+                >
+                  <Ionicons name="menu" size={24} color="white" />
+                </TouchableOpacity>
+              ),
+            };
+          }}
         />
         <Stack.Screen
           name="EditQuote"

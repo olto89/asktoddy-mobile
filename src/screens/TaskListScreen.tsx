@@ -57,6 +57,18 @@ export default function TaskListScreen({ navigation, route }: any) {
     };
   }, []);
 
+  // Keep the navigation header title in sync with what's actually happening, so
+  // it doesn't read "Quote Generated" while the AI is still working (or failed).
+  useEffect(() => {
+    const headerState =
+      isProcessing && !isViewingGenerated
+        ? 'generating'
+        : generationFailed
+          ? 'failed'
+          : 'generated';
+    navigation.setParams?.({ headerState });
+  }, [isProcessing, isViewingGenerated, generationFailed, navigation]);
+
   useEffect(() => {
     if (isViewingGenerated && savedQuote) {
       // Load existing generated quote data - NO AI CALL NEEDED
