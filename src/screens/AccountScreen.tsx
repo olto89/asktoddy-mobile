@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, dbHelpers } from '../services/supabase';
+import { logger } from '../services/Logger';
 import { useNavigation } from '@react-navigation/native';
 import { useImagePicker } from '../hooks/useImagePicker';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -86,21 +87,46 @@ export default function AccountScreen() {
     onImageSelected: async (uri: string) => {
       try {
         setUploadingLogo(true);
-        // Convert any format (HEIC, WEBP, PNG, etc.) to JPEG for consistent storage
+
+        // RLS scopes uploads to the user's own folder ({uid}/*), so a logged-in
+        // session is required. Bail clearly rather than uploading to "undefined/".
+        if (!user?.id) {
+          Alert.alert('Sign in needed', 'Please sign in again to upload your logo.');
+          return;
+        }
+
+        // Convert any format (HEIC, WEBP, PNG, etc.) to JPEG for consistent
+        // storage. Request base64 so we upload exactly what the manipulator
+        // produced — avoids a second file read of a camera-roll asset that can
+        // come back empty on iOS.
         const manipulated = await ImageManipulator.manipulateAsync(
           uri,
           [{ resize: { width: 512 } }],
-          { compress: 0.85, format: ImageManipulator.SaveFormat.JPEG }
+          { compress: 0.85, format: ImageManipulator.SaveFormat.JPEG, base64: true }
         );
-        const logoPath = `${user?.id}/logo.jpg`;
+        if (!manipulated?.uri) {
+          throw new Error('Image processing returned no file');
+        }
+
+        const logoPath = `${user.id}/logo.jpg`;
         // Delete any old PNG version to avoid stale files
-        await dbHelpers.deleteStorageFile('company-logos', `${user?.id}/logo.png`).catch(() => {});
-        const result = await dbHelpers.uploadImage(manipulated.uri, logoPath, 'company-logos');
+        await dbHelpers.deleteStorageFile('company-logos', `${user.id}/logo.png`).catch(() => {});
+        const result = await dbHelpers.uploadImage(
+          manipulated.uri,
+          logoPath,
+          'company-logos',
+          manipulated.base64
+        );
         if (result.error) throw result.error;
         await updateCompanyProfile({ companyLogoUrl: result.data!.publicUrl });
         showLogoSaved();
-      } catch (err) {
-        Alert.alert('Upload Failed', 'Could not process that image. Please try a different one.');
+      } catch (err: any) {
+        // Surface the real reason — previously this was swallowed behind a
+        // generic message, leaving RLS denials / read failures undiagnosable.
+        logger.error('Logo upload failed:', err);
+        const reason =
+          err?.message || err?.error_description || err?.error || 'Please try a different image.';
+        Alert.alert('Upload Failed', `Could not save your logo. ${reason}`);
       } finally {
         setUploadingLogo(false);
       }

@@ -210,7 +210,12 @@ describe('AccountScreen', () => {
     });
   });
 
-  it('converts picked image to JPEG via ImageManipulator before uploading', async () => {
+  it('converts picked image to JPEG (with base64) and passes it through to upload', async () => {
+    (ImageManipulator.manipulateAsync as jest.Mock).mockResolvedValueOnce({
+      uri: 'mock://manipulated.jpeg',
+      base64: 'manipulated-base64==',
+    });
+
     const { getByTestId } = renderWithProviders(<AccountScreen />, {
       authContext: {
         user: mockUser,
@@ -224,16 +229,64 @@ describe('AccountScreen', () => {
     fireEvent.press(getByTestId('logo-picker-button'));
 
     await waitFor(() => {
+      // Requests base64 so the manipulated bytes go straight to upload.
       expect(ImageManipulator.manipulateAsync).toHaveBeenCalledWith(
         'mock://image.jpg',
         [{ resize: { width: 512 } }],
-        { compress: 0.85, format: ImageManipulator.SaveFormat.JPEG }
+        { compress: 0.85, format: ImageManipulator.SaveFormat.JPEG, base64: true }
       );
-      // Should always upload as .jpg regardless of source format
+      // Should always upload as .jpg regardless of source format, passing the
+      // pre-read base64 as the 4th arg.
       expect(dbHelpers.uploadImage).toHaveBeenCalledWith(
         'mock://manipulated.jpeg',
         `${mockUser.id}/logo.jpg`,
-        'company-logos'
+        'company-logos',
+        'manipulated-base64=='
+      );
+    });
+  });
+
+  it('does not upload and prompts to sign in when there is no user session', async () => {
+    const { getByTestId } = renderWithProviders(<AccountScreen />, {
+      authContext: {
+        user: null,
+        freemiumUser: mockFreeUser,
+        isAuthenticated: false,
+        isAnonymous: true,
+      },
+    });
+
+    fireEvent.press(getByTestId('company-branding-toggle'));
+    fireEvent.press(getByTestId('logo-picker-button'));
+
+    await waitFor(() => {
+      expect(Alert.alert).toHaveBeenCalledWith('Sign in needed', expect.any(String));
+    });
+    expect(dbHelpers.uploadImage).not.toHaveBeenCalled();
+  });
+
+  it('surfaces the real failure reason instead of a generic message', async () => {
+    (dbHelpers.uploadImage as jest.Mock).mockResolvedValueOnce({
+      data: null,
+      error: { message: 'new row violates row-level security policy' },
+    });
+
+    const { getByTestId } = renderWithProviders(<AccountScreen />, {
+      authContext: {
+        user: mockUser,
+        freemiumUser: mockFreeUser,
+        isAuthenticated: true,
+        isAnonymous: false,
+      },
+    });
+
+    fireEvent.press(getByTestId('company-branding-toggle'));
+    fireEvent.press(getByTestId('logo-picker-button'));
+
+    await waitFor(() => {
+      expect(Alert.alert).toHaveBeenCalledWith(
+        'Upload Failed',
+        expect.stringContaining('row-level security')
       );
     });
   });

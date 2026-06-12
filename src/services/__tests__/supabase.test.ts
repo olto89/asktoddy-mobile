@@ -94,6 +94,45 @@ describe('dbHelpers.uploadImage', () => {
     expect(result.data).toBeNull();
     expect(result.error).toBeTruthy();
   });
+
+  it('uses caller-supplied base64 instead of reading the file', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const FileSystem = require('expo-file-system');
+    mockUpload.mockResolvedValue({
+      data: { path: 'abc/logo.jpg', fullPath: 'company-logos/abc/logo.jpg' },
+      error: null,
+    });
+    mockGetPublicUrl.mockReturnValue({ data: { publicUrl: 'https://x/logo.jpg' } });
+
+    const result = await dbHelpers.uploadImage(
+      'file:///tmp/photo.jpg',
+      'abc/logo.jpg',
+      'company-logos',
+      'preReadBase64=='
+    );
+
+    expect(result.error).toBeNull();
+    // When base64 is supplied, we must NOT re-read the file.
+    expect(FileSystem.readAsStringAsync).not.toHaveBeenCalled();
+    expect(mockUpload).toHaveBeenCalled();
+  });
+
+  it('fails loudly when image data is empty (no 0-byte upload)', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const FileSystem = require('expo-file-system');
+    FileSystem.readAsStringAsync.mockResolvedValueOnce('');
+
+    const result = await dbHelpers.uploadImage(
+      'file:///tmp/empty.jpg',
+      'abc/logo.jpg',
+      'company-logos'
+    );
+
+    expect(result.data).toBeNull();
+    expect(result.error).toBeTruthy();
+    // Must never attempt to store an empty file.
+    expect(mockUpload).not.toHaveBeenCalled();
+  });
 });
 
 describe('dbHelpers.deleteStorageFile', () => {

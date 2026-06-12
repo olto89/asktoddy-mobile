@@ -98,12 +98,26 @@ export const authHelpers = {
 // Database helper functions
 export const dbHelpers = {
   // Upload image to storage (React Native compatible via base64)
-  uploadImage: async (uri: string, filename: string, bucket: string = 'project-images') => {
+  uploadImage: async (
+    uri: string,
+    filename: string,
+    bucket: string = 'project-images',
+    prereadBase64?: string
+  ) => {
     try {
-      // Read file as base64 — reliable on React Native unlike fetch → blob
-      const base64 = await FileSystem.readAsStringAsync(uri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
+      // Prefer base64 already produced upstream (e.g. by ImageManipulator); fall
+      // back to reading the file. Reading base64 is reliable on React Native
+      // unlike fetch → blob, which often yields an empty body.
+      const base64 =
+        prereadBase64 ||
+        (await FileSystem.readAsStringAsync(uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        }));
+
+      // A 0-byte upload "succeeds" but stores an unusable file — fail loudly.
+      if (!base64) {
+        throw new Error('Image data was empty — could not read the selected image');
+      }
 
       // Detect content type from extension
       const fileExt = filename.split('.').pop()?.toLowerCase() || 'jpg';
