@@ -118,7 +118,13 @@ export default function AccountScreen() {
           manipulated.base64
         );
         if (result.error) throw result.error;
-        await updateCompanyProfile({ companyLogoUrl: result.data!.publicUrl });
+        // The logo always lives at the same storage path (upsert), so its public
+        // URL is byte-identical on every upload. Without a unique query param,
+        // React Native's Image cache and the Supabase CDN keep showing the OLD
+        // logo after a replace/remove-then-add. Bust the cache so the new image
+        // actually appears (and the stored value changes → triggers a re-render).
+        const cacheBustedUrl = `${result.data!.publicUrl}?v=${Date.now()}`;
+        await updateCompanyProfile({ companyLogoUrl: cacheBustedUrl });
         showLogoSaved();
       } catch (err: any) {
         // Surface the real reason — previously this was swallowed behind a

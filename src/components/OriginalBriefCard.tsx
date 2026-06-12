@@ -167,7 +167,14 @@ export default function OriginalBriefCard({ siteNotes, defaultExpanded = false }
 
 const styles = StyleSheet.create({
   card: {
+    // Align width with the summary card above (which is inset 16px) instead of
+    // being full-bleed to the screen edges.
+    marginHorizontal: designTokens.spacing.md,
     marginTop: designTokens.spacing.md,
+    // Match the gap above this card (summary card's marginBottom 16 + this card's
+    // marginTop 16 = 32) so it sits symmetrically between the summary and the
+    // "Tasks & Costs" heading, rather than crowding the heading.
+    marginBottom: designTokens.spacing.xl,
     padding: designTokens.spacing.md,
   },
   header: {

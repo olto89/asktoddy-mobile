@@ -246,6 +246,36 @@ describe('AccountScreen', () => {
     });
   });
 
+  it('saves a cache-busted logo URL so a replaced logo actually refreshes', async () => {
+    (ImageManipulator.manipulateAsync as jest.Mock).mockResolvedValueOnce({
+      uri: 'mock://manipulated.jpeg',
+      base64: 'b64==',
+    });
+    (dbHelpers.uploadImage as jest.Mock).mockResolvedValueOnce({
+      data: { path: 'p', fullPath: 'f', publicUrl: 'https://cdn.example.com/u/logo.jpg' },
+      error: null,
+    });
+
+    const { getByTestId, mockAuth } = renderWithProviders(<AccountScreen />, {
+      authContext: {
+        user: mockUser,
+        freemiumUser: mockFreeUser,
+        isAuthenticated: true,
+        isAnonymous: false,
+      },
+    });
+
+    fireEvent.press(getByTestId('company-branding-toggle'));
+    fireEvent.press(getByTestId('logo-picker-button'));
+
+    await waitFor(() => {
+      expect(mockAuth.updateCompanyProfile).toHaveBeenCalledWith({
+        // Base URL preserved + a unique ?v= cache-buster appended.
+        companyLogoUrl: expect.stringMatching(/^https:\/\/cdn\.example\.com\/u\/logo\.jpg\?v=\d+$/),
+      });
+    });
+  });
+
   it('does not upload and prompts to sign in when there is no user session', async () => {
     const { getByTestId } = renderWithProviders(<AccountScreen />, {
       authContext: {
