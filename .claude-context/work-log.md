@@ -75,6 +75,21 @@
   existing, persist edits to draft) and `TaskListScreen.headlineFields.test.tsx` (+1:
   top-level on generated quote). PDF auto-includes them (no template change).
 
+### 🐞 Delete-account failed — edge function not deployed (staging had a function gap)
+
+- "Delete account" returned a non-2xx ("issue with the edge function"). Root cause:
+  **`delete-account` was never deployed to staging** (existed locally only). The
+  function code is fine; `functions.invoke('delete-account')` hit a missing fn.
+- Discovered **`sync-quotes` was also undeployed** on staging — so logged-in quote
+  sync (`useSyncQuotes` → `syncToServer`) was silently failing.
+- **Fix: deployed both** to staging (`supabase functions deploy delete-account`
+  / `sync-quotes`). Now all 8 app functions are live. Backend-only — fixes build
+  52 with no rebuild. Verified delete-account FK cleanup is safe (quote_usage
+  cascades on user delete).
+- **Cutover implication:** reinforces that the prod cutover must deploy ALL
+  functions (this gap existed even on staging, not just prod). `npm run
+deploy:production` step in PRODUCTION_CUTOVER.md must verify the full set of 8.
+
 ### 🚨 Staging migration tracking is OUT OF SYNC (matters for prod cutover — ADR-021)
 
 - `supabase migration list` (linked to **staging** `iezmuqawughmwsxlqrim`) shows

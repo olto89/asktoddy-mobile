@@ -242,8 +242,8 @@
     "profile": "staging",
     "status": "TestFlight — Tier 1 hardening: edge auth (T1), server-side usage limiting (T2), prompt-injection hardening (T4), mock-provider removal (T5), SubscriptionService fix (T6), auto-save failure banner (T8). For UI run-through."
   },
-  "edge_function_version": "staging redeployed June 11 (analyze-construction with auth + usage limiting + injection hardening)",
-  "lastUpdated": "2026-06-12T11:21:12.520Z",
+  "edge_function_version": "staging redeployed June 11 (analyze-construction with auth + usage limiting + injection hardening). June 12: deployed delete-account + sync-quotes which were MISSING on staging (caused delete-account failure + silent sync failures). All 8 app functions now live on staging.",
+  "lastUpdated": "2026-06-12T14:54:24.186Z",
   "project": {
     "name": "asktoddy-mobile",
     "version": "1.2.4",
@@ -255,9 +255,9 @@
   },
   "git": {
     "branch": "staging",
-    "lastCommit": "a6e5f8c fix: company logo upload reliability + re-assert storage RLS",
+    "lastCommit": "b87d437 fix: header title reflects generation state (not premature \"Quote Generated\")",
     "hasUncommittedChanges": true,
-    "changedFiles": 20
+    "changedFiles": 4
   },
   "environment": {
     "nodeVersion": "v24.3.0",
@@ -266,14 +266,17 @@
   "runningProcesses": [],
   "recentFiles": [
     "src/types/Quote.ts",
+    "src/navigation/DrawerNavigator.tsx",
     "src/screens/AccountScreen.tsx",
     "src/screens/SiteNotesScreen.tsx",
     "src/screens/__tests__/TaskListScreen.retry.test.tsx",
     "src/screens/__tests__/SiteNotesScreen.headlineFields.test.tsx",
+    "src/screens/__tests__/TaskListScreen.headerTitle.test.tsx",
     "src/screens/__tests__/TaskListScreen.headlineFields.test.tsx",
     "src/screens/__tests__/ForgotPasswordScreen.test.tsx",
     "src/screens/__tests__/AccountScreen.test.tsx",
     "src/screens/TaskListScreen.tsx",
+    "src/components/modals/UpgradePromptModal.tsx",
     "src/components/modals/LoginSignupModal.tsx",
     "src/components/OriginalBriefCard.tsx",
     "src/components/__tests__/OriginalBriefCard.test.tsx",
