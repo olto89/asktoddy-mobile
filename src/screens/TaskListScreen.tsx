@@ -22,6 +22,8 @@ import { useAuth } from '../contexts/AuthContext';
 import LoginSignupModal from '../components/modals/LoginSignupModal';
 import UpgradePromptModal from '../components/modals/UpgradePromptModal';
 import OriginalBriefCard from '../components/OriginalBriefCard';
+import ToddyAdviceCard from '../components/ToddyAdviceCard';
+import type { ToddyAdvice, ToddyAdviceContext } from '../services/ai/ToddyAdviceService';
 import { calculateVAT, calculateIncVAT, formatGBP } from '../utils/vat';
 import { logger } from '../services/Logger';
 import { Task, parseAIResponseToTasks } from './taskListHelpers';
@@ -42,6 +44,11 @@ export default function TaskListScreen({ navigation, route }: any) {
   // showing misleading hardcoded template figures.
   const [generationFailed, setGenerationFailed] = useState(false);
   const [saveError, setSaveError] = useState(false);
+  // Opt-in: list each line item's materials on the customer PDF. Off by default
+  // so existing quote PDFs don't change unless the user chooses to show them.
+  const [showMaterialBreakdown, setShowMaterialBreakdown] = useState<boolean>(
+    savedQuote?.showMaterialBreakdown ?? false
+  );
   const lastSaveArgsRef = useRef<{ generatedTasks: Task[]; aiResponse: any } | null>(null);
   const [pendingQuoteGeneration, setPendingQuoteGeneration] = useState(false);
   const [previousAuthState, setPreviousAuthState] = useState(isAnonymous);
@@ -205,6 +212,53 @@ export default function TaskListScreen({ navigation, route }: any) {
     if (args) {
       autoSaveGeneratedQuote(args.generatedTasks, args.aiResponse);
     }
+  };
+
+  // Cache Toddy's advice onto the saved quote so re-opening it shows the advice
+  // instantly without re-billing a Gemini call. Best-effort: a persistence
+  // failure must not disrupt the (already-displayed) advice.
+  const persistToddyAdvice = async (advice: ToddyAdvice) => {
+    if (!currentQuote) return;
+    const updated = { ...currentQuote, toddyAdvice: advice, lastModified: Date.now() };
+    setCurrentQuote(updated);
+    try {
+      await quoteStorage.save(updated);
+      logger.debug('💾 Cached Toddy advice on quote:', updated.id);
+    } catch (error) {
+      logger.warn('⚠️ Failed to persist Toddy advice (advice still shown):', error);
+    }
+  };
+
+  // Toggle "show materials on PDF" and persist it on the quote so the choice
+  // sticks across sessions. Best-effort persistence — never block the toggle.
+  const toggleMaterialBreakdown = async () => {
+    const next = !showMaterialBreakdown;
+    setShowMaterialBreakdown(next);
+    if (!currentQuote) return;
+    const updated = { ...currentQuote, showMaterialBreakdown: next, lastModified: Date.now() };
+    setCurrentQuote(updated);
+    try {
+      await quoteStorage.save(updated);
+    } catch (error) {
+      logger.warn('⚠️ Failed to persist material-breakdown preference:', error);
+    }
+  };
+
+  // Quote context sent to the advice edge function — selected line items + total.
+  const buildToddyContext = (): ToddyAdviceContext => {
+    const selected = tasks.filter(t => t.selected);
+    return {
+      jobType: siteNotes.jobType,
+      propertyType: siteNotes.propertyType,
+      size: siteNotes.size,
+      notes: siteNotes.notes,
+      lineItems: selected.map(t => ({
+        description: t.description,
+        price: t.finalPrice ?? t.estimatedCost.max,
+      })),
+      quoteTotal:
+        finalCost ?? selected.reduce((sum, t) => sum + (t.finalPrice ?? t.estimatedCost.max), 0),
+    };
   };
 
   // Helper function to compress and convert image URIs to base64
@@ -538,6 +592,7 @@ Provide detailed cost breakdown with materials, labor, and realistic price range
         tasks: selectedTasks,
         totalCost,
         finalCost, // Your Price total
+        showMaterialBreakdown, // controls the per-item materials list on the PDF
       },
     });
   };
@@ -660,6 +715,17 @@ Provide detailed cost breakdown with materials, labor, and realistic price range
         {/* Read-only original brief — only when viewing an already-generated
             quote, so users can look back on what they submitted. */}
         {isViewingGenerated && <OriginalBriefCard siteNotes={siteNotes} />}
+
+        {/* On-demand "ask Toddy" advice — only once a quote exists. Sits below
+            the brief and never competes with the quote itself; advice is
+            fetched lazily on tap and cached on the quote. */}
+        {tasks.length > 0 && (
+          <ToddyAdviceCard
+            context={buildToddyContext()}
+            initialAdvice={currentQuote?.toddyAdvice ?? null}
+            onAdviceGenerated={persistToddyAdvice}
+          />
+        )}
 
         {/* Auto-save failure banner */}
         {saveError && (
@@ -840,6 +906,26 @@ Provide detailed cost breakdown with materials, labor, and realistic price range
               </Text>
             </View>
           )}
+          <TouchableOpacity
+            style={styles.materialToggleRow}
+            onPress={toggleMaterialBreakdown}
+            activeOpacity={0.7}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: showMaterialBreakdown }}
+            accessibilityLabel="Show material breakdown on customer PDF"
+          >
+            <Ionicons
+              name={showMaterialBreakdown ? 'checkbox' : 'square-outline'}
+              size={22}
+              color={
+                showMaterialBreakdown
+                  ? designTokens.colors.primary[500]
+                  : designTokens.colors.text.tertiary
+              }
+            />
+            <Text style={styles.materialToggleLabel}>Show material breakdown on customer PDF</Text>
+          </TouchableOpacity>
+
           <View style={styles.actionButtons}>
             <Button
               title="Edit Quote"
@@ -1140,6 +1226,18 @@ const styles = StyleSheet.create({
     color: designTokens.colors.text.secondary,
     textAlign: 'center' as const,
     fontStyle: 'italic' as const,
+    flex: 1,
+  },
+  materialToggleRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    paddingVertical: designTokens.spacing.sm,
+    marginBottom: designTokens.spacing.sm,
+  },
+  materialToggleLabel: {
+    fontSize: designTokens.typography.fontSize.sm,
+    color: designTokens.colors.text.secondary,
+    marginLeft: designTokens.spacing.sm,
     flex: 1,
   },
   actionButtons: {

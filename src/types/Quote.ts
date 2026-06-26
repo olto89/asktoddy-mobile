@@ -35,6 +35,15 @@ export interface SiteNote {
   projectNotes?: string;
   // Construction method label for display
   constructionMethodLabel?: string;
+  // Cached on-demand "Toddy's advice" (winning-range estimate + margin tips),
+  // so re-opening a saved quote shows it without re-billing a Gemini call.
+  toddyAdvice?: {
+    winRange: { min: number; max: number };
+    rationale: string;
+    tips: string[];
+  };
+  // User opt-in to list each line item's materials on the customer PDF.
+  showMaterialBreakdown?: boolean;
 }
 
 export interface DraftFormData {

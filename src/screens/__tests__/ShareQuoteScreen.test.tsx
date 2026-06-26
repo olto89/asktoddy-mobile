@@ -593,6 +593,79 @@ describe('ShareQuoteScreen', () => {
     });
   });
 
+  describe('material breakdown on PDF', () => {
+    const tasksWithMaterials = [
+      {
+        description: 'Bathroom fit-out',
+        finalPrice: 5000,
+        estimatedCost: { min: 4000, max: 6000 },
+        materials: ['toilet', 'basin', 'bath'],
+      },
+      {
+        description: 'Tiling',
+        finalPrice: 2000,
+        estimatedCost: { min: 1500, max: 2500 },
+        materials: [],
+      },
+    ];
+
+    const exportPdf = (overrides = {}) => {
+      const { getByText } = renderWithProviders(
+        <ShareQuoteScreen
+          navigation={createNavigation()}
+          route={createRoute({ tasks: tasksWithMaterials, finalCost: 7000, ...overrides })}
+        />,
+        { authContext: { freemiumUser: mockFreeUser, isAuthenticated: true, isAnonymous: false } }
+      );
+      (Sharing.isAvailableAsync as jest.Mock).mockResolvedValue(true);
+      (Print.printToFileAsync as jest.Mock).mockResolvedValue({ uri: 'file:///test.pdf' });
+      fireEvent.press(getByText('Export PDF'));
+    };
+
+    it('lists materials per item when the breakdown is enabled', async () => {
+      exportPdf({ showMaterialBreakdown: true });
+      await waitFor(() => {
+        const htmlArg = (Print.printToFileAsync as jest.Mock).mock.calls[0][0].html;
+        expect(htmlArg).toContain('Materials: toilet, basin, bath');
+      });
+    });
+
+    it('omits the materials line when the breakdown is disabled (default)', async () => {
+      exportPdf({ showMaterialBreakdown: false });
+      await waitFor(() => {
+        const htmlArg = (Print.printToFileAsync as jest.Mock).mock.calls[0][0].html;
+        expect(htmlArg).not.toContain('Materials:');
+      });
+    });
+
+    it('does not add a materials line for an item with no materials', async () => {
+      exportPdf({ showMaterialBreakdown: true });
+      await waitFor(() => {
+        const htmlArg = (Print.printToFileAsync as jest.Mock).mock.calls[0][0].html;
+        // Only the first item has materials; "Materials:" should appear exactly once.
+        expect(htmlArg.match(/Materials:/g)).toHaveLength(1);
+      });
+    });
+
+    it('HTML-escapes material names', async () => {
+      exportPdf({
+        showMaterialBreakdown: true,
+        tasks: [
+          {
+            description: 'Glazing',
+            finalPrice: 1000,
+            estimatedCost: { min: 800, max: 1200 },
+            materials: ['glass <pane> & frame'],
+          },
+        ],
+      });
+      await waitFor(() => {
+        const htmlArg = (Print.printToFileAsync as jest.Mock).mock.calls[0][0].html;
+        expect(htmlArg).toContain('glass &lt;pane&gt; &amp; frame');
+      });
+    });
+  });
+
   describe('navigation', () => {
     it('goes back on back button press', () => {
       const navigation = createNavigation();

@@ -134,10 +134,21 @@ export default function ShareQuoteScreen({ navigation, route }: any) {
           const laborText = laborDays
             ? `<div style="font-size: 11px; color: #9ca3af; margin-top: 2px;">Est. ${laborDays} day${laborDays !== 1 ? 's' : ''}</div>`
             : '';
+          // Optional per-item materials list — only when the user opted in and
+          // the item actually has materials.
+          const materials = Array.isArray(task.materials)
+            ? task.materials.filter((m: any) => typeof m === 'string' && m.trim())
+            : [];
+          const materialsText =
+            quote.showMaterialBreakdown && materials.length > 0
+              ? `<div style="font-size: 11px; color: #6b7280; margin-top: 4px;">Materials: ${materials
+                  .map((m: string) => escapeHTML(m))
+                  .join(', ')}</div>`
+              : '';
           return `
         <tr>
           <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${index + 1}</td>
-          <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${task.description || 'Item'}${laborText}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${task.description || 'Item'}${laborText}${materialsText}</td>
           <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 500;">£${price.toLocaleString()}</td>
         </tr>
       `;
