@@ -44,8 +44,15 @@ if (environment === 'production' && config.projectRef === 'YOUR_PRODUCTION_PROJE
 }
 
 try {
-  // List of Edge Functions to deploy
-  const functions = ['analyze-construction', 'generate-document', 'get-pricing', 'scheduled-tasks'];
+  // Auto-discover Edge Functions from the filesystem so this list can never go
+  // stale again (each subdir of supabase/functions is a function; `_shared` is a
+  // shared library, not a deployable function).
+  const functionsDir = path.join(__dirname, '..', 'supabase', 'functions');
+  const functions = fs
+    .readdirSync(functionsDir, { withFileTypes: true })
+    .filter(entry => entry.isDirectory() && !entry.name.startsWith('_'))
+    .map(entry => entry.name)
+    .sort();
 
   console.log(`📦 Deploying to project: ${config.projectRef}`);
   console.log(`📋 Functions to deploy: ${functions.join(', ')}`);
