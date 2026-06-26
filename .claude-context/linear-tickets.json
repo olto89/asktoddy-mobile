@@ -57,18 +57,20 @@
     {
       "id": "ASK-204",
       "title": "Set Up Own iOS Developer Account",
-      "status": "Blocked",
+      "status": "In Progress",
       "priority": "Critical",
-      "description": "Enroll in Apple Developer Program with own DUNS number. Required for App Store submission.",
+      "description": "Enroll in Apple Developer Program with own DUNS number. Required for App Store submission. June 26, 2026: Apple accepted authority to hold the account, enrollment fee paid, pending payment clearance (~48h, expect active ~June 28).",
       "acceptance_criteria": [
-        "DUNS number received",
-        "Apple Developer enrollment completed",
+        "DUNS number received — DONE (May 29)",
+        "Apple accepted authority to hold account — DONE (June 26)",
+        "Enrollment fee paid, payment cleared — IN PROGRESS (pending ~48h)",
+        "Apple Developer enrollment completed / account active",
         "New bundle ID registered",
         "Certificates and provisioning profiles created"
       ],
       "effort": "Small",
       "sprint": "Week 2 (May 19-23)",
-      "blocker": "DUNS number pending"
+      "blocker": "Apple payment clearance (~48h)"
     },
     {
       "id": "ASK-205",

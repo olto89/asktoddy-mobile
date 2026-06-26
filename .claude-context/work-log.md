@@ -6,6 +6,133 @@
 
 ---
 
+## 📅 June 19, 2026 — Feature 2: "Toddy's advice" (built, deployed, on TestFlight #54)
+
+New product direction discussed: AskToddy is an **admin tool for quote creation**,
+not a precision pricing engine. Two features scoped to reinforce that. Feature 2
+built this session.
+
+### ✨ Feature 2 — "Toddy's advice" (on-demand AI advice on the quote page)
+
+A collapsible card under the Original Brief on the generated-quote page. User taps
+**"Get Toddy's advice"** → spinner → drops down with a **winning-price RANGE** plus
+2–3 **margin-preserving** cost-down tips, in first-person Toddy voice. Collapsible
+via chevron.
+
+- **Design = Option B (lazy/on-demand), chosen over inline-on-every-quote** after a
+  latency discussion: a separate edge call fired only on tap. Zero added quote
+  latency, only billed when actually viewed, and the quote can never be broken by
+  the advice (no same-call JSON-parse coupling). The win price is a **range anchored
+  to the user's own quote total** (at/just under) so it stays internally consistent
+  rather than guessing a market price.
+- **Files:** `supabase/functions/toddy-advice/index.ts` (verifyUser-gated; does NOT
+  consume the free-tier quote quota — it isn't a quote); client
+  `src/services/ai/ToddyAdviceService.ts`; UI `src/components/ToddyAdviceCard.tsx`
+  (idle / loading / loaded / error states, `LayoutAnimation` drop-down); wired into
+  `TaskListScreen` under `OriginalBriefCard` (renders when `tasks.length > 0`).
+  Cached on the quote via a new `toddyAdvice` field (`src/types/Quote.ts`) so
+  re-opening a saved quote shows it instantly without re-billing.
+- **Tests:** 23 new (edge pure-fns mirrored in `advice.test.ts`; service; component).
+  **Full suite 377/46 green**, no regressions.
+- **Deployed `toddy-advice` to staging** (project `iezmuqawughmwsxlqrim`); smoke-test
+  returns 401 for the anon key (auth gate works). Added `toddy-advice` to
+  `scripts/deploy-edge-functions.js` so the prod cutover picks it up automatically.
+  ⚠️ That script's function list was stale (only 4) — still missing
+  delete-account/get-session-quote/sync-quotes/update-ons-cache.
+
+### 🏗️ Build / workflow learning
+
+- **No OTA configured** (`expo-updates` not installed) and no dev client in use, so a
+  JS-only change does **not** reach the installed TestFlight build — confirmed the
+  user saw nothing until a rebuild. Cut **iOS staging build #54** (`buildNumber`
+  53→54) with `--auto-submit`; submitted to TestFlight for visual review.
+- Consider adding **EAS Update** so future JS-only tweaks push without a full rebuild.
+
+### ✅ Feature 1 — "Show material breakdown on customer PDF" (names-only)
+
+Built same session, after Toddy's advice was approved.
+
+- Opt-in checkbox (default **off**) in the Actions block on the generated-quote page
+  (`TaskListScreen`), above Edit/Share. Persisted on the quote via a new
+  `showMaterialBreakdown` boolean (`src/types/Quote.ts`) and threaded into the
+  ShareQuote navigation.
+- When on, the PDF (`ShareQuoteScreen` `generateQuoteHTML`) renders a grey
+  "Materials: …" sub-line under each line item that has materials (uses
+  `task.materials`, already client-side; HTML-escaped; names-only, no £ split).
+- Tests: 4 new ShareQuoteScreen PDF cases + 4 new TaskListScreen toggle/flow cases.
+  **Full suite 385/47 green.**
+
+### Build #55
+
+- Build #54 had Feature 2 only (Feature 1 landed after). Cut **iOS staging #55**
+  (`buildNumber` 54→55) batching BOTH features, `--auto-submit` to TestFlight.
+
+### Remaining
+
+- **Android keystore** one-time interactive generation still parked (blocks Android
+  builds; `eas build --platform android` non-interactive can't create the keystore).
+- Optional: add **EAS Update** (OTA) to avoid a full rebuild per JS-only change.
+
+---
+
+## 📅 June 16, 2026 — Apple feedback + production-prep queue (PAUSED mid-discussion)
+
+### 🍎 Apple review feedback (GOOD news)
+
+- Apple came back and did **NOT** raise any company-ownership / permission issue
+  (the partner-account concern). **Only stated blocker: "we need a website live."**
+- **Website domain decision:** `asktoddy.co.uk` is acceptable — does NOT need to be
+  on the Oakhouse domain. Apple wants a live, legitimate web presence for the app
+  with working Privacy Policy + Support URLs; a product/brand domain is the norm.
+  Use whichever domain is owned/fastest to go live. Add "AskToddy is a product of
+  Oakhouse Ltd" in the footer for brand↔entity consistency (not required by Apple).
+  The Privacy Policy URL + Support URL in ASC just need valid reachable links
+  (e.g. one page with /privacy and /support sections).
+
+### 📋 Production-prep queue (to resume — was mid-AskUserQuestion when paused)
+
+Build 53 on TestFlight looking good. Remaining pre-launch prep, split by who can do it:
+
+**Claude can produce now (in-repo / drafts):**
+
+1. ✅✅ **DONE & LIVE — Website (clears Apple's stated blocker).** Next.js site at
+   `/Users/olivertodd/Desktop/asktoddy-website` (landing + `/privacy` + `/support`),
+   branded to match the app (Toddy Orange #FF6B35, system font, Toddy caricature
+   from `assets/characters/` as header logo + hero + favicon). Deployed to Vercel
+   (account olto89 / project `olivers-projects-bcf6bd1f/asktoddy-website`).
+   - **Live on custom domain with valid SSL:** `https://asktoddy.co.uk` (+ www).
+     Vercel auto-issued the cert (free, auto-renew — did NOT buy GoDaddy SSL).
+   - **DNS:** kept GoDaddy as DNS host; apex A `@`→76.76.21.21, `www` CNAME→
+     cname.vercel-dns.com. Nameservers stayed on GoDaddy (so mail works).
+   - **Email forwarding LIVE via ImprovMX** (GoDaddy charges for forwarding, so used
+     free ImprovMX): MX mx1/mx2.improvmx.com (10/20) + SPF TXT
+     `v=spf1 include:spf.improvmx.com ~all` added in GoDaddy DNS; catch-all
+     `*@asktoddy.co.uk` → `oliver@oakhousewoodbridge.co.uk`. Tested working.
+   - **App Store Connect URLs:** Privacy `https://asktoddy.co.uk/privacy`,
+     Support `https://asktoddy.co.uk/support`.
+   - NOTE: website project is NOT in git yet; redeploy with `vercel --prod` from the
+     folder. Display emails on the site (`support@`/`privacy@asktoddy.co.uk`) now
+     resolve via the forward — no code change needed.
+2. **App Store metadata (ASK-203)** — name/subtitle/description, 100-char keywords,
+   promo text, category, age rating, screenshot shot-list (6.7" + 5.5").
+3. **Sentry crash reporting** — scaffold @sentry/react-native + EAS source maps
+   (user supplies a DSN).
+
+**Needs user (Claude writes the runbook):** 4. **Gemini cost controls (CRITICAL)** — monthly spend cap + daily quota + budget
+alerts (AI Studio / Cloud Console). Bill-shock protection before real users. 5. **Rotate Gemini key (T14)** before launch. 6. **iOS dev account enrolment (ASK-204)** — Apple BOUNCED the org enrolment (only
+gap cited: needed a live website). **Re-enrolled June 16** with same standard
+company info (Oak House (Woodbridge) Ltd) + the now-live `https://asktoddy.co.uk`.
+Awaiting Apple verification (few business days; watch for a verification phone
+call to the D-U-N-S number + email/spam). Do NOT start a 3rd parallel enrolment.
+Fallback: partner account (Hot Soup Ltd) already works for launch if this drags.
+Once approved → App Store Connect app under new account → RevenueCat (ASK-205). 7. **RevenueCat reconfigure (ASK-205)** — blocked on own iOS account.
+
+**Already verified done in-code:** coming-soon placeholder stubs appear removed;
+in-app PrivacyPolicyScreen + TermsScreen exist (but a HOSTED public URL is still
+needed — that's item 1).
+
+---
+
 ## 📅 June 12, 2026 — UX (read-only brief) + Logo upload diagnosis + staging migration-drift finding
 
 ### ✅ Piece C — Read-only "Original brief" on a completed quote (SHIPPED)

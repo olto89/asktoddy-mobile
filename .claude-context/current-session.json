@@ -13,13 +13,13 @@
       "action": "Enroll at developer.apple.com/enroll immediately"
     },
     "ios_dev_account": {
-      "status": "UNBLOCKED — enroll now with DUNS",
-      "impact": "Expect ~48 hours for Apple approval",
-      "note": "Want own account from the outset, not partner's"
+      "status": "IN PROGRESS (June 26, 2026) — Apple accepted authority to hold the account, enrollment fee PAID, now PENDING payment clearance (~48h)",
+      "impact": "Once payment clears the account goes active → register bundle ID, create certs/profiles, set up App Store Connect app",
+      "note": "Own account from the outset (not partner's). Next check-in ~June 28."
     },
     "revenuecat": {
-      "status": "Unblocked once iOS dev account approved",
-      "impact": "Can configure App Store Connect products + RevenueCat dashboard after enrollment"
+      "status": "Unblocked once iOS dev account active (payment clearing, ~48h)",
+      "impact": "Can configure App Store Connect products + RevenueCat dashboard after enrollment clears"
     }
   },
   "architecture": {
@@ -235,15 +235,23 @@
     "step9": "PENDING - Build development client and test purchases"
   },
   "latest_build": {
-    "build_number": "50",
+    "build_number": "55",
     "version": "1.2.4",
-    "submitted": "2026-06-11",
+    "submitted": "2026-06-19",
     "platform": "iOS",
     "profile": "staging",
-    "status": "TestFlight — Tier 1 hardening: edge auth (T1), server-side usage limiting (T2), prompt-injection hardening (T4), mock-provider removal (T5), SubscriptionService fix (T6), auto-save failure banner (T8). For UI run-through."
+    "status": "TestFlight — batches Feature 2 'Toddy's advice' (on-demand AI advice card) AND Feature 1 'show material breakdown on customer PDF' (opt-in checkbox, names-only). #54 had Feature 2 only; #55 supersedes it. No OTA, so each JS change needs a full rebuild."
   },
-  "edge_function_version": "staging redeployed June 11 (analyze-construction with auth + usage limiting + injection hardening). June 12: deployed delete-account + sync-quotes which were MISSING on staging (caused delete-account failure + silent sync failures). All 8 app functions now live on staging.",
-  "lastUpdated": "2026-06-12T14:54:24.186Z",
+  "toddy_advice_feature": {
+    "status": "Built + deployed to staging June 19; in TestFlight (build #54) for visual review",
+    "design": "Option B — lazy/on-demand: separate edge fn called only when user taps 'Get Toddy's advice', so zero added quote latency and the quote can't be broken by advice. Win price is a RANGE, anchored to the user's own quote total (at/just under), framed in first-person Toddy voice.",
+    "files": "edge: supabase/functions/toddy-advice/index.ts (verifyUser-gated, does NOT touch quote quota); client: src/services/ai/ToddyAdviceService.ts; UI: src/components/ToddyAdviceCard.tsx (4 states + LayoutAnimation drop-down, collapsible); wired in TaskListScreen under OriginalBriefCard (renders when tasks.length>0); cached on quote via toddyAdvice field (src/types/Quote.ts) so re-open doesn't re-bill.",
+    "tests": "23 new (advice.test.ts mirrors edge pure fns; ToddyAdviceService.test.ts; ToddyAdviceCard.test.tsx). Full suite 377/46 green.",
+    "deploy_note": "Added 'toddy-advice' to scripts/deploy-edge-functions.js functions[] so prod cutover (deploy:production) picks it up automatically. That script's list was stale (only 4 fns) — still missing delete-account/get-session-quote/sync-quotes/update-ons-cache.",
+    "remaining": "Both features now built. Feature 1 (PDF material-names checkbox) DONE same session — opt-in checkbox in TaskListScreen Actions block, default off, persisted via showMaterialBreakdown on the quote, renders a grey 'Materials: …' sub-line per item in ShareQuoteScreen PDF (HTML-escaped, names-only). 8 new tests. Both shipped in build #55."
+  },
+  "edge_function_version": "staging redeployed June 11 (analyze-construction with auth + usage limiting + injection hardening). June 12: deployed delete-account + sync-quotes which were MISSING on staging. June 19: deployed NEW toddy-advice fn to staging (Feature 2). All app functions + toddy-advice now live on staging.",
+  "lastUpdated": "2026-06-26T08:25:44.057Z",
   "project": {
     "name": "asktoddy-mobile",
     "version": "1.2.4",
@@ -255,9 +263,9 @@
   },
   "git": {
     "branch": "staging",
-    "lastCommit": "b87d437 fix: header title reflects generation state (not premature \"Quote Generated\")",
+    "lastCommit": "84db419 feat: Toddy's advice card + opt-in material breakdown on customer PDF",
     "hasUncommittedChanges": true,
-    "changedFiles": 4
+    "changedFiles": 5
   },
   "environment": {
     "nodeVersion": "v24.3.0",
@@ -265,23 +273,9 @@
   },
   "runningProcesses": [],
   "recentFiles": [
-    "src/types/Quote.ts",
-    "src/navigation/DrawerNavigator.tsx",
-    "src/screens/AccountScreen.tsx",
-    "src/screens/SiteNotesScreen.tsx",
-    "src/screens/__tests__/TaskListScreen.retry.test.tsx",
-    "src/screens/__tests__/SiteNotesScreen.headlineFields.test.tsx",
-    "src/screens/__tests__/TaskListScreen.headerTitle.test.tsx",
-    "src/screens/__tests__/TaskListScreen.headlineFields.test.tsx",
-    "src/screens/__tests__/ForgotPasswordScreen.test.tsx",
-    "src/screens/__tests__/AccountScreen.test.tsx",
     "src/screens/TaskListScreen.tsx",
-    "src/components/modals/UpgradePromptModal.tsx",
-    "src/components/modals/LoginSignupModal.tsx",
-    "src/components/OriginalBriefCard.tsx",
-    "src/components/__tests__/OriginalBriefCard.test.tsx",
-    "src/services/__tests__/supabase.test.ts",
-    "src/services/ai/AIServiceEdge.ts",
-    "src/services/supabase.ts"
+    "src/components/ToddyAdviceCard.tsx",
+    "src/services/ai/ToddyAdviceService.ts",
+    "src/services/ai/__tests__/ToddyAdviceService.test.ts"
   ]
 }
