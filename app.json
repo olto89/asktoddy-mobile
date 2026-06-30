@@ -17,8 +17,8 @@
     "ios": {
       "supportsTablet": false,
       "usesAppleSignIn": true,
-      "bundleIdentifier": "com.asktoddy.staging",
-      "buildNumber": "55",
+      "bundleIdentifier": "com.oakhouse.asktoddy.staging",
+      "buildNumber": "56",
       "splash": {
         "backgroundColor": "#FF7A3B",
         "image": "./assets/splash-icon.png",
@@ -34,7 +34,7 @@
       }
     },
     "android": {
-      "package": "com.asktoddy.staging",
+      "package": "com.oakhouse.asktoddy.staging",
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
