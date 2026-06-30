@@ -23,7 +23,7 @@
         "EXPO_PUBLIC_API_URL": "https://iezmuqawughmwsxlqrim.supabase.co/functions/v1",
         "EXPO_PUBLIC_ENABLE_MOCK_DATA": "false",
         "EXPO_PUBLIC_ENABLE_DEBUG_LOGS": "true",
-        "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "appl_fzMpeIdnKZEhSbuJxHucxfSlVwx"
+        "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "appl_yyMDiXttTeqBNKWUuNzemxEbDye"
       },
       "ios": {
         "resourceClass": "m-medium",
