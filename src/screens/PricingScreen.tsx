@@ -1,37 +1,71 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
+import useSubscription from '../hooks/useSubscription';
 import designTokens from '../styles/designTokens';
 import { AppIcons, IconSize } from '../styles/iconRegistry';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 
 export default function PricingScreen({ navigation }: any) {
-  const { freemiumUser, upgradeUser, user } = useAuth();
+  const { freemiumUser, user, refreshPremiumStatus } = useAuth();
+  const { monthlyPackage, purchaseMonthly, restorePurchases, isLoading, error, clearError } =
+    useSubscription();
+  const [isPurchasing, setIsPurchasing] = useState(false);
 
-  const handleSelectPlan = (planType: 'free' | 'premium') => {
+  const handleSelectPlan = async (planType: 'free' | 'premium') => {
     if (planType === 'free') {
       // Already on free plan
       Alert.alert('Current Plan', "You're already on the free plan.");
       return;
     }
 
-    if (planType === 'premium') {
-      Alert.alert(
-        'Upgrade to Premium',
-        'Premium subscription coming soon! In-app purchase will be available shortly.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Notify Me',
-            onPress: () => {
-              Alert.alert('Thanks!', "We'll notify you when premium subscriptions are available.");
-            },
-          },
-        ]
-      );
+    // planType === 'premium' → real RevenueCat purchase
+    setIsPurchasing(true);
+    clearError();
+    try {
+      const success = await purchaseMonthly();
+      if (success) {
+        await refreshPremiumStatus();
+        Alert.alert(
+          'Welcome to Premium!',
+          'You now have unlimited quotes and all premium features.',
+          [{ text: 'Great!', onPress: () => navigation.goBack() }]
+        );
+      } else if (error) {
+        // purchaseMonthly swallows user-cancellation; only surface real errors
+        Alert.alert('Purchase Unsuccessful', error);
+      }
+    } finally {
+      setIsPurchasing(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    setIsPurchasing(true);
+    clearError();
+    try {
+      const restored = await restorePurchases();
+      if (restored) {
+        await refreshPremiumStatus();
+        Alert.alert('Purchases Restored', 'Your premium subscription has been restored.', [
+          { text: 'OK', onPress: () => navigation.goBack() },
+        ]);
+      } else {
+        Alert.alert('No Purchases Found', 'We could not find any previous purchases to restore.');
+      }
+    } finally {
+      setIsPurchasing(false);
     }
   };
 
@@ -168,7 +202,9 @@ export default function PricingScreen({ navigation }: any) {
           <View style={styles.planHeader}>
             <Text style={styles.planName}>Premium</Text>
             <View style={styles.priceContainer}>
-              <Text style={styles.planPrice}>£9.99</Text>
+              <Text style={styles.planPrice}>
+                {monthlyPackage?.product?.priceString ?? '£9.99'}
+              </Text>
               <Text style={styles.planPeriod}>per month</Text>
             </View>
             <Text style={styles.planSaving}>Save 2+ hours per quote</Text>
@@ -234,16 +270,40 @@ export default function PricingScreen({ navigation }: any) {
           </View>
 
           <Button
-            title={freemiumUser.tier === 'premium' ? 'Current Plan' : 'Upgrade to Premium'}
+            title={
+              freemiumUser.tier === 'premium'
+                ? 'Current Plan'
+                : isPurchasing
+                  ? 'Processing…'
+                  : 'Upgrade to Premium'
+            }
             onPress={() => handleSelectPlan('premium')}
             variant={freemiumUser.tier === 'premium' ? 'secondary' : 'primary'}
-            disabled={freemiumUser.tier === 'premium'}
+            disabled={freemiumUser.tier === 'premium' || isPurchasing || isLoading}
             icon={
               freemiumUser.tier !== 'premium' ? (
-                <Ionicons name="star" size={20} color="white" />
+                isPurchasing ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Ionicons name="star" size={20} color="white" />
+                )
               ) : undefined
             }
           />
+
+          {freemiumUser.tier !== 'premium' && (
+            <>
+              <TouchableOpacity
+                onPress={handleRestore}
+                style={styles.restoreButton}
+                disabled={isPurchasing}
+                testID="restore-purchases-button"
+              >
+                <Text style={styles.restoreButtonText}>Restore Purchases</Text>
+              </TouchableOpacity>
+              {error ? <Text style={styles.errorText}>{error}</Text> : null}
+            </>
+          )}
         </Card>
 
         {/* ROI Section */}
@@ -447,6 +507,22 @@ const styles = StyleSheet.create({
   featureUnavailable: {
     color: designTokens.colors.text.tertiary,
     textDecorationLine: 'line-through',
+  },
+  restoreButton: {
+    alignItems: 'center',
+    marginTop: designTokens.spacing.md,
+    padding: designTokens.spacing.sm,
+  },
+  restoreButtonText: {
+    fontSize: designTokens.typography.fontSize.sm,
+    color: designTokens.colors.primary[600],
+    textDecorationLine: 'underline',
+  },
+  errorText: {
+    fontSize: designTokens.typography.fontSize.sm,
+    color: designTokens.colors.error[500],
+    textAlign: 'center',
+    marginTop: designTokens.spacing.sm,
   },
   roiCard: {
     marginHorizontal: designTokens.spacing.lg,
