@@ -58,6 +58,15 @@ security definer
 set search_path = public
 as $$
 begin
+  -- Ignore events for a user that doesn't exist locally: RevenueCat test events
+  -- and purchases under an anonymous/aliased id carry an app_user_id with no
+  -- matching auth.users row. That's not an error (nothing to mirror), so no-op
+  -- and let the webhook return 200 — otherwise the FK violation would 500 and
+  -- RevenueCat would retry forever.
+  if not exists (select 1 from auth.users where id = p_user_id) then
+    return;
+  end if;
+
   insert into public.user_subscriptions as us
     (user_id, entitlement, is_active, product_id, store, environment, expires_at,
      last_event_type, last_event_id, event_ts, updated_at)
