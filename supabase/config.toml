@@ -412,3 +412,8 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/scheduled-tasks/deno.json"
 entrypoint = "./functions/scheduled-tasks/index.ts"
+
+[functions.revenuecat-webhook]
+enabled = true
+verify_jwt = false  # RevenueCat sends its own shared-secret auth, not a Supabase JWT
+entrypoint = "./functions/revenuecat-webhook/index.ts"

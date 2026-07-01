@@ -30,14 +30,34 @@ function adminClient() {
 }
 
 /**
- * Resolve a user's subscription tier.
+ * Resolve a user's subscription tier from the RevenueCat entitlement mirror
+ * (public.user_subscriptions), kept up to date by the revenuecat-webhook function.
  *
- * TODO(revenuecat): everyone is 'free' until entitlement is synced server-side.
- * When the Apple/RevenueCat account exists, populate a subscriptions table from
- * a RevenueCat webhook and look the tier up here — no other code needs to change.
+ * A user is 'pro' when they hold an active 'premium' entitlement that hasn't
+ * expired. Fails to 'free' on any error: a DB hiccup shouldn't hand out unlimited
+ * quotes, and a legitimate Pro user is only briefly capped at the (lenient) free
+ * limit — checkQuoteAllowed itself then fails OPEN on a usage-read error.
  */
-export async function getUserTier(_userId: string): Promise<Tier> {
-  return 'free';
+export async function getUserTier(userId: string): Promise<Tier> {
+  try {
+    const { data, error } = await adminClient()
+      .from('user_subscriptions')
+      .select('is_active, expires_at')
+      .eq('user_id', userId)
+      .eq('entitlement', 'premium')
+      .maybeSingle();
+
+    if (error) {
+      console.error('⚠️ tier lookup failed, treating as free:', error.message);
+      return 'free';
+    }
+    if (!data || !data.is_active) return 'free';
+    if (data.expires_at && new Date(data.expires_at).getTime() <= Date.now()) return 'free';
+    return 'pro';
+  } catch (e) {
+    console.error('⚠️ tier lookup threw, treating as free:', e);
+    return 'free';
+  }
 }
 
 /**
