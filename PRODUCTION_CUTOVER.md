@@ -1,101 +1,144 @@
 # Production Cutover Plan
 
-_Last updated: 2026-06-10_
+_Last updated: 2026-07-07_
 
-How to promote work from **staging** to **production**. We build and verify
-everything on staging, then promote via the explicit checklist below. Frontend
-parity is automatic on a branch merge; **backend parity is manual** and is where
-all the real risk lives.
+How to promote work from **staging** to **production**, and the remaining steps to
+ship v1 to the App Store. We build and verify everything on staging, then promote
+via the explicit checklist below. Frontend parity is automatic on a branch merge;
+**backend parity is manual** and is where all the real risk lives.
 
 ## Environment topology
 
-| Layer                      | Staging                  | Production                                         |
-| -------------------------- | ------------------------ | -------------------------------------------------- |
-| Git branch                 | `staging` (active)       | `main`                                             |
-| Supabase project ref       | `iezmuqawughmwsxlqrim`   | `tggvoqhewfmczyjoxrqu`                             |
-| Bundle ID                  | `com.asktoddy.staging`   | `com.asktoddy.prod` (via `APP_VARIANT=production`) |
-| Build profile (`eas.json`) | `staging`                | `production`                                       |
-| Edge fn deploy             | `npm run deploy:staging` | `npm run deploy:production`                        |
-| Secrets file               | `.env.staging`           | `.env.production`                                  |
+| Layer                      | Staging                  | Production                                             |
+| -------------------------- | ------------------------ | ------------------------------------------------------ |
+| Git branch                 | `staging` (active)       | `main`                                                 |
+| Supabase project ref       | `iezmuqawughmwsxlqrim`   | `rdlnlvtfwzntxiyugcuk` (rebuilt 2026-07-02)            |
+| Bundle ID                  | `com.asktoddy.staging`   | `com.oakhouse.asktoddy` (via `APP_VARIANT=production`) |
+| Build profile (`eas.json`) | `staging`                | `production`                                           |
+| Edge fn deploy             | `npm run deploy:staging` | `npm run deploy:production`                            |
+| Secrets file               | `.env.staging`           | `.env.production`                                      |
+| ASC App ID                 | `6785867307`             | `6785868118`                                           |
 
 The **app code is shared** — the same source builds both apps; only build-time
 env in `eas.json` differs. The **backends are two separate Supabase projects** —
 edge functions, migrations, secrets, and storage buckets must be applied to each
 independently.
 
-## ⚠️ Drift snapshot (2026-06-10)
+Apple: own Company/Org account, Team ID `48HRFFDTVQ`. ASC API key `Q7DT7VPXB6`
+(issuer `2a31713b-c178-40b1-a0e7-d7eb753c7c0f`) wired into both eas.json submit
+profiles.
 
-Production is **far** behind and appears to be a near-fresh backend:
+## Status snapshot (2026-07-07)
 
-- **Prod Supabase project appears PAUSED / dormant.** Its REST + storage hosts do
-  not resolve (DNS fails) while the management API still works — the classic
-  signature of a paused free-tier project (last activity 2025-10-23). **Must be
-  un-paused from the Supabase dashboard before anything can deploy.** _(User
-  action — verify in dashboard.)_
-- **Edge functions:** prod has only 3 (`analyze-construction`, `generate-document`,
-  `get-pricing`) at **version 7, 2025-10-23**. Staging is at version ~107.
-  Five functions are **missing from prod entirely**: `delete-account`,
-  `get-session-quote`, `scheduled-tasks`, `sync-quotes`, `update-ons-cache`.
-- **Database schema:** unverified (project unreachable), but almost certainly
-  missing everything from late 2025 onward — including the `quotes` table
-  (2026-03-16) and `company-logos` storage bucket. Treat prod DB as empty.
-- **No real users in prod** → we can rebuild it cleanly. Cutover is "deploy
-  everything," not "carefully migrate deltas."
+The old prod project (`tggvoqhewfmczyjoxrqu`) was paused >90 days, became
+permanently unrecoverable, and was deleted. It had no real users. A **fresh prod
+project (`rdlnlvtfwzntxiyugcuk`) was stood up and baselined on 2026-07-02** via
+the Supabase Management API. Backend is largely cutover already:
 
-## Cutover checklist (run in order, before App Store submission)
+- **✅ Schema applied** — `conversation_sessions`, `quotes`, `quote_usage`,
+  `user_subscriptions`, and the public `company-logos` bucket.
+  - **Skipped (intentionally):** `20241203_setup_cron_jobs` (staging-hardcoded
+    pg_cron, errors on a fresh DB), `20251105_add_concrete_category`,
+    `20251113_scraped_materials` (labour_rates drift — a `task_description` column
+    was added out-of-band on staging and never captured in a migration file).
+    None of these are read by any edge function at runtime (`get-pricing` uses
+    in-code constants in `data/uk-pricing-data.ts`), so skipping is safe for core
+    quoting + payments. Revisit if pricing/cron tables are ever queried at runtime.
+- **✅ All 10 edge functions deployed** to prod (analyze-construction,
+  delete-account, generate-document, get-pricing, get-session-quote,
+  revenuecat-webhook, scheduled-tasks, sync-quotes, toddy-advice,
+  update-ons-cache).
+- **✅ App config repointed** — `eas.json` production env + `.env.production` use
+  the new prod URL + anon/service-role keys (commit `661ef69`).
+- **✅ Prod secrets set** — `GEMINI_API_KEY` (created under personal Gmail, project
+  `asktoddy mobile prod`; verified against gemini-2.5-flash) and
+  `REVENUECAT_WEBHOOK_AUTH` (`f0d0378801bf190cf286cec780ae53dd500eba7193c0225833ade1cbbfbcd968`).
+  `SUPABASE_SERVICE_ROLE_KEY` is auto-injected — do not set manually.
 
-> Prereq: own Apple Developer account + App Store Connect app exist (blocked on
-> DUNS — tracked separately). The backend steps below are **not** blocked and can
-> be done now once the prod project is un-paused.
+## Remaining to ship v1 (run in order)
 
-1. **Un-pause the prod Supabase project** (`tggvoqhewfmczyjoxrqu`) in the
-   dashboard. Confirm REST host resolves: `curl -I https://tggvoqhewfmczyjoxrqu.supabase.co/rest/v1/`.
-2. **⚠️ FIRST reconcile staging's migration history (drift discovered 2026-06-12).**
-   `supabase migration list` (staging) shows `20260316`, `20260320`, `20260326`,
-   `20260610` — and `20260612` (company-logos RLS re-assert, run via the dashboard
-   SQL editor on 2026-06-12) — as NOT in staging's history, yet `quote_usage`, the
-   `company-logos` bucket, and those policies demonstrably exist. They were applied
-   out-of-band via the dashboard SQL editor, so the `supabase_migrations` history is
-   incomplete. **`migration list` is NOT a trustworthy parity source.** Before
-   pushing to prod, repair staging's history so it reflects reality:
-   `supabase migration repair --status applied 20260316 20260320 20260326 20260610 20260612`
-   (verify each against the actual schema first). Otherwise the prod `db push` below
-   may re-apply or skip migrations unpredictably. NOTE: prod is unaffected by this
-   staging-history gap — prod reads its own history, and `20260612` is a committed
-   migration file, so the push applies it to prod automatically (idempotent).
-   **Apply all migrations to prod.** Link to prod and push:
-   `supabase link --project-ref tggvoqhewfmczyjoxrqu && supabase db push`.
-   Then re-link to staging (`supabase link --project-ref iezmuqawughmwsxlqrim`).
-   Verify the `quotes`, `conversation_sessions`, and pricing-cache tables exist.
-3. **Create storage buckets** in prod (`company-logos`) with matching RLS — the
-   `20260320_company_logos_bucket.sql` / `20260326_fix_company_logos_rls.sql`
-   migrations should handle this; verify in the dashboard.
-4. **Populate `.env.production` secrets** — Gemini API key (rotated, see security
-   hardening), prod Supabase service-role key, RevenueCat prod key (after own
-   account), any others. Mirror `.env.staging` keys.
-5. **Deploy edge functions to prod:** `npm run deploy:production`. Confirm all 8
-   functions deploy and the version jumps from 7 to current.
-6. **Set edge function secrets in prod** (Supabase dashboard or
-   `supabase secrets set --project-ref tggvoqhewfmczyjoxrqu`) — Gemini key etc.
-   These do NOT come from `.env.production` automatically.
-7. **Sign in with Apple (T15) — fix or hide.** Client code is correct; the
-   failure is account config. On the own account: enable the Sign in with Apple
-   capability on the App ID, create a Services ID + .p8 key, and configure the
-   Supabase Apple provider with the correct **bundle ID(s) in authorized Client
-   IDs** (audience mismatch is the usual cause). Verify `ios.usesAppleSignIn`
-   puts the entitlement in the build. If not fixing for v1, **hide the Apple
-   button** (email-only is compliant since there are no other 3rd-party logins).
-   A visible-but-broken button is a rejection risk.
-8. **Merge code:** `git checkout main && git merge staging && git push origin main`.
-9. **Build + submit prod app:** bump `ios.buildNumber`, then
+Backend is baselined; what's left is prod payments, cost controls, store prep, and
+the build. Ownership marked **[me]** (in-repo) vs **[you]** (dashboard/account).
+
+1. **[me] Push staging** — done 2026-07-07 (`origin/staging` @ `2a08045`).
+
+2. **[you] Prod RevenueCat + ASC subscription**
+   - Create a **prod RC app** on bundle `com.oakhouse.asktoddy`; generate its own
+     prod iOS SDK key.
+   - Create the ASC subscription product `asktoddy_pro_monthly` (£9.99/month) and
+     submit for approval. Configure the `premium` entitlement (must match
+     `RevenueCatService.ts` `ENTITLEMENT_ID='premium'`). Set the `default` offering
+     Current with the monthly package.
+   - Add the **prod RC webhook** → URL
+     `https://rdlnlvtfwzntxiyugcuk.supabase.co/functions/v1/revenuecat-webhook`,
+     Authorization header = the prod `REVENUECAT_WEBHOOK_AUTH` value above.
+
+3. **[me] Swap the prod RevenueCat key in `eas.json`** — the production profile
+   still carries the **partner's** key `appl_fzMpeIdnKZEhSbuJxHucxfSlVwx`
+   (line ~45). Replace with your new prod iOS SDK key from step 2.
+
+4. **[you] ⚠️ Prod cost controls — CRITICAL pre-launch blocker.** On the
+   `asktoddy mobile prod` Google Cloud project (no billing card yet):
+   - Add a billing card.
+   - Set a monthly budget + alerts at 50/75/90% (Cloud Console → Billing →
+     Budgets & Alerts).
+   - Set a daily request quota on the Gemini API (APIs & Services → Quotas).
+   - The app has a template fallback, so throttling degrades gracefully to
+     non-AI quotes rather than failing.
+
+5. **[you] Sign in with Apple** — enable the capability on the App ID, create a
+   Services ID + .p8 key, and configure the Supabase Apple provider with
+   `com.oakhouse.asktoddy` in the authorized Client IDs (audience mismatch is the
+   usual failure). Or **hide the Apple button for v1** — email-only is compliant
+   since there are no other third-party logins. A visible-but-broken button is a
+   rejection risk.
+
+6. **[you] App Store metadata** — screenshots (6.7" + 5.5"), description, keywords,
+   category, app icon, privacy policy URL, support URL. Currently not started.
+
+7. **[you] Landing page** — asktoddy.com (company: Oakhouse) single-pager with
+   app description, privacy policy, and support contact. Must be live before
+   review submission (Apple requires reachable privacy/support URLs).
+
+8. **[me] Merge code:**
+   `git checkout main && git merge staging && git push origin main`.
+
+9. **[me] Build + submit prod app:** bump `ios.buildNumber` in `app.json`, then
    `eas build --profile production --platform ios --auto-submit --non-interactive`.
-   (Prod ASC App ID: `6754278089`.)
-10. **Smoke-test prod end to end:** sign up, generate a quote (real AI), save,
-    share PDF, delete account, restore purchases, **Sign in with Apple**.
+   Prod ASC App ID: `6785868118`.
 
-## Parity rule going forward
+10. **[you/me] Smoke-test prod end to end:** sign up → generate a real-AI quote →
+    save → share PDF → sandbox purchase → generate 6+ quotes with no 429 (Pro
+    exemption) → delete account → **Sign in with Apple**.
 
-Every backend change merged to `main` must be accompanied by steps 2/5/6 against
-the prod project. Migrations and edge-function deploys do **not** propagate
-automatically. Keep a one-line note in the work log whenever prod is brought
-level so drift never silently reopens.
+## Migration + secret parity rule going forward
+
+Every backend change merged to `main` must be accompanied by, against the prod
+project (`rdlnlvtfwzntxiyugcuk`):
+
+- the migration (applied via the Supabase Management API — see below), and
+- the edge-function deploy (`npm run deploy:production`), and
+- any new edge-function secret.
+
+Migrations and edge-function deploys do **not** propagate automatically. Keep a
+one-line note in the work log whenever prod is brought level so drift never
+silently reopens.
+
+**Running migrations without the CLI:** the Supabase CLI keeps its token in the
+macOS keychain (unreadable from automation) and `db push` needs the DB password
+interactively. Use the **Management API** with a user-supplied PAT (`sbp_…` from
+dashboard → account → tokens):
+`POST https://api.supabase.com/v1/projects/<ref>/database/query` with
+`{"query": <sql>}`, `Authorization: Bearer <PAT>`. Pass SQL via an env var to
+avoid shell-quoting issues. This bypasses migration-history drift entirely (same
+effect as the dashboard SQL editor). Revoke the PAT afterwards.
+
+## Notes / caveats
+
+- **Free-tier auto-pause:** a free Supabase project re-pauses after ~7 days idle.
+  A launched app with traffic won't be idle, but a lull (or the pre-launch gap)
+  can pause prod and take the backend down. Keep it warm or move to Pro before
+  real traffic. A fresh <90-day pause IS restorable (unlike the old one).
+- Prod DB password: `54cef34330550cf567aec556e16f59991a18f9b8a7625cb1`.
+- **No OTA:** there is no `expo-updates`; JS-only changes do not reach a build
+  without a full rebuild. Never claim "no build needed" for JS changes.
