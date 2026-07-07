@@ -100,6 +100,16 @@ the build. Ownership marked **[me]** (in-repo) vs **[you]** (dashboard/account).
    app description, privacy policy, and support contact. Must be live before
    review submission (Apple requires reachable privacy/support URLs).
 
+7b. **[you] Custom SMTP for auth email (pre-launch).** Supabase's built-in email
+is rate-limited to a few messages/hour and is meant for testing — at real
+signup volume, confirmation + password-reset emails will silently fail. Set up
+custom SMTP (e.g. Resend free tier, ~3k/mo) sending from an `@asktoddy.com`
+address on both staging and prod. Also improves deliverability and makes the
+branded templates land. The AskToddy-branded confirmation + recovery templates
+already live in `supabase/email-templates/` — apply them per project with
+`SUPABASE_PAT=sbp_xxx node supabase/email-templates/apply-templates.mjs <ref>`.
+The recovery email carries the mobile-only-link notice.
+
 8. **[me] Merge code:**
    `git checkout main && git merge staging && git push origin main`.
 
