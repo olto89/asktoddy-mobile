@@ -6,6 +6,50 @@
 
 ---
 
+## 📅 July 7–8, 2026 — Branded auth emails + custom SMTP prep; git pushed; cutover doc refreshed
+
+**Git:** `staging` was 23 commits ahead of `origin/staging` and never pushed —
+all committed, now **pushed** (origin/staging @ `7d0147f`). Nothing was lost; it
+was unpushed, not uncommitted.
+
+**Cutover doc:** `PRODUCTION_CUTOVER.md` was stale (referenced the deleted old
+prod ref `tggvoqhewfmczyjoxrqu`). Rewritten for the rebuilt prod
+`rdlnlvtfwzntxiyugcuk` + a clean "remaining to ship v1" checklist ([me]/[you]
+ownership). Prod backend already baselined July 2 (schema + 10 fns + secrets);
+what's left is prod RevenueCat, prod cost controls, Sign in with Apple, App Store
+metadata, landing page, custom SMTP, then merge→build→submit.
+
+**Branded auth emails (DONE on staging):** created AskToddy-branded Supabase
+templates in `supabase/email-templates/` (`confirmation.html`, `recovery.html`).
+Recovery email carries the **mobile-only-link notice** (deep link only opens in
+the installed app). Palette: Toddy Orange `#FF6B35` header, Navy `#2C3E50`.
+Applied to **staging** via `apply-templates.mjs` (Management API PATCH
+`config/auth`) — verified subjects + mobile note present. **Prod NOT applied yet.**
+
+**Custom SMTP (prep DONE, not yet configured):** wrote `apply-smtp.mjs` companion
+script (Resend via Management API). Chosen because Resend free tier (3k/mo) is the
+cheapest route vs ImprovMX's paid SMTP add-on. **Domain = asktoddy.co.uk** (live;
+NOT `.com`). ImprovMX already handles INBOUND support-email forwarding → Oakhouse
+inbox. SMTP is OUTBOUND (separate). Plan: verify **`send.asktoddy.co.uk`** subdomain
+in Resend (isolates DKIM/SPF from ImprovMX's root MX/SPF — no merge needed), send
+from `no-reply@send.asktoddy.co.uk`.
+
+**PENDING (user is doing now):** sign up Resend → add `send.asktoddy.co.uk` → add
+DKIM/SPF DNS → wait Verified → make API key. Then (needs a fresh Supabase PAT):
+
+```
+SUPABASE_PAT=.. SMTP_PASS=<resend key> SMTP_SENDER=no-reply@send.asktoddy.co.uk \
+node supabase/email-templates/apply-smtp.mjs iezmuqawughmwsxlqrim   # staging first, then rdlnlvtfwzntxiyugcuk
+```
+
+Then device-test signup + reset, run through mail-tester. Also still TODO: apply
+the branded TEMPLATES to prod (`apply-templates.mjs rdlnlvtfwzntxiyugcuk`).
+
+**Note:** PATs are one-time-view secrets, intentionally not stored — user creates
+fresh each time and revokes after.
+
+---
+
 ## 📅 June 19, 2026 — Feature 2: "Toddy's advice" (built, deployed, on TestFlight #54)
 
 New product direction discussed: AskToddy is an **admin tool for quote creation**,
