@@ -193,7 +193,7 @@ export default function LoginScreen({ navigation }: Props) {
         setError(null);
         break;
       case 'contact_support':
-        Alert.alert('Contact Support', 'Email us at support@asktoddy.com for help');
+        Alert.alert('Contact Support', 'Email us at support@asktoddy.co.uk for help');
         break;
       case 'retry':
       default:

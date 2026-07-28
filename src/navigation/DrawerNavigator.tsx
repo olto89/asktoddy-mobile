@@ -345,7 +345,7 @@ function MenuModal({ visible, onClose, navigation }: any) {
               style={styles.menuItem}
               onPress={() => {
                 onClose();
-                Alert.alert('Support', 'Contact us at support@asktoddy.com');
+                Alert.alert('Support', 'Contact us at support@asktoddy.co.uk');
               }}
             >
               <Ionicons

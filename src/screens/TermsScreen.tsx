@@ -130,7 +130,7 @@ export default function TermsScreen() {
         <Text style={styles.body}>
           If you have questions about these Terms and Conditions, please contact us at:
         </Text>
-        <Text style={styles.body}>Email: support@asktoddy.com</Text>
+        <Text style={styles.body}>Email: support@asktoddy.co.uk</Text>
 
         <View style={styles.bottomSpacing} />
       </ScrollView>

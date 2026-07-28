@@ -87,7 +87,7 @@ export default function VerificationSuccessScreen({ navigation }: Props) {
 
         {/* Help Text */}
         <View style={styles.helpContainer}>
-          <Text style={styles.helpText}>Need help? Contact us at support@asktoddy.com</Text>
+          <Text style={styles.helpText}>Need help? Contact us at support@asktoddy.co.uk</Text>
         </View>
       </View>
     </SafeAreaView>

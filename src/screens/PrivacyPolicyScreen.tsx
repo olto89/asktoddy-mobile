@@ -150,7 +150,7 @@ export default function PrivacyPolicyScreen() {
           If you have questions about this Privacy Policy or wish to exercise your data rights,
           please contact us at:
         </Text>
-        <Text style={styles.body}>Email: support@asktoddy.com</Text>
+        <Text style={styles.body}>Email: support@asktoddy.co.uk</Text>
 
         <View style={styles.bottomSpacing} />
       </ScrollView>

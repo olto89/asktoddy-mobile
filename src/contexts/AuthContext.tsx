@@ -139,51 +139,77 @@ export function AuthProvider({ children }: AuthProviderProps) {
           logger.debug('💾 Loaded existing freemium user:', storedFreemiumUser.tier);
         }
 
-        // Get initial session - let Supabase handle this naturally
-        const {
-          data: { session },
-          error,
-        } = await supabase.auth.getSession();
+        // Get initial session. Guard it with a timeout: when the device is offline
+        // (e.g. flight mode) supabase-js can block on a background token refresh held
+        // behind its internal lock and never resolve, which would leave the whole app
+        // stuck on the loading splash. Racing a timeout lets the UI come up in the
+        // last-known/anonymous state; the real session resolves later via
+        // onAuthStateChange once connectivity returns.
+        const SESSION_TIMEOUT = Symbol('session-timeout');
+        const raced = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise<typeof SESSION_TIMEOUT>(resolve =>
+            setTimeout(() => resolve(SESSION_TIMEOUT), 4000)
+          ),
+        ]);
 
         if (!mounted) return; // Component unmounted
 
-        if (error) {
-          console.error('❌ Error getting initial session:', error);
-
-          // If it's an invalid refresh token error, clear the session
-          if (
-            error.message?.includes('Invalid Refresh Token') ||
-            error.message?.includes('Refresh Token Not Found')
-          ) {
-            logger.debug('🔄 Clearing invalid session...');
-            await supabase.auth.signOut();
-          }
-
-          setSession(null);
-          setUser(null);
-          // Keep anonymous user if no session
+        if (raced === SESSION_TIMEOUT) {
+          logger.warn(
+            '⏱️ getSession timed out (likely offline) — starting in last-known/anonymous state'
+          );
+          // Do NOT clear the stored session token here; connectivity may just be down.
+          // Fall back to cached UI state so the app is usable offline.
           if (!storedFreemiumUser) {
             const anonymousUser = createAnonymousUser();
             setFreemiumUser(anonymousUser);
             await saveFreemiumUserToStorage(anonymousUser);
           }
-        } else if (session) {
-          logger.debug('✅ Initial session found for:', session.user?.email);
-          setSession(session);
-          setUser(session.user);
-          // Convert to free user if not already upgraded
-          const freeUser = createFreeUser(session.user);
-          setFreemiumUser(freeUser);
-          await saveFreemiumUserToStorage(freeUser);
         } else {
-          logger.debug('ℹ️ No initial session found');
-          setSession(null);
-          setUser(null);
-          // Keep anonymous user if no session
-          if (!storedFreemiumUser) {
-            const anonymousUser = createAnonymousUser();
-            setFreemiumUser(anonymousUser);
-            await saveFreemiumUserToStorage(anonymousUser);
+          const {
+            data: { session },
+            error,
+          } = raced;
+
+          if (error) {
+            console.error('❌ Error getting initial session:', error);
+
+            // If it's an invalid refresh token error, clear the session
+            if (
+              error.message?.includes('Invalid Refresh Token') ||
+              error.message?.includes('Refresh Token Not Found')
+            ) {
+              logger.debug('🔄 Clearing invalid session...');
+              await supabase.auth.signOut();
+            }
+
+            setSession(null);
+            setUser(null);
+            // Keep anonymous user if no session
+            if (!storedFreemiumUser) {
+              const anonymousUser = createAnonymousUser();
+              setFreemiumUser(anonymousUser);
+              await saveFreemiumUserToStorage(anonymousUser);
+            }
+          } else if (session) {
+            logger.debug('✅ Initial session found for:', session.user?.email);
+            setSession(session);
+            setUser(session.user);
+            // Convert to free user if not already upgraded
+            const freeUser = createFreeUser(session.user);
+            setFreemiumUser(freeUser);
+            await saveFreemiumUserToStorage(freeUser);
+          } else {
+            logger.debug('ℹ️ No initial session found');
+            setSession(null);
+            setUser(null);
+            // Keep anonymous user if no session
+            if (!storedFreemiumUser) {
+              const anonymousUser = createAnonymousUser();
+              setFreemiumUser(anonymousUser);
+              await saveFreemiumUserToStorage(anonymousUser);
+            }
           }
         }
       } catch (error) {

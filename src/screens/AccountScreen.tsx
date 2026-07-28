@@ -23,6 +23,7 @@ import { config } from '../config';
 import { useNavigation } from '@react-navigation/native';
 import { useImagePicker } from '../hooks/useImagePicker';
 import * as ImageManipulator from 'expo-image-manipulator';
+import Constants from 'expo-constants';
 import designTokens from '../styles/designTokens';
 import { AppIcons } from '../styles/iconRegistry';
 import { DEFAULT_QUOTE_VALIDITY_DAYS, DEFAULT_LEGAL_NOTICE } from '../constants/quoteDefaults';
@@ -748,7 +749,7 @@ export default function AccountScreen() {
 
           <TouchableOpacity
             style={styles.menuItem}
-            onPress={() => Alert.alert('Help', 'Contact support at support@asktoddy.com')}
+            onPress={() => Alert.alert('Help', 'Contact support at support@asktoddy.co.uk')}
           >
             <View style={styles.menuItemLeft}>
               <Ionicons
@@ -764,7 +765,10 @@ export default function AccountScreen() {
           <TouchableOpacity
             style={styles.menuItem}
             onPress={() =>
-              Alert.alert('App Info', 'AskToddy v1.0.1\nYour construction cost expert')
+              Alert.alert(
+                'App Info',
+                `AskToddy v${Constants.expoConfig?.version ?? ''}\nYour construction cost expert`
+              )
             }
           >
             <View style={styles.menuItemLeft}>

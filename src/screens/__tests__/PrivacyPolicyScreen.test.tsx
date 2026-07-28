@@ -17,6 +17,6 @@ describe('PrivacyPolicyScreen', () => {
   it('displays contact email', () => {
     const { getAllByText } = renderWithProviders(<PrivacyPolicyScreen />);
 
-    expect(getAllByText('Email: support@asktoddy.com').length).toBeGreaterThan(0);
+    expect(getAllByText('Email: support@asktoddy.co.uk').length).toBeGreaterThan(0);
   });
 });

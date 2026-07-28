@@ -56,6 +56,26 @@ describe('AuthContext', () => {
       expect(result.current.user).toBeNull();
       expect(result.current.freemiumUser.tier).toBe('anonymous');
     });
+
+    it('does not get stuck on the loading splash when getSession hangs (offline / flight mode)', async () => {
+      // Simulate supabase-js blocking on a background token refresh that never
+      // resolves while offline — previously this left the whole app on the splash.
+      (mockSupabase.auth.getSession as jest.Mock).mockImplementationOnce(
+        () => new Promise(() => {}) // never resolves (only for this test's init call)
+      );
+
+      const wrapper = ({ children }: { children: React.ReactNode }) => (
+        <AuthProvider>{children}</AuthProvider>
+      );
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      // The internal timeout guard must still flip loading to false so the UI renders.
+      await waitFor(() => expect(result.current.loading).toBe(false), { timeout: 6000 });
+
+      // App is usable offline in a safe fallback state (no session, anonymous).
+      expect(result.current.user).toBeNull();
+      expect(result.current.isAnonymous).toBe(true);
+    }, 10000);
   });
 
   describe('canGenerateQuote', () => {
