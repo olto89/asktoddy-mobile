@@ -33,9 +33,10 @@ export default function PrivacyPolicyScreen() {
 
         <Text style={styles.sectionTitle}>1. Introduction</Text>
         <Text style={styles.body}>
-          AskToddy ("we", "our", "us") is committed to protecting your privacy. This Privacy Policy
-          explains how we collect, use, store, and share your personal data when you use the
-          AskToddy mobile application and related services.
+          AskToddy, a service provided by Oakhouse Woodbridge Ltd ("we", "our", "us"), is committed
+          to protecting your privacy. This Privacy Policy explains how we collect, use, store, and
+          share your personal data when you use the AskToddy mobile application and related
+          services.
         </Text>
 
         <Text style={styles.sectionTitle}>2. Data We Collect</Text>

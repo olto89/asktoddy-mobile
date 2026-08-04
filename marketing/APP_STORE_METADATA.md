@@ -116,7 +116,7 @@ Apple's reviewer needs a working account (quote generation requires login).
 
 ## Pre-submit checks
 
-- [ ] Legal entity consistent (see marketing/README — "AskToddy Ltd" vs "Oakhouse").
+- [x] Legal entity consistent — **Oakhouse Woodbridge Ltd** (seller name in ASC must match).
 - [ ] Privacy "nutrition label" (App Privacy) filled: data collected = email, usage,
       photos, user content; used for app functionality; linked to identity.
 - [ ] Export compliance: uses standard encryption (HTTPS) only → usually exempt.

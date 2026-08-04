@@ -26,6 +26,5 @@ Point `asktoddy.co.uk` at the deployment. Then the URLs App Store Connect needs 
 
 1. `index.html` — replace the `href="#"` on the **Download for iOS** button with the
    real App Store URL once the listing is live (search `TODO` in the file).
-2. **Legal entity check:** the in-app Terms (and therefore `terms.html`) say
-   _"AskToddy Ltd"_, but the App Store / bundle is under **Oakhouse**. Confirm which
-   legal entity is correct and make the app + site consistent before submission.
+2. **Legal entity:** resolved — the entity is **Oakhouse Woodbridge Ltd** (applied to the
+   in-app Terms/Privacy and to `terms.html`/`privacy.html` + copyright footers).

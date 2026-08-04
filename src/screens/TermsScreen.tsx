@@ -35,7 +35,7 @@ export default function TermsScreen() {
         <Text style={styles.body}>
           AskToddy is an AI-powered mobile application that generates construction cost estimates
           and quotes based on information you provide, including site assessments, photos, and
-          project descriptions. The service is provided by AskToddy Ltd.
+          project descriptions. The service is provided by Oakhouse Woodbridge Ltd.
         </Text>
 
         <Text style={styles.sectionTitle}>2. Acceptance of Terms</Text>
@@ -87,16 +87,16 @@ export default function TermsScreen() {
         <Text style={styles.sectionTitle}>6. Intellectual Property</Text>
         <Text style={styles.body}>
           The AskToddy app, including its design, branding, AI models, and source code, is the
-          intellectual property of AskToddy Ltd. Quotes generated using the service are yours to use
-          for personal or business purposes. You retain ownership of all content (photos, notes,
-          data) you upload to the service.
+          intellectual property of Oakhouse Woodbridge Ltd. Quotes generated using the service are
+          yours to use for personal or business purposes. You retain ownership of all content
+          (photos, notes, data) you upload to the service.
         </Text>
 
         <Text style={styles.sectionTitle}>7. Limitation of Liability</Text>
         <Text style={styles.body}>
-          To the fullest extent permitted by law, AskToddy Ltd shall not be liable for any indirect,
-          incidental, special, consequential, or punitive damages arising from your use of the
-          service. This includes, without limitation, any losses arising from reliance on
+          To the fullest extent permitted by law, Oakhouse Woodbridge Ltd shall not be liable for
+          any indirect, incidental, special, consequential, or punitive damages arising from your
+          use of the service. This includes, without limitation, any losses arising from reliance on
           AI-generated estimates, business interruption, or data loss.
         </Text>
         <Text style={styles.body}>
